@@ -1,0 +1,592 @@
+"use strict";
+/** Application state and navigation model. Storage and views are supplied separately. */
+const WorkTimeServiceApplication = (() => {
+  /** @param {{state:WorkStateData,writable:boolean,readError:Error|null,corrupt:boolean,today:string}} input @returns {WorkApplicationModel} */
+  function create(input) {
+    return {
+      state: input.state,
+      revision: 0,
+      storageFailed: !!input.readError || !input.writable,
+      loadCorrupt: input.corrupt,
+      loadIssue: input.corrupt
+        ? "corrupt"
+        : input.readError
+          ? "unavailable"
+          : null,
+      today: input.today,
+      month: input.today.slice(0, 7),
+      selected: input.today,
+      calendarSelected: input.today,
+      batchMode: false,
+      batchDays: new Set(),
+      batchAnchor: null,
+      batchDraft: null,
+      batchPreview: null,
+      batchSaving: false,
+      yearMode: false,
+      yearViewMode: "heatmap",
+      analysisMode: false,
+      viewYear: Number(input.today.slice(0, 4)),
+      returnMonth: input.today.slice(0, 7),
+    };
+  }
+  /** Own business state. Views receive frozen snapshots, operations own all writes.
+   * @param {{state:WorkStateData,persistence:WorkStatePersistence,core:WorkApplicationCore,failed?:boolean,corrupt?:boolean,unsaved?:boolean,today?:()=>string}} options
+   */
+  function createState({
+    state: initial,
+    persistence,
+    core: C,
+    failed = false,
+    corrupt = false,
+    unsaved = false,
+    today = () => "",
+  }) {
+    const clone = (value) => JSON.parse(JSON.stringify(value));
+    function expirePlans(candidate) {
+      const cutoff = today(),
+        expired = cutoff
+          ? Object.keys(candidate.days).filter(
+              (date) => date < cutoff && candidate.days[date].plannedOvertime,
+            )
+          : [];
+      if (!expired.length) return { state: candidate, expired };
+      const days = { ...candidate.days };
+      for (const date of expired) {
+        const day = { ...days[date] };
+        delete day.plannedOvertime;
+        if (Object.keys(day).length) days[date] = day;
+        else delete days[date];
+      }
+      return { state: { ...candidate, days }, expired };
+    }
+    function freeze(value) {
+      if (value && typeof value === "object" && !Object.isFrozen(value)) {
+        Object.values(value).forEach(freeze);
+        Object.freeze(value);
+      }
+      return value;
+    }
+    const A = WorkTimeApp.services.archive;
+    const initialCleanup = expirePlans(initial);
+    let state = freeze(initialCleanup.state),
+      revision = 0,
+      dirty = unsaved || initialCleanup.expired.length > 0,
+      saveFailed = failed,
+      loadCorrupt = corrupt,
+      pending = 0,
+      exclusive = false;
+    let dirtyChanges = initialCleanup.expired.length
+      ? { days: initialCleanup.expired }
+      : {};
+    const listeners = new Set();
+    function publish(changes, reset = false) {
+      for (const listener of listeners) listener(changes, reset);
+    }
+    function collect(before, after, hints) {
+      const changes = { ...hints };
+      for (const key of [
+        "personal",
+        "preferences",
+        "settings",
+        "overtimeRequirements",
+        "oaUrl",
+        "scheduleRanges",
+        "timeTemplates",
+        "agenda",
+        "memo",
+      ])
+        if (before[key] !== after[key]) changes[key] = true;
+      if (before.days !== after.days && !changes.days)
+        changes.days = [
+          ...new Set([...Object.keys(before.days), ...Object.keys(after.days)]),
+        ].filter((key) => before.days[key] !== after.days[key]);
+      if (before.imports !== after.imports && !changes.imports)
+        changes.imports = [
+          ...new Set([
+            ...before.imports.map((log) => log.id),
+            ...after.imports.map((log) => log.id),
+          ]),
+        ];
+      return changes;
+    }
+    function combine(left, right) {
+      const result = { ...left, ...right };
+      for (const key of ["days", "imports"])
+        if (left[key] || right[key])
+          result[key] = [
+            ...new Set([...(left[key] || []), ...(right[key] || [])]),
+          ];
+      return result;
+    }
+    function resetDate(days, date) {
+      const old = days[date];
+      if (!old) return;
+      const next = WorkTimeApp.domain.batch.resetBatchDay(old);
+      if (next) days[date] = next;
+      else delete days[date];
+    }
+    function commit(
+      candidate,
+      { atomic = false, restore = false, changes = {} } = {},
+    ) {
+      if (persistence.loadIssue === "unsupported")
+        return Promise.resolve({
+          persisted: false,
+          applied: false,
+          error: A.error(
+            "当前存档版本需要更新的应用，已启用只读保护。",
+            "UNSUPPORTED_VERSION",
+          ),
+        });
+      if (exclusive)
+        return Promise.resolve({
+          persisted: false,
+          applied: false,
+          error: A.error("正在恢复或应用作息，请完成后重试。", "BUSY"),
+        });
+      const cleanup = expirePlans(candidate);
+      candidate = cleanup.state;
+      if (cleanup.expired.length)
+        changes = combine(changes, { days: cleanup.expired });
+      const before = state,
+        changed = candidate !== state;
+      const patch = collect(before, candidate, changes);
+      if (!changed && !dirty && !saveFailed && !restore)
+        return Promise.resolve({
+          changed: false,
+          applied: false,
+          persisted: true,
+          dirty: false,
+          error: null,
+        });
+      if (atomic) exclusive = true;
+      else if (changed) {
+        state = freeze(candidate);
+        revision++;
+        dirty = true;
+        publish(patch, restore);
+      }
+      if (!atomic) dirtyChanges = combine(dirtyChanges, patch);
+      const generation = revision;
+      pending++;
+      let work;
+      try {
+        work = restore
+          ? persistence.restore(candidate)
+          : persistence.commit(
+              candidate,
+              atomic ? combine(dirtyChanges, patch) : { ...dirtyChanges },
+            );
+      } catch (error) {
+        work = { persisted: false, error };
+      }
+      return Promise.resolve(work)
+        .catch((error) => ({ persisted: false, error }))
+        .then((saved) => {
+          if (saved.persisted && atomic) {
+            state = freeze(candidate);
+            revision++;
+            publish(patch, restore);
+          }
+          if (saved.persisted && (atomic || generation === revision)) {
+            dirty = false;
+            dirtyChanges = {};
+          }
+          if (!saved.persisted && !atomic) dirty = true;
+          saveFailed = !saved.persisted;
+          if (restore && saved.persisted) loadCorrupt = false;
+          return {
+            changed,
+            applied: changed && (!atomic || saved.persisted),
+            persisted: saved.persisted,
+            dirty,
+            error: saved.error || null,
+            code: saved.error?.code || null,
+            message: saved.error?.message || "",
+          };
+        })
+        .finally(() => {
+          pending--;
+          if (atomic) exclusive = false;
+        });
+    }
+    const service = {
+      subscribe(listener) {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+      get state() {
+        return state;
+      },
+      get revision() {
+        return revision;
+      },
+      get pending() {
+        return pending > 0;
+      },
+      get dirty() {
+        return dirty;
+      },
+      get failed() {
+        return saveFailed;
+      },
+      get loadCorrupt() {
+        return persistence.loadIssue === undefined
+          ? loadCorrupt
+          : persistence.loadIssue !== null;
+      },
+      markUnsaved() {
+        dirty = true;
+        saveFailed = true;
+      },
+      retry() {
+        return commit(state);
+      },
+      /** @param {string} date @param {WorkDay} day */
+      saveDay(date, day) {
+        const previous = state.days[date] || {};
+        const known = [
+          "oa",
+          "actual",
+          "estimate",
+          "draft",
+          "kind",
+          "leaveMinutes",
+          "note",
+          "plannedOvertime",
+          "sourcePriority",
+        ];
+        const extras = Object.fromEntries(
+          Object.entries(previous).filter(([key]) => !known.includes(key)),
+        );
+        const next = { ...extras, ...clone(day) };
+        for (const key of ["oa", "actual", "estimate", "draft"])
+          if (next[key]) next[key] = A.merge(previous[key], next[key]);
+        return commit(
+          { ...state, days: { ...state.days, [date]: next } },
+          { changes: { days: [date] } },
+        );
+      },
+      togglePlanned(date) {
+        if (today() && date < today()) return commit(state);
+        const day = { ...state.days[date] };
+        if (C.calendarInfo(date, day).work) return commit(state);
+        if (day.plannedOvertime) delete day.plannedOvertime;
+        else day.plannedOvertime = true;
+        return service.saveDay(date, day);
+      },
+      toggleSourcePriority(date) {
+        const day = state.days[date];
+        if (!day?.oa || !WorkTimeApp.domain.records.manualSource(day))
+          return commit(state);
+        return service.saveDay(date, {
+          ...day,
+          sourcePriority: day.sourcePriority === "manual" ? "oa" : "manual",
+        });
+      },
+      resetDay(date) {
+        if (!state.days[date]) return commit(state);
+        const days = { ...state.days };
+        resetDate(days, date);
+        return commit({ ...state, days }, { changes: { days: [date] } });
+      },
+      cancelPlanned(date) {
+        if (!state.days[date]?.plannedOvertime) return commit(state);
+        const days = { ...state.days };
+        resetDate(days, date);
+        const day = { ...days[date] };
+        delete day.plannedOvertime;
+        if (Object.keys(day).length) days[date] = day;
+        else delete days[date];
+        return commit({ ...state, days }, { changes: { days: [date] } });
+      },
+      // Reset-all requires an explicit month, including non-selectable dates in it.
+      resetBatch(dates, month = null) {
+        return commit(
+          WorkTimeApp.domain.batch.applyBatchChanges(state, {
+            dates: dates || [],
+            reset: dates === null ? "all" : "selected",
+            month,
+          }),
+          { atomic: true },
+        );
+      },
+      saveTemplate(template, editing) {
+        const clean = C.validateTimeTemplate(template),
+          templates = [...state.timeTemplates];
+        if (editing) {
+          const index = templates.findIndex((item) => item.id === clean.id);
+          if (index < 0) throw Error("模板已不存在。");
+          templates[index] = { ...templates[index], ...clean };
+        } else {
+          if (templates.length >= WorkTimeApp.services.templateShare.LIMIT)
+            throw Error("最多保存 6 个模板，请先删除一个模板。");
+          templates.push(clean);
+        }
+        return commit({ ...state, timeTemplates: templates });
+      },
+      removeTemplate(id) {
+        return commit({
+          ...state,
+          timeTemplates: state.timeTemplates.filter((item) => item.id !== id),
+        });
+      },
+      saveAgenda(item) {
+        const clean = WorkTimeApp.domain.agenda.validate(item);
+        const items = state.agenda || [];
+        const previous = items.find((entry) => entry.id === clean.id);
+        return commit(
+          {
+            ...state,
+            agenda: previous
+              ? items.map((entry) => (entry.id === clean.id ? clean : entry))
+              : [...items, clean],
+          },
+          { atomic: true },
+        );
+      },
+      saveMemo(text) {
+        if (typeof text !== "string" || text.length > 10000)
+          throw Error("Invalid memo");
+        return commit({ ...state, memo: text });
+      },
+      removeAgenda(id) {
+        return commit(
+          {
+            ...state,
+            agenda: (state.agenda || []).filter((entry) => entry.id !== id),
+          },
+          { atomic: true },
+        );
+      },
+      replaceTemplates(templates) {
+        const clean = WorkTimeApp.services.templateShare
+          .validate(templates)
+          .map((template) =>
+            C.validateTimeTemplate({
+              ...template,
+              id: A.uuid(),
+            }),
+          );
+        return commit({ ...state, timeTemplates: clean }, { atomic: true });
+      },
+      saveBatch(dates, record, month = null) {
+        return commit(
+          WorkTimeApp.domain.batch.applyBatchChanges(state, {
+            dates,
+            record,
+            month,
+          }),
+        );
+      },
+      confirmBatch(draft) {
+        return commit(
+          WorkTimeApp.domain.batch.applyBatchChanges(state, draft),
+          {
+            atomic: true,
+          },
+        );
+      },
+      /** @param {WorkImportLog} log */
+      importRecords(log) {
+        const candidate = {
+          ...state,
+          days: { ...state.days },
+          imports: [...state.imports],
+        };
+        for (const record of log.records)
+          if (candidate.days[record.date])
+            candidate.days[record.date] = clone(candidate.days[record.date]);
+        for (const record of log.records)
+          C.applyObservation(candidate, record, log.id);
+        candidate.imports.push(clone(log));
+        const compact = C.compactOAState({
+          ...candidate,
+          days: Object.fromEntries(
+            log.records.map((record) => [
+              record.date,
+              candidate.days[record.date],
+            ]),
+          ),
+          imports: [candidate.imports.at(-1)],
+        });
+        candidate.days = { ...candidate.days, ...compact.days };
+        candidate.imports[candidate.imports.length - 1] = compact.imports[0];
+        return commit(candidate, {
+          changes: {
+            days: log.records.map((record) => record.date),
+            imports: [log.id],
+          },
+        });
+      },
+      async removeImport(id) {
+        await service.hydrateImports();
+        const dates = Object.keys(state.days).filter(
+          (date) => state.days[date].oa?.importId === id,
+        );
+        const affected = new Set(dates);
+        const candidate = {
+          ...state,
+          days: Object.fromEntries(
+            Object.entries(state.days).map(([date, day]) => [
+              date,
+              affected.has(date) ? clone(day) : day,
+            ]),
+          ),
+          imports: [...state.imports],
+        };
+        const impact = C.deleteImport(candidate, id);
+        for (const date of dates)
+          if (!candidate.days[date]) {
+            const known = [
+              "oa",
+              "actual",
+              "estimate",
+              "draft",
+              "kind",
+              "leaveMinutes",
+              "note",
+              "plannedOvertime",
+            ];
+            const extras = Object.fromEntries(
+              Object.entries(state.days[date]).filter(
+                ([key]) => !known.includes(key),
+              ),
+            );
+            if (Object.keys(extras).length) candidate.days[date] = extras;
+          }
+        return {
+          ...(await commit(candidate, {
+            changes: { days: dates, imports: [id] },
+          })),
+          impact,
+        };
+      },
+      saveOAUrl(oaUrl) {
+        return commit({ ...state, oaUrl });
+      },
+      /** @param {Partial<WorkSettings>} settings @param {(number|null)[]} overtimeRequirements */
+      saveSettings(settings, overtimeRequirements) {
+        return commit({
+          ...state,
+          settings: { ...state.settings, ...clone(settings) },
+          overtimeRequirements: [...overtimeRequirements],
+        });
+      },
+      /** @param {WorkStateData} candidate */
+      applySchedule(candidate) {
+        return commit(candidate, { atomic: true });
+      },
+      /** @param {Partial<WorkPersonal>} personal */
+      savePersonal(personal) {
+        return commit({
+          ...state,
+          personal: { ...state.personal, ...clone(personal) },
+        });
+      },
+      saveTyping(data) {
+        return commit(WorkTimeApp.services.typingStorage.attach(state, data), {
+          changes: { typing: true },
+        });
+      },
+      saveVocabulary(data) {
+        return commit(
+          WorkTimeApp.services.vocabularyStorage.attach(state, data),
+          {
+            changes: { vocabulary: true },
+          },
+        );
+      },
+      restore(candidate) {
+        if (saveFailed && Object.keys(dirtyChanges).length)
+          return Promise.resolve({
+            persisted: false,
+            error: A.error(
+              "请先导出本页未保存修改并刷新，再恢复备份。",
+              "UNSAVED",
+            ),
+          });
+        let restored = A.migrate(candidate);
+        restored.preferences.lastAutoBackupDate =
+          state.preferences.lastAutoBackupDate ?? null;
+        restored.preferences.lastAutoBackupHour =
+          state.preferences.lastAutoBackupHour ?? null;
+        const typing = WorkTimeApp.services.typingStorage;
+        const vocabulary = WorkTimeApp.services.vocabularyStorage;
+        if (vocabulary && !vocabulary.find(restored) && vocabulary.find(state))
+          restored = vocabulary.attach(
+            restored,
+            vocabulary.validateModule(vocabulary.find(state)),
+          );
+        if (typing && !typing.find(restored) && typing.find(state))
+          restored = typing.attach(
+            restored,
+            typing.validateModule(typing.find(state)),
+          );
+        return commit(restored, {
+          restore: true,
+          atomic: true,
+        });
+      },
+      initialize(pageTheme) {
+        if (persistence.loadIssue !== "corrupt")
+          throw Error("仅损坏的存档可以初始化。");
+        const candidate = A.migrate(C.defaultState());
+        candidate.preferences.pageTheme = pageTheme;
+        return commit(candidate, { restore: true, atomic: true });
+      },
+      /** @param {Partial<WorkPreferences>} preferences */
+      savePreferences(preferences) {
+        return commit({
+          ...state,
+          preferences: { ...state.preferences, ...preferences },
+        });
+      },
+      async hydrateImports() {
+        if (!state.imports.some((log) => log._lazy)) return;
+        const captured = state;
+        const hydrated = await persistence.hydrateImports(captured);
+        const full = new Map(hydrated.imports.map((log) => [log.id, log]));
+        state = freeze({
+          ...state,
+          _archive: {
+            ...state._archive,
+            recordExtras:
+              hydrated._archive?.recordExtras || state._archive?.recordExtras,
+            dataExtras:
+              hydrated._archive?.dataExtras || state._archive?.dataExtras,
+          },
+          imports: state.imports.map((log) =>
+            log._lazy ? full.get(log.id) : log,
+          ),
+        });
+      },
+      async export(preferences) {
+        return persistence.export(
+          preferences
+            ? {
+                ...state,
+                preferences: { ...state.preferences, ...preferences },
+              }
+            : state,
+        );
+      },
+      /** @param {WorkStateData} candidate */
+      reload(candidate) {
+        const cleanup = expirePlans(candidate);
+        state = freeze(cleanup.state);
+        revision++;
+        dirty = cleanup.expired.length > 0;
+        dirtyChanges = dirty ? { days: cleanup.expired } : {};
+        publish({}, true);
+        saveFailed = false;
+        loadCorrupt = false;
+      },
+    };
+    return service;
+  }
+  return { create, createState };
+})();
+
+WorkTimeApp.services.application = WorkTimeServiceApplication;

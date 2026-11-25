@@ -1,0 +1,75 @@
+{
+  "modelHash": "629dd91fd23b1b66d7ed25923be101934208325100677f2578c785125843f081",
+  "seedRange": [
+    9300000,
+    9301999
+  ],
+  "sources": {
+    "rules": "488c12850d85fa27b324b96f27d1f85a7dd1aabbc09fa55c04e4d6168aa514b9",
+    "ai": "80a2ec2d96543eff93b6baf40d8be09bc2e5955b7128f22356e96359d48b3a6c"
+  },
+  "protocol": "Four-seat rotation, identical seeded dice streams within each paired comparison; fixed node limits, no wall-clock cutoff during evaluation",
+  "inference": {
+    "easy": {
+      "rounds": 0,
+      "temperature": 4
+    },
+    "normal": {
+      "rounds": 2,
+      "temperature": 0.7
+    },
+    "hard": {
+      "rounds": 16,
+      "temperature": 0
+    },
+    "rolloutDice": 12
+  },
+  "cases": {
+    "random": {
+      "wins": 1320,
+      "games": 2000,
+      "rate": 0.66,
+      "low": 0.638950093032789,
+      "high": 0.68043645183721
+    },
+    "baseline": {
+      "wins": 673,
+      "games": 2000,
+      "rate": 0.3365,
+      "low": 0.316122543677368,
+      "high": 0.3575043307836017
+    },
+    "hard": {
+      "wins": 805,
+      "games": 2000,
+      "rate": 0.4025,
+      "low": 0.38121430570705017,
+      "high": 0.4241595185127941
+    },
+    "ablation": {
+      "wins": 171,
+      "games": 2000,
+      "rate": 0.0855,
+      "low": 0.07402575867765614,
+      "high": 0.09856347351850255
+    },
+    "normal": {
+      "wins": 673,
+      "games": 2000,
+      "rate": 0.3365,
+      "low": 0.316122543677368,
+      "high": 0.3575043307836017
+    }
+  },
+  "hardVsNormal": {
+    "difference": 0.066,
+    "low": 0.039930492816272915,
+    "high": 0.09206950718372708
+  },
+  "modelVsAblation": {
+    "difference": 0.251,
+    "low": 0.22839056673783686,
+    "high": 0.27360943326216314
+  },
+  "passed": true
+}

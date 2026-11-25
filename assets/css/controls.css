@@ -1,0 +1,428 @@
+/* Shared control geometry. Component layouts retain their explicit exceptions. */
+/* Focus navigation stays native; controls have no additional outline ring. */
+/* Standalone field captions name controls without extending their pointer area.
+   Keep native label associations for accessibility and labels wrapping controls
+   (such as theme choices and switches) interactive. */
+body label[for]:not(:has(input, select, textarea, button)) {
+  pointer-events: none;
+}
+body :focus,
+body :focus-visible {
+  outline: 0;
+  outline-offset: 0;
+}
+/* Tabs stretch to their footer row; ordinary form controls use fixed geometry. */
+body button.ui-button:where(:not(.notification-tab):not(.game-menu-entry)),
+body
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(
+    [type="hidden"]
+  ),
+body select {
+  height: var(--control-height) !important;
+  min-height: var(--control-height) !important;
+  max-height: var(--control-height) !important;
+  border-radius: var(--control-radius) !important;
+  padding-block: 0 !important;
+  line-height: 1.3;
+}
+/* The font's visible ink sits above its line-box center. Asymmetric padding
+   lowers native input text and placeholders together without moving the control. */
+body
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not(
+    [type="hidden"]
+  ),
+body select {
+  padding-block: 0.22em 0 !important;
+}
+body button.ui-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+/* Leading icons keep their natural width; labels center in the remaining space.
+   Match the child order so trailing icons and icon-only controls stay unchanged. */
+body button.ui-button:has(> :is(.ui-icon, .oa-icon-slot) + .button-label:last-child),
+body #importOpen .import-main {
+  display: inline-grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  /* Shared geometry takes precedence over component-specific button padding. */
+  padding-inline: var(--button-icon-inset) !important;
+}
+body button.ui-button > :is(.ui-icon, .oa-icon-slot):has(+ .button-label:last-child) {
+  justify-self: start;
+}
+body button.ui-button > :is(.ui-icon, .oa-icon-slot) + .button-label:last-child,
+body #importOpen .import-main > span {
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+body button.icon-only,
+body button.nextday-toggle {
+  width: var(--control-height) !important;
+  min-width: var(--control-height) !important;
+  max-width: var(--control-height) !important;
+  flex-basis: var(--control-height);
+  padding: 0 !important;
+}
+body button.ui-button > .ui-icon,
+body #importOpen .import-main > .ui-icon {
+  display: block;
+  vertical-align: initial;
+}
+/* Shared control appearance. Layout-specific dimensions stay with each component. */
+
+/* All time fields use the same text layer, typography, border and focus state. */
+body .editor #dayForm .time-fields .clock-input,
+body .editor #batchForm input.clock-input,
+body #settingsForm input.clock-input,
+body #settingsForm #workCity,
+body #personalSettingsForm :is(#employmentDate, #workCity),
+body #timeTemplateForm input.clock-input,
+body #settingsForm input.number-input,
+body .editor #batchForm input.number-input,
+body .editor #dayForm input.number-input {
+  background: var(--clock-background);
+  border: 1px solid var(--clock-border);
+  color: var(--clock-ink);
+  box-shadow: var(--control-shadow);
+  font-family: var(--font-numeric);
+  font-size: var(--clock-font);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  font-stretch: normal;
+  letter-spacing: 0.2px;
+  line-height: 1.3;
+  text-align: center;
+  padding-inline: 4px;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+  height: var(--input-height) !important;
+  min-height: var(--input-height) !important;
+  max-height: var(--input-height) !important;
+}
+body #settingsForm .settings-requirement input.number-input {
+  font-size: 1rem;
+  font-weight: 600;
+}
+body #personalSettingsForm :is(#employmentDate, #workCity) {
+  font-size: 1rem;
+}
+/* City names use CJK fallback glyphs, which do not need the numeric font's
+   downward optical correction. Keep the native text centered in its field. */
+body #personalSettingsForm #workCity {
+  padding-block: 0 !important;
+}
+body .editor #dayForm .time-entry .clock-input::placeholder,
+body #settingsForm #workCity::placeholder,
+body input::placeholder,
+body input:is([type="number"], [inputmode="numeric"])::placeholder,
+body input.clock-input::placeholder {
+  font: inherit;
+  letter-spacing: inherit;
+  font-variant-numeric: inherit;
+  color: var(--clock-placeholder);
+  opacity: 1;
+}
+body .editor #dayForm .time-fields .clock-input:focus,
+body .editor #batchForm input.clock-input:focus,
+body #settingsForm input.clock-input:focus,
+body #personalSettingsForm :is(#employmentDate, #workCity):focus,
+body #settingsForm #workCity:focus,
+body #timeTemplateForm input.clock-input:focus,
+body #settingsForm input.number-input:focus,
+body .editor #batchForm input.number-input:focus,
+body .editor #dayForm input.number-input:focus {
+  background: #fff;
+  border-color: var(--accent);
+}
+body .editor #dayForm .clock-input[aria-invalid="true"] {
+  border-color: #c65c4e;
+  background: #fff4f2;
+  color: #8d302d;
+}
+
+/* The template name shares the height of the template time fields. */
+body #timeTemplateName {
+  height: var(--input-height) !important;
+  min-height: var(--input-height) !important;
+  max-height: var(--input-height) !important;
+}
+
+/* Same button family across toolbars, editor actions and dialogs. */
+body button.ui-button:not(.notification-tab):not(#importOpen):not(.game-menu-entry) {
+  font-family: inherit;
+  font-size: var(--button-font-size, var(--text-small)) !important;
+  font-weight: 500;
+  line-height: 1.3;
+  gap: 0.357143rem;
+}
+body
+  button.ui-button:not(.notification-tab):not(#importOpen):not(
+    .template-fill
+  ):not(.template-edit):not(.primary):not(.game-menu-entry):not([aria-pressed="true"]):not(:where(.workspace-toolbar-action)) {
+  border: 1px solid var(--control-border);
+  background: #fff;
+  box-shadow: var(--control-shadow);
+}
+body
+  button.ui-button:not(.notification-tab):not(#importOpen):not(
+    .template-fill
+  ):not(.template-edit):not(.primary):not(.game-menu-entry):not([aria-pressed="true"]):not(:where(.workspace-toolbar-action)):hover:not(
+    :disabled
+  ) {
+  background: var(--control-hover);
+  border-color: var(--theme-border, #aecdbf);
+}
+body button.ui-button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+body button.ui-button.primary:hover:not(:disabled) {
+  background: var(--theme-accent-deep, #10634f);
+  border-color: var(--theme-edge, #10634f);
+}
+body button.ui-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+/* Layout centers the icon slot; ui-alignment centers the visible text ink in its
+   line box after fonts load and labels change. Use that single correction:
+   an additional optical nudge would move already-centered text down again. */
+body button.ui-button:not(.notification-tab) .button-label,
+body #importOpen .import-main > span {
+  display: inline-block;
+  font: inherit;
+  line-height: 1.3;
+  transform: translateY(var(--ui-ink-offset, 0px));
+}
+body #batchAddTimeTemplate {
+  width: var(--control-height) !important;
+  min-width: var(--control-height) !important;
+  padding: 0 !important;
+}
+/* Joined button groups share one outside border and a single inner divider. */
+body :is(.settings-button-group, .calendar-view-button-group, .batch-button-group) button.ui-button {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+body :is(.settings-button-group, .calendar-view-button-group, .batch-button-group) button.ui-button + button {
+  border-left: 1px solid var(--control-border) !important;
+}
+/* Keep OA text and symbols on stable raster sizes at desktop scaling. */
+body .sidebar-actions :is(#importOpen, #importOASite) .ui-icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+body .sidebar-actions #importOASite .ui-icon {
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
+}
+@supports (font-size: round(nearest, 1rem, 1px)) {
+  @media (min-width: 1921px) {
+    body button.ui-button:not(.notification-tab) {
+      --button-font-size: round(nearest, var(--text-small), 1px);
+    }
+  }
+  @media (min-width: 1800px) {
+    body .sidebar-actions > #importOpen {
+      --control-height: round(nearest, 3rem, 2px);
+    }
+    body #importOpen .ui-icon {
+      width: round(nearest, 1.285714rem, 2px);
+      height: round(nearest, 1.285714rem, 2px);
+    }
+  }
+}
+
+/* Shared music and reading sliders: slim visible rail, generous hit area. */
+body :is(#musicDialog, #musicPanel, #readerDialog, #readerPanel) input.media-range[type="range"] {
+  --range-rail: color-mix(in srgb, var(--accent) 15%, var(--paper));
+  appearance: none;
+  display: block;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  margin: 0;
+  padding: 0 !important;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--accent);
+  cursor: pointer;
+  outline: none;
+}
+body input.media-range[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--accent) var(--range-fill, 0%), var(--range-rail) var(--range-fill, 0%));
+}
+body input.media-range[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  margin-top: -3px;
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: box-shadow 140ms ease, transform 140ms ease;
+}
+body input.media-range[type="range"]::-moz-range-track {
+  height: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--range-rail);
+}
+body input.media-range[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+body input.media-range[type="range"]::-moz-range-thumb {
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: box-shadow 140ms ease, transform 140ms ease;
+}
+body input.media-range:is(:hover, :active, :focus-visible):not(:disabled)::-webkit-slider-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+body input.media-range:is(:hover, :active, :focus-visible):not(:disabled)::-moz-range-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+body :is(#musicDialog, #musicPanel, #readerDialog, #readerPanel) input.media-range:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  outline-offset: 2px;
+}
+body input.media-range:disabled {
+  opacity: .4;
+  cursor: default;
+}
+body #readerDialog input.media-range,
+body #readerPanel input.media-range { width: 100%; }
+:where(html:where([data-reduced-motion="true"])) body input.media-range::-webkit-slider-thumb { transition: none; }
+:where(html:where([data-reduced-motion="true"])) body input.media-range::-moz-range-thumb { transition: none; }
+
+/* Overnight toggles retain a clear selected state in editors and dialogs. */
+body button.ui-button.nextday-toggle[aria-pressed="true"] {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px #ffffff30;
+}
+body button.ui-button.nextday-toggle[aria-pressed="true"]:hover:not(:disabled),
+body button.ui-button.nextday-toggle[aria-pressed="true"]:focus-visible,
+body button.ui-button.nextday-toggle[aria-pressed="true"]:active:not(:disabled) {
+  color: #fff;
+  background: var(--theme-accent-deep, var(--accent));
+  border-color: var(--theme-accent-deep, var(--accent));
+}
+
+/* Placeholder in the existing ebook auxiliary panel. */
+.reader-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.reader-placeholder {
+  box-sizing: border-box;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--ink);
+}
+.reader-placeholder h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+/* Shared settings/game select geometry and menu states. */
+.shared-native-select {
+  display: none;
+}
+.shared-select-trigger {
+  width: 100%;
+  min-width: 0;
+  justify-content: space-between;
+  padding-inline: 0.857143rem;
+  text-align: start;
+}
+.shared-select-trigger > .button-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.shared-select-trigger > .ui-icon {
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
+  color: var(--muted);
+}
+.shared-select-trigger[aria-expanded="true"] {
+  --game-button-edge: var(--accent);
+  border-color: var(--accent);
+  background: var(--control-hover);
+}
+body .shared-select-options {
+  --language-menu-padding: 0.285714rem;
+}
+body .shared-select-options > .shared-select-option {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-small);
+  font-weight: 500;
+  border-radius: var(--control-radius);
+  box-shadow: none;
+  justify-content: space-between;
+  width: 100%;
+  height: auto;
+  min-height: var(--control-height);
+  padding: 0.5rem calc(0.857143rem - 0.285714rem);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  white-space: normal;
+  text-align: start;
+}
+.shared-select-options .button-label {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}
+.shared-select-options .ui-icon {
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
+}
+body
+  .shared-select-options
+  > .shared-select-option:is(:hover, :focus-visible) {
+  background: var(--control-hover);
+}
+body .shared-select-options > .shared-select-option:focus-visible {
+  outline: 0;
+}
+body .shared-select-options > .shared-select-option[aria-selected="true"] {
+  color: var(--accent);
+  background: var(--accent-light);
+}

@@ -1,0 +1,597 @@
+"use strict";
+WorkTimeApp.games.register({
+  id: "game-2048",
+  nameKey: "games.puzzleName",
+  descriptionKey: "games.puzzleDescription",
+  icon: "game-2048",
+  create({ container, signal }) {
+    const gameStorage = WorkTimeApp.services.gameArchive.session();
+    const rules = WorkTimeApp.games.rules2048;
+    const compat = WorkTimeApp.ui.animationCompat;
+    const reduced = compat.preference();
+    const key = "worktime.games.2048.v1";
+    const t = (name) => WorkTimeApp.i18n.t("games.puzzle." + name);
+    let state,
+      previous = null,
+      best = 0,
+      aiBest = 0,
+      playerSave = null,
+      saveFailed = false;
+    let paused = false,
+      demonstrating = false,
+      aiTimer = null,
+      aiSteps = 0,
+      aiRevision = 0,
+      aiRunning = false,
+      disposed = false,
+      confirming = false,
+      confirmationAction = "restart",
+      pointer = null,
+      moving = false,
+      revision = 0,
+      animations = [];
+    try {
+      const saved = rules.restore(JSON.parse(gameStorage.getItem(key)));
+      if (saved) ({ state, previous, best, aiBest } = saved);
+      if (saved?.aiDemo) {
+        playerSave = { state, previous, best };
+        state = saved.aiDemo.state;
+        aiSteps = saved.aiDemo.steps;
+        demonstrating = true;
+        previous = null;
+      }
+    } catch {
+      saveFailed = true;
+    }
+    state ||= rules.create();
+    function node(tag, className, parent) {
+      const element = document.createElement(tag);
+      element.className = className;
+      parent?.append(element);
+      return element;
+    }
+    const root = node("section", "game-2048 game-session", container);
+    const header = node("div", "puzzle-header game-hud", root);
+    const scores = node("div", "puzzle-scores", header);
+    const scoreBox = node("div", "game-stat", scores);
+    const scoreLabel = node("span", "", scoreBox);
+    const score = node("strong", "", scoreBox);
+    score.dataset.puzzleScore = "";
+    const aiBestBox = node("div", "game-stat", scores);
+    const aiBestLabel = node("span", "", aiBestBox);
+    const aiBestValue = node("strong", "", aiBestBox);
+    aiBestValue.dataset.puzzleAiBest = "";
+    const bestBox = node("div", "game-stat", scores);
+    const bestLabel = node("span", "", bestBox);
+    const bestValue = node("strong", "", bestBox);
+    bestValue.dataset.puzzleBest = "";
+    function button(parent, action, callback, iconName) {
+      const element = node("button", "game-button", parent);
+      element.type = "button";
+      element.dataset.puzzleAction = action;
+      if (iconName) element.append(WorkTimeApp.games.createIcon(iconName));
+      element.addEventListener(
+        "click",
+        () => {
+          if (!paused && !disposed && !signal.aborted) callback();
+        },
+        { signal },
+      );
+      return element;
+    }
+    const actions = node("div", "puzzle-actions game-controls", root);
+    const ai = button(actions, "ai", () => {
+      if (confirming) return;
+      stopAI();
+      stopMotion();
+      clearPointer();
+      confirmationAction = demonstrating ? "aiStop" : "ai";
+      confirming = true;
+      render();
+      cancel.focus();
+    });
+    ai.classList.add("game-icon-button");
+    const undo = button(actions, "undo", () => {
+      if (demonstrating || confirming || !previous) return;
+      stopMotion();
+      state = rules.snapshot(previous);
+      previous = null;
+      save();
+      render();
+      board.focus({ preventScroll: true });
+    });
+    const restart = button(actions, "restart", () => {
+      stopAI();
+      stopMotion();
+      confirmationAction = "restart";
+      confirming = true;
+      render();
+      cancel.focus();
+    });
+    undo.classList.add("game-icon-button");
+    restart.classList.add("game-icon-button");
+    const confirmation = node("div", "puzzle-confirm", root);
+    const confirmText = document.createElement("p");
+    confirmText.id = "puzzle-confirm-description";
+    const confirmActions = node("div", "puzzle-actions", confirmation);
+    const cancel = button(
+      confirmActions,
+      "cancel",
+      () => {
+        confirming = false;
+        render();
+        (confirmationAction !== "restart" ? ai : restart).focus();
+        scheduleAI();
+      },
+      "close",
+    );
+    node("span", "button-label", cancel);
+    const confirm = button(
+      confirmActions,
+      "confirm",
+      () => {
+        confirming = false;
+        stopAI();
+        if (confirmationAction === "aiStop") {
+          ({ state, previous, best } = playerSave);
+          playerSave = null;
+          demonstrating = false;
+          aiSteps = 0;
+        } else {
+          if (confirmationAction === "ai") {
+            if (!demonstrating)
+              playerSave = {
+                state: rules.snapshot(state),
+                previous: previous ? rules.snapshot(previous) : null,
+                best,
+              };
+            demonstrating = true;
+            aiSteps = 0;
+          } else demonstrating = false;
+          state = rules.create();
+          previous = null;
+          playerSave = demonstrating ? playerSave : null;
+        }
+        save();
+        render();
+        board.focus();
+        scheduleAI();
+      },
+      "restart-alt",
+    );
+    node("span", "button-label", confirm);
+    const paintRestartCover = WorkTimeApp.games.createRestartCover({
+      cover: confirmation,
+      cancel: cancel,
+      accept: confirm,
+      signal,
+      description: confirmText,
+      labels: () => ({
+        title: t(
+          confirmationAction === "aiStop"
+            ? "aiStop"
+            : confirmationAction === "ai"
+              ? "aiStart"
+              : "confirmTitle",
+        ),
+        cancel: t("cancel"),
+        accept: t(
+          confirmationAction === "aiStop"
+            ? "aiStop"
+            : confirmationAction === "ai"
+              ? "aiStart"
+              : "confirm",
+        ),
+      }),
+    });
+    const board = node("div", "puzzle-board", root);
+    board.tabIndex = 0;
+    board.setAttribute("role", "group");
+    const grid = node("div", "puzzle-grid", board);
+    grid.setAttribute("role", "table");
+    const cells = Array.from({ length: 4 }, () => {
+      const row = node("div", "puzzle-row", grid);
+      row.setAttribute("role", "row");
+      return Array.from({ length: 4 }, () => {
+        const cell = node("div", "puzzle-cell", row);
+        cell.setAttribute("role", "cell");
+        return cell;
+      });
+    }).flat();
+    const layer = node("div", "puzzle-motion", board);
+    layer.setAttribute("aria-hidden", "true");
+    const overlay = node("div", "puzzle-overlay", board);
+    board.append(confirmation);
+    const endTitle = node("h3", "", overlay);
+    const endHint = node("p", "", overlay);
+    const endActions = node("div", "puzzle-actions", overlay);
+    const keepGoing = button(endActions, "continue", () => {
+      if (confirming) return;
+      state.continued = true;
+      save();
+      render();
+      board.focus();
+    });
+    keepGoing.append(WorkTimeApp.games.createIcon("play-arrow"));
+    const keepGoingLabel = node("span", "button-label", keepGoing);
+    const retry = button(endActions, "retry", () => {
+      if (confirming) return;
+      confirmationAction = "restart";
+      confirming = true;
+      render();
+      cancel.focus();
+    });
+    retry.append(WorkTimeApp.games.createIcon("restart-alt"));
+    const retryLabel = node("span", "button-label", retry);
+    const status = node("p", "puzzle-status game-sr-only", root);
+    status.setAttribute("role", "status");
+    const notice = node("div", "game-notice", root);
+    const aiNotice = node("p", "puzzle-status", notice);
+    aiNotice.setAttribute("role", "status");
+    const warning = node("p", "puzzle-save-warning", notice);
+    warning.setAttribute("role", "status");
+    function save() {
+      try {
+        gameStorage.setItem(
+          key,
+          JSON.stringify({
+            version: 1,
+            ...(demonstrating ? playerSave : { state, best, previous }),
+            aiBest,
+            aiDemo: demonstrating ? { state, steps: aiSteps } : null,
+          }),
+        );
+        saveFailed = false;
+      } catch {
+        saveFailed = true;
+      }
+    }
+    function paintTile(element, value) {
+      element.textContent = value || "";
+      element.dataset.value = value;
+      element.dataset.level = value ? Math.min(11, Math.log2(value)) : 0;
+      element.classList.toggle("puzzle-long-number", value >= 16384);
+    }
+    function render() {
+      scoreLabel.textContent = t("score");
+      bestLabel.textContent = t("best");
+      aiBestBox.hidden = !demonstrating;
+      aiBestLabel.textContent = t("aiBest");
+      const counters = [
+        [score, state.score],
+        [bestValue, best],
+        [aiBestValue, aiBest],
+      ];
+      const digits = Math.max(
+        4,
+        String(state.score).length,
+        String(best).length,
+        demonstrating ? String(aiBest).length : 0,
+      );
+      const counterSize = Math.min(1.5, 6.5 / digits) + "rem";
+      for (const [element, value] of counters) {
+        WorkTimeApp.games.paintCounter(element, value);
+        element.style.fontSize = counterSize;
+      }
+      root.dataset.mode = demonstrating ? "ai" : "manual";
+      WorkTimeApp.games.setIcon(ai, demonstrating ? "stop-circle" : "robot-2");
+      ai.title = t(demonstrating ? "aiStop" : "ai");
+      ai.setAttribute("aria-label", t(demonstrating ? "aiStop" : "ai"));
+      ai.setAttribute("aria-pressed", String(demonstrating));
+      ai.disabled = confirming;
+      aiNotice.hidden = !demonstrating;
+      aiNotice.textContent = t(
+        rules.lost(state.board) ? "aiFinished" : "aiRunning",
+      );
+      WorkTimeApp.games.setIcon(undo, "undo");
+      undo.title = t("undo");
+      undo.setAttribute("aria-label", t("undo"));
+      WorkTimeApp.games.setIcon(restart, "restart-alt");
+      restart.title = t("restart");
+      restart.setAttribute("aria-label", t("restart"));
+      const aiConfirmation = confirming && confirmationAction !== "restart";
+      confirmation.classList.toggle("puzzle-ai-confirm", aiConfirmation);
+      confirmText.hidden = !aiConfirmation;
+      if (aiConfirmation) {
+        confirmText.textContent = t(
+          confirmationAction === "ai" ? "aiConfirmHint" : "aiStopHint",
+        );
+        confirmation.setAttribute("aria-describedby", confirmText.id);
+      } else confirmation.removeAttribute("aria-describedby");
+      confirmation.hidden = !confirming;
+      paintRestartCover(confirming);
+      undo.disabled = demonstrating || !previous || confirming;
+      restart.disabled = confirming;
+      board.setAttribute("aria-label", t("board"));
+      grid.setAttribute("aria-label", t("board"));
+      grid.inert = confirming;
+      cells.forEach((cell, index) => {
+        paintTile(cell, state.board[index]);
+        cell.setAttribute(
+          "aria-label",
+          state.board[index] ? String(state.board[index]) : t("empty"),
+        );
+      });
+      const won = rules.won(state),
+        lost = rules.lost(state.board);
+      overlay.hidden = demonstrating || moving || confirming || (!won && !lost);
+      overlay.dataset.result = won ? "won" : "lost";
+      endTitle.textContent = t(won ? "won" : "lost");
+      endHint.textContent = t(
+        demonstrating ? "aiFinished" : won ? "wonHint" : "lostHint",
+      );
+      keepGoingLabel.textContent = t("continue");
+      keepGoing.hidden = !won;
+      retryLabel.textContent = t("restart");
+      retry.disabled = false;
+      keepGoing.disabled = false;
+      status.textContent =
+        t(won ? "won" : lost ? "lost" : "playing") +
+        " · " +
+        t("score") +
+        " " +
+        state.score;
+      warning.hidden = !saveFailed;
+      warning.textContent = t("saveFailed");
+    }
+    function stopMotion() {
+      revision++;
+      animations.forEach((animation) => animation.cancel());
+      animations = [];
+      layer.replaceChildren();
+      cells.forEach((cell) => cell.classList.remove("puzzle-in-motion"));
+      moving = false;
+    }
+    async function animateTurn(result, duration = 230) {
+      if (reduced.matches || paused || !board.clientWidth) {
+        render();
+        return;
+      }
+      const token = revision;
+      moving = true;
+      render();
+      const bounds = layer.getBoundingClientRect();
+      const boxes = cells.map((cell) => cell.getBoundingClientRect());
+      result.paths.forEach(({ from, to, value }) => {
+        const ghost = node("div", "puzzle-cell puzzle-ghost", layer);
+        paintTile(ghost, value);
+        Object.assign(ghost.style, {
+          left: boxes[from].left - bounds.left + "px",
+          top: boxes[from].top - bounds.top + "px",
+          width: boxes[from].width + "px",
+          height: boxes[from].height + "px",
+        });
+        animations.push(
+          compat.animate(
+            ghost,
+            [
+              { transform: "translate(0, 0)" },
+              {
+                transform: `translate(${boxes[to].left - boxes[from].left}px, ${boxes[to].top - boxes[from].top}px)`,
+              },
+            ],
+            {
+              duration: duration * (130 / 230),
+              fill: "both",
+              easing: "ease-out",
+            },
+          ),
+        );
+      });
+      cells.forEach((cell) => cell.classList.add("puzzle-in-motion"));
+      await Promise.all(animations.map((animation) => animation.finished));
+      if (token !== revision || disposed) return;
+      layer.replaceChildren();
+      cells.forEach((cell) => cell.classList.remove("puzzle-in-motion"));
+      animations = [];
+      const merged = result.paths
+        .filter((path) => path.merged)
+        .map((path) => path.to);
+      for (const index of new Set([...merged, result.spawned])) {
+        animations.push(
+          compat.animate(
+            cells[index],
+            [
+              {
+                transform: `scale(${index === result.spawned ? 0.8 : 1.08})`,
+                opacity: index === result.spawned ? 0 : 1,
+              },
+              { transform: "scale(1)", opacity: 1 },
+            ],
+            { duration: duration * (100 / 230), easing: "ease-out" },
+          ),
+        );
+      }
+      await Promise.all(animations.map((animation) => animation.finished));
+      if (token !== revision || disposed) return;
+      animations = [];
+      moving = false;
+      render();
+    }
+    function stopAI() {
+      aiRevision++;
+      clearTimeout(aiTimer);
+      aiTimer = null;
+      aiRunning = false;
+    }
+    function aiInterval() {
+      return 100 + 150 * (1 - Math.min(aiSteps / 60, 1)) ** 2;
+    }
+    function scheduleAI(delay = aiInterval()) {
+      if (
+        !demonstrating ||
+        paused ||
+        disposed ||
+        signal.aborted ||
+        confirming ||
+        aiTimer !== null ||
+        aiRunning ||
+        rules.lost(state.board)
+      )
+        return;
+      const token = aiRevision;
+      aiTimer = setTimeout(async () => {
+        aiTimer = null;
+        if (paused || disposed || signal.aborted || confirming) return;
+        aiRunning = true;
+        const started = performance.now();
+        const interval = aiInterval();
+        const direction = rules.chooseMove(state.board);
+        if (direction) await play(direction, true, interval * 0.75);
+        if (token !== aiRevision) return;
+        aiRunning = false;
+        scheduleAI(Math.max(0, interval - (performance.now() - started)));
+      }, delay);
+    }
+    function play(direction, automatic = false, duration = 230) {
+      if (paused || disposed || signal.aborted || confirming) return;
+      if (demonstrating && !automatic) return;
+      const result = rules.turn(state, direction);
+      if (!result) return;
+      stopMotion();
+      state = result.state;
+      if (demonstrating) {
+        aiSteps++;
+        if (state.board.some((value) => value >= 2048)) state.continued = true;
+        if (state.score > aiBest) {
+          aiBest = state.score;
+        }
+      } else {
+        previous = result.previous;
+        best = Math.max(best, state.score);
+      }
+      save();
+      return animateTurn(result, duration);
+    }
+    const keys = {
+      ArrowUp: "up",
+      ArrowDown: "down",
+      ArrowLeft: "left",
+      ArrowRight: "right",
+      w: "up",
+      s: "down",
+      a: "left",
+      d: "right",
+    };
+    const shell = container.closest(".game-shell") || container;
+    shell.addEventListener(
+      "keydown",
+      (event) => {
+        if (
+          event.altKey ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.target.closest(
+            "input, textarea, select, [contenteditable=true]",
+          )
+        )
+          return;
+        const direction = keys[event.key] || keys[event.key.toLowerCase()];
+        if (direction) {
+          event.preventDefault();
+          event.stopPropagation();
+          play(direction);
+        }
+      },
+      { signal },
+    );
+    board.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (
+          !event.isPrimary ||
+          event.button !== 0 ||
+          event.target.closest("button") ||
+          paused ||
+          demonstrating ||
+          confirming ||
+          rules.won(state) ||
+          rules.lost(state.board)
+        )
+          return;
+        pointer = { id: event.pointerId, x: event.clientX, y: event.clientY };
+        board.setPointerCapture(event.pointerId);
+        board.focus({ preventScroll: true });
+      },
+      { signal },
+    );
+    board.addEventListener(
+      "pointerup",
+      (event) => {
+        if (pointer?.id !== event.pointerId) return;
+        const dx = event.clientX - pointer.x,
+          dy = event.clientY - pointer.y;
+        pointer = null;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+        play(
+          Math.abs(dx) > Math.abs(dy)
+            ? dx > 0
+              ? "right"
+              : "left"
+            : dy > 0
+              ? "down"
+              : "up",
+        );
+      },
+      { signal },
+    );
+    const clearPointer = () => {
+      const id = pointer?.id;
+      pointer = null;
+      if (id !== undefined && board.hasPointerCapture(id))
+        board.releasePointerCapture(id);
+    };
+    board.addEventListener("pointercancel", clearPointer, { signal });
+    board.addEventListener("lostpointercapture", clearPointer, { signal });
+    document.addEventListener("worktime:languagechange", render, { signal });
+    const unlisten = compat.listen(reduced, () => {
+      if (reduced.matches) {
+        stopMotion();
+        render();
+      }
+    });
+    signal.addEventListener(
+      "abort",
+      () => {
+        paused = true;
+        stopAI();
+        clearPointer();
+        stopMotion();
+      },
+      { once: true },
+    );
+    save();
+    render();
+    return {
+      resize({ width, height }) {
+        clearPointer();
+        stopMotion();
+        root.style.setProperty(
+          "--puzzle-size",
+          Math.max(180, Math.min(560, width, height - 200)) + "px",
+        );
+        render();
+      },
+      pause() {
+        paused = true;
+        stopAI();
+        clearPointer();
+        stopMotion();
+        render();
+      },
+      resume() {
+        paused = false;
+        render();
+        scheduleAI();
+      },
+      dispose() {
+        disposed = true;
+        stopAI();
+        clearPointer();
+        stopMotion();
+        unlisten();
+        root.remove();
+      },
+    };
+  },
+});

@@ -1,0 +1,111 @@
+"use strict";
+/** calendar domain. No DOM or storage access. Loaded as an ordered classic script for file://. */
+const WorkTimeDomainCalendar = (() => {
+  const { dateKey, localDate, monthBounds, validDate } =
+    WorkTimeApp.domain.time;
+  const holidays = {},
+    makeups = new Set();
+  const calendarSchedules = WorkTimeApp.data.calendars.schedules;
+  const struggleDays = new Set(WorkTimeApp.data.struggleDays);
+  const festivalData = WorkTimeApp.data.majorFestivals,
+    movableFestivals = new Map();
+  for (const [year, dates] of Object.entries(festivalData.years))
+    dates.forEach((date, index) => {
+      const key = year + "-" + date;
+      const names = movableFestivals.get(key) || [];
+      names.push(festivalData.movableNames[index]);
+      movableFestivals.set(key, names);
+    });
+  function festivalNames(date) {
+    return [
+      festivalData.fixed[date.slice(5)],
+      ...(movableFestivals.get(date) || []),
+    ].filter(Boolean);
+  }
+  function festivalName(date) {
+    return festivalNames(date)
+      .map((name) => (name.endsWith("节") ? name : name + "节"))
+      .join("、");
+  }
+  for (const [year, schedule] of Object.entries(calendarSchedules)) {
+    for (const [start, end, name] of schedule.off) {
+      const date = localDate(year + "-" + start);
+      while (dateKey(date) <= year + "-" + end) {
+        holidays[dateKey(date)] = name;
+        date.setDate(date.getDate() + 1);
+      }
+    }
+    schedule.work.forEach((date) => makeups.add(year + "-" + date));
+  }
+  const calendarKnown = (date) =>
+    Object.hasOwn(calendarSchedules, Number(date.slice(0, 4)));
+  function calendarInfo(k, day = {}) {
+    const weekend = [0, 6].includes(localDate(k).getDay()),
+      festival = festivalName(k),
+      holiday = holidays[k] || (!calendarKnown(k) ? festivalNames(k)[0] : "");
+    let work = !weekend,
+      label = festival || (weekend ? "周末" : "工作日");
+    if (holiday) {
+      work = false;
+      label = festival || "休息日";
+    }
+    if (makeups.has(k)) {
+      work = true;
+      label = "调休日";
+    }
+    if (struggleDays.has(k)) label = "奋斗日";
+    if (day.kind === "work") {
+      work = true;
+      label = "工作日 · 手动";
+    }
+    if (day.kind === "rest") {
+      work = false;
+      label = "休息日 · 手动";
+    }
+    return {
+      work,
+      festival,
+      makeup: makeups.has(k),
+      label,
+      holiday: work ? "" : holiday || "",
+      weekend: weekend && !work,
+    };
+  }
+  /**
+   * Pick the date the work-time editor focuses for a month: today in the
+   * current month, the last working day for a past month, and the first
+   * working day for a future month.
+   * @param {string} month
+   * @param {string} today
+   * @param {Object<string, WorkDay>} [days]
+   */
+  function attendanceFocusDate(month, today, days = {}) {
+    const [first, last] = monthBounds(month);
+    if (!validDate(first) || !validDate(today)) return first;
+    const todayMonth = today.slice(0, 7),
+      current = month === todayMonth;
+    if (current) return today;
+    const past = month < todayMonth,
+      candidate = localDate(past ? last : first),
+      limit = past ? first : last,
+      step = past ? -1 : 1;
+    for (;;) {
+      const date = dateKey(candidate);
+      if (calendarInfo(date, days[date] || {}).work) return date;
+      if (date === limit) break;
+      candidate.setDate(candidate.getDate() + step);
+    }
+    return past ? last : first;
+  }
+  return {
+    holidays,
+    makeups,
+    calendarSchedules,
+    calendarKnown,
+    calendarInfo,
+    attendanceFocusDate,
+    festivalName,
+  };
+})();
+
+WorkTimeApp.domain.calendar = WorkTimeDomainCalendar;

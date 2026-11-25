@@ -1,0 +1,448 @@
+.game-content:has(.game-sokoban) {
+  container-type: inline-size;
+}
+.game-sokoban {
+  --soko-wood: #efc889;
+  --soko-wood-edge: #a87a44;
+  --soko-wood-brace: #f6daa5;
+  --soko-stage: #e6ecdb;
+  --soko-floor: #d4dfb8;
+  --soko-edge: #bccca1;
+  --soko-detail: #b5c69c;
+  --soko-theme: #476a3b;
+  width: 100%;
+  height: 100%;
+}
+.game-sokoban[data-skin="desert"] {
+  --soko-stage: #f5ecda;
+  --soko-floor: #eee0bf;
+  --soko-edge: #dac9a5;
+  --soko-detail: #dfcda6;
+  --soko-theme: #367e79;
+}
+.game-sokoban[data-skin="space"] {
+  --soko-stage: #f2f6f4;
+  --soko-floor: #d4e8ed;
+  --soko-edge: #b4cfd8;
+  --soko-detail: #c4dce4;
+  --soko-theme: #4a8877;
+}
+.game-sokoban[data-skin="glacier"] {
+  --soko-stage: #edf5fc;
+  --soko-floor: #f3faff;
+  --soko-edge: #bdd1e3;
+  --soko-detail: #d1e4ef;
+  --soko-theme: #623b9c;
+}
+.game-sokoban[data-skin="forge"] {
+  --soko-stage: #f5ece3;
+  --soko-floor: #f2e5d5;
+  --soko-edge: #d7c4b5;
+  --soko-detail: #ddcebd;
+  --soko-theme: #962d24;
+}
+.game-sokoban[data-skin="glacier"] .sokoban-cell.is-floor {
+  background-image: linear-gradient(135deg, transparent 46%, #d1e4ef80 47%, #d1e4ef80 50%, transparent 51%);
+  background-size: 65% 65%;
+}
+.game-sokoban[data-skin="forge"] .sokoban-cell.is-floor {
+  box-shadow: inset 0 0 0 1px #ddcebd;
+}
+.game-sokoban[data-skin="greenhouse"] {
+  --soko-stage: #f0f6ee;
+  --soko-floor: #fff9ec;
+  --soko-edge: #c8d9c5;
+  --soko-detail: #ece2ce;
+  --soko-theme: #b45c58;
+}
+.game-sokoban[data-skin="palace"] {
+  --soko-stage: #f3f4fa;
+  --soko-floor: #fffdf5;
+  --soko-edge: #dcd3bd;
+  --soko-detail: #eee8d8;
+  --soko-theme: #9b783b;
+}
+.game-sokoban[data-skin="greenhouse"] .sokoban-cell.is-floor {
+  background-image: none;
+  box-shadow: inset 0 0 0 1px #eee7d7;
+}
+.game-sokoban[data-skin="palace"] .sokoban-cell.is-floor {
+  background-image: none;
+  box-shadow: inset 0 0 0 1px #eee8d8;
+}
+.game-sokoban .sokoban-card-motif {
+  position: absolute;
+  bottom: 0.35rem;
+  left: 0.4rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.75;
+  pointer-events: none;
+}
+.game-sokoban[data-playing="false"] {
+  height: auto;
+}
+.game-sokoban .game-level-categories .game-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+.sokoban-category-difficulty {
+  font-weight: 700;
+}
+.sokoban-category-scene {
+  font-weight: 400;
+  font-size: 0.9em;
+}
+.sokoban-hud,
+.sokoban-controls,
+.sokoban-actions,
+.sokoban-meters {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.sokoban-hud {
+  justify-content: space-between;
+  min-height: 0;
+  margin: 0;
+}
+.game-sokoban .sokoban-hud .game-title {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: normal;
+  line-height: 1.4;
+}
+.sokoban-play {
+  display: grid;
+  grid-template-columns: max-content 18rem;
+  align-items: start;
+  align-content: safe center;
+  justify-content: center;
+  gap: 2rem;
+  height: 100%;
+  min-height: 0;
+  padding: 1.5rem;
+  container-type: size;
+}
+.sokoban-sidebar {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+  padding-block: 0.5rem;
+}
+.sokoban-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  gap: 0.5rem;
+}
+.game-sokoban .sokoban-toolbar-button {
+  --game-button-edge: transparent;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+body .game-sokoban .sokoban-toolbar-button {
+  height: auto !important;
+  min-height: 4rem !important;
+  max-height: none !important;
+  padding-block: 0.5rem !important;
+}
+.sokoban-toolbar-button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.35rem 0.25rem;
+  white-space: nowrap;
+}
+.sokoban-toolbar-button > .ui-icon {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+}
+.sokoban-toolbar-button > span {
+  flex: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sokoban-meters {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+}
+.sokoban-theory-section {
+  width: 100%;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--line);
+}
+.sokoban-theory-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0.65rem 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--theme-surface-subtle, #f3f8f5);
+}
+.sokoban-theory-card .game-stat {
+  min-width: 0;
+  width: auto;
+  margin: 0;
+  padding: 0 0.3rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  display: grid;
+  grid-template-rows: auto 2.1rem;
+  align-content: center;
+  align-items: center;
+  justify-items: center;
+  gap: 0.15rem;
+}
+.sokoban-theory-card .game-stat + .game-stat {
+  border-left: 1px solid var(--line);
+}
+.sokoban-theory-card .is-unverified {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+.sokoban-meters .game-stat {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  min-height: 4.1rem;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--theme-surface-subtle, #f3f8f5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+}
+.sokoban-stage {
+  grid-column: 1;
+  grid-row: 1;
+  width: min(calc(100cqw - 20rem), 100cqh);
+  aspect-ratio: 1;
+  min-width: 0;
+  position: relative;
+  display: grid;
+  place-items: center;
+  background: var(--soko-stage);
+  border: 1px solid var(--soko-edge);
+  border-radius: 8px;
+  container-type: size;
+}
+.sokoban-board {
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  width: min(
+    calc(100cqw - 2rem),
+    calc(var(--columns) * 4.5rem),
+    calc((100cqh - 2rem) * var(--columns) / var(--rows))
+  );
+  aspect-ratio: var(--columns) / var(--rows);
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  overflow: visible;
+  background: transparent;
+  touch-action: none;
+  user-select: none;
+}
+.sokoban-board:focus-visible {
+  outline: none;
+}
+.sokoban-cell {
+  display: grid;
+  place-items: center;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+.sokoban-cell.is-floor {
+  background-color: var(--soko-floor);
+  background-image: radial-gradient(circle at 22% 28%, var(--soko-detail) 1px, transparent 1.5px), radial-gradient(circle at 74% 76%, var(--soko-detail) 1px, transparent 1.5px);
+  border: 1px solid var(--soko-edge);
+}
+.game-sokoban[data-skin="desert"] .sokoban-cell.is-floor {
+  background-image: linear-gradient(135deg, transparent 72%, var(--soko-detail) 73%, var(--soko-detail) 75%, transparent 76%);
+}
+.game-sokoban[data-skin="space"] .sokoban-cell.is-floor {
+  background-image: linear-gradient(135deg, var(--soko-detail) 8%, transparent 9%, transparent 91%, var(--soko-detail) 92%);
+  box-shadow: inset 0 0 0 2px #e7f1f3;
+}
+.sokoban-cell.is-wall {
+  background: transparent;
+  color: var(--soko-theme);
+}
+.sokoban-sprite {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+.sokoban-box {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  position: relative;
+  place-self: center;
+}
+.sokoban-box:not(.on-goal) .sokoban-solved-mark {
+  visibility: hidden;
+}
+.sokoban-player {
+  width: 94%;
+  height: 94%;
+  position: relative;
+  z-index: 2;
+  place-self: center;
+}
+.game-sokoban:is([data-skin="glacier"], [data-skin="forge"], [data-skin="greenhouse"], [data-skin="palace"]) .sokoban-box.on-goal .sokoban-sprite > :first-child {
+  stroke: #fff;
+  stroke-width: 3;
+}
+.sokoban-directions {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  gap: 0.3rem;
+}
+.sokoban-directions .game-button {
+  padding: 0;
+  height: 44px;
+}
+.sokoban-directions [data-sokoban-action="u"] {
+  grid-column: 2;
+  grid-row: 1;
+}
+.sokoban-directions [data-sokoban-action="l"] {
+  grid-column: 1;
+  grid-row: 2;
+}
+.sokoban-directions [data-sokoban-action="d"] {
+  grid-column: 2;
+  grid-row: 2;
+}
+.sokoban-directions [data-sokoban-action="r"] {
+  grid-column: 3;
+  grid-row: 2;
+}
+.sokoban-feedback {
+  width: 100%;
+  min-height: var(--control-height);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0;
+}
+.sokoban-feedback:has(.sokoban-status:empty):has(button:disabled) {
+  display: none;
+}
+.sokoban-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-small);
+  text-align: start;
+  line-height: 1.5;
+}
+.sokoban-status:empty {
+  display: none;
+}
+.sokoban-feedback [data-sokoban-action="next"]:disabled {
+  display: none;
+}
+.sokoban-feedback [data-sokoban-action="next"] {
+  grid-column: 3;
+}
+.sokoban-actions {
+  width: 100%;
+  justify-content: flex-start;
+}
+.sokoban-actions > .game-button {
+  flex: 1;
+  min-height: 44px;
+}
+.sokoban-footer {
+  text-align: center;
+  font-size: var(--text-small);
+  line-height: 1.5;
+  margin-top: 0.75rem;
+  color: var(--muted);
+}
+.sokoban-warning {
+  margin: 0;
+}
+.sokoban-footer:has(.sokoban-warning:empty) {
+  display: none;
+}
+.sokoban-confirm {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  gap: 1rem;
+  text-align: center;
+}
+.game-sokoban [hidden] {
+  display: none !important;
+}
+@container (width < 700px) {
+  .game-sokoban[data-playing="true"],
+  .sokoban-play {
+    height: auto;
+  }
+  .sokoban-play {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0.75rem;
+    container-type: normal;
+  }
+  .sokoban-stage {
+    order: -1;
+    width: 100%;
+  }
+  .sokoban-sidebar {
+    width: 100%;
+    gap: 0.75rem;
+  }
+  .sokoban-directions {
+    flex: none;
+    margin-inline: auto;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  .sokoban-directions {
+    display: none;
+  }
+}

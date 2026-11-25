@@ -1,0 +1,215 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const { pathToFileURL } = require("node:url");
+const { chromium } = require("playwright");
+async function verify() {
+  const output = path.resolve("test-results/calendar-date");
+  fs.mkdirSync(output, { recursive: true });
+  const browser = await chromium.launch({
+    channel: process.env.WORKTIME_BROWSER_CHANNEL || "msedge",
+    headless: true,
+  });
+  try {
+    for (const language of ["zh-CN", "zh-TW", "zh-HK", "ja", "ko", "en"]) {
+      const context = await browser.newContext({
+        locale: language,
+        reducedMotion: "reduce",
+        viewport: { width: 1440, height: 1000 },
+      });
+      const page = await context.newPage();
+      await page.route(/^https?:/, (route) => route.abort());
+      await page.clock.setFixedTime(new Date("2026-10-21T04:00:00Z"));
+      await page.goto(
+        pathToFileURL(path.resolve(process.argv[2] || ".", "index.html")).href,
+      );
+      await page.waitForFunction(
+        () =>
+          document.documentElement.dataset.appState === "ready" &&
+          !document.documentElement.classList.contains("app-loading"),
+      );
+      const tagSizes = () =>
+        page.locator("#calendar .daystatus .pill").evaluateAll((nodes) =>
+          nodes.map((node) => ({
+            date: node.closest(".day").dataset.date,
+            text: node.textContent,
+            width: node.getBoundingClientRect().width,
+            height: node.getBoundingClientRect().height,
+          })),
+        );
+      const initialTags = await tagSizes();
+      assert.ok(
+        initialTags.length > 0,
+        "Pending tags are present before the first selection",
+      );
+      await page
+        .locator('.day[data-date="2026-10-23"] .day-select')
+        .click({ force: true });
+      await page.evaluate(() => WorkTimeApp.ui.alignment.refresh());
+      assert.deepEqual(
+        await tagSizes(),
+        initialTags,
+        language + " tag dimensions stay fixed after the first day selection",
+      );
+      const retainedMarkers = await page.evaluate(() => {
+        const markers = [
+          ...document.querySelectorAll("#calendar .date-markers"),
+        ].map((node) => ({ node, date: node.closest(".day").dataset.date }));
+        if (!markers.length) throw Error("Expected October date markers");
+        for (const { date } of markers)
+          document.querySelector(`[data-date="${date}"] .day-select`).click();
+        document.querySelector("#todayButton").click();
+        return markers.every(
+          ({ node, date }) =>
+            document.querySelector(`[data-date="${date}"] .date-markers`) ===
+            node,
+        );
+      });
+      assert.equal(
+        retainedMarkers,
+        true,
+        "Selecting dates retains their holiday and schedule markers",
+      );
+      // Include a second badge and a planned-overtime badge in wrapping checks.
+      await page
+        .locator('.day[data-date="2026-10-09"] .day-select')
+        .click({ force: true });
+      await page.locator("#dayLeaveToggle").click();
+      await page.locator("#dayLeave").fill("0.5");
+      await page.locator("#dayLeaveDone").click();
+      await page
+        .locator('.day[data-date="2026-10-24"] .day-select')
+        .click({ force: true });
+      await page.locator("#plannedOvertimeToggle").click();
+      await page.locator("#todayButton").click();
+      assert.ok(
+        (await page.locator("#calendar .pill.leave").count()) > 0,
+        "Leave tag is present",
+      );
+      for (const width of [1440, 1280, 390, 320]) {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.evaluate(() => {
+          for (const text of document.querySelectorAll("#calendar .pill-text"))
+            text.classList.remove("ui-aligned-text");
+        });
+        const unalignedTags = await tagSizes();
+        await page.evaluate(() => WorkTimeApp.ui.alignment.refresh());
+        const clippedDateDigits = await page
+          .locator("#calendar .daynum-text .summary-number-digit")
+          .evaluateAll((digits) =>
+            digits
+              .filter((digit) => {
+                const range = document.createRange();
+                range.selectNodeContents(digit);
+                return (
+                  Math.abs(
+                    digit
+                      .closest(".summary-number-column")
+                      .getBoundingClientRect().width -
+                      range.getBoundingClientRect().width,
+                  ) > 0.1
+                );
+              })
+              .map((digit) => digit.closest(".daynum-text").textContent),
+          );
+        assert.deepEqual(
+          clippedDateDigits,
+          [],
+          language +
+            "/" +
+            width +
+            " date columns fit their actual digit widths",
+        );
+        assert.deepEqual(
+          await tagSizes(),
+          unalignedTags,
+          language +
+            "/" +
+            width +
+            " alignment preserves single-line and wrapped tag sizes",
+        );
+        const result = await page.evaluate(() => {
+          const stamp = document.querySelector("#editorDate"),
+            date = stamp
+              .querySelector(".calendar-today-date")
+              .getBoundingClientRect(),
+            dot = stamp
+              .querySelector(".calendar-today-separator")
+              .getBoundingClientRect(),
+            weekday = stamp
+              .querySelector(".calendar-today-weekday")
+              .getBoundingClientRect();
+          const baselines = [
+            ...stamp.querySelectorAll(
+              ".calendar-today-number,.calendar-today-weekday",
+            ),
+          ].map((node) => {
+            const probe = document.createElement("i");
+            probe.style.cssText =
+              "display:inline-block;width:0;height:0;padding:0;margin:0;border:0;vertical-align:baseline;font-size:0;line-height:0";
+            node.append(probe);
+            const y = probe.getBoundingClientRect().top;
+            probe.remove();
+            return y;
+          });
+          const box = stamp.getBoundingClientRect(),
+            host = stamp.closest(".editor-day-header").getBoundingClientRect();
+          return {
+            baselines,
+            leftGap: dot.left - date.right,
+            rightGap: weekday.left - dot.right,
+            slashes: stamp.querySelectorAll(".calendar-date-divider").length,
+            expectedSlashes: (
+              WorkTimeApp.i18n.date("2026-10-21").match(/\//g) || []
+            ).length,
+            fits: box.left >= host.left - 1 && box.right <= host.right + 1,
+            weekday: stamp.querySelector(".calendar-today-weekday").textContent,
+          };
+        });
+        assert.equal(await page.locator("#calendarToday").count(), 0);
+        assert.equal(
+          result.slashes,
+          result.expectedSlashes,
+          language + " uses original slash icon",
+        );
+        assert.ok(
+          Math.max(...result.baselines) - Math.min(...result.baselines) < 0.6,
+          language + " shared baseline: " + result.baselines,
+        );
+        assert.ok(
+          Math.abs(result.leftGap - result.rightGap) < 0.6,
+          language + " dot spacing is symmetric",
+        );
+        assert.ok(result.leftGap >= 5, language + " dot has breathing room");
+        assert.ok(result.fits, language + " date fits at " + width);
+        const controlsFit = await page.evaluate(() => {
+          const host = document
+            .querySelector(".panel-head")
+            .getBoundingClientRect();
+          return [...document.querySelectorAll(".month-controls > *")].every(
+            (node) => {
+              const box = node.getBoundingClientRect();
+              return box.left >= host.left - 1 && box.right <= host.right + 1;
+            },
+          );
+        });
+        assert.ok(controlsFit, language + " month controls fit at " + width);
+        await page.locator("#editorDate").screenshot({
+          path: path.join(output, language + "-" + width + ".png"),
+        });
+      }
+      await context.close();
+      console.log(
+        language +
+          ": shared date/weekday baseline, symmetric dot and localized slash icons verified.",
+      );
+    }
+  } finally {
+    await browser.close();
+  }
+}
+verify().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

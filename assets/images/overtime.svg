@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200" fill="none">
+  <!-- A taller laptop and small plant balance the lower part of the card. -->
+  <g stroke="#b5a1cc" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M26 133h57a3 3 0 0 1 3 3v42H23v-42a3 3 0 0 1 3-3Z" fill="#eee8f6"/>
+    <path d="M29 139h51v33H29Z" fill="#f7f3fb" stroke-width="1.2"/>
+    <path d="M16 178h77l-5 5H21Z" fill="#e1d5ee"/>
+    <path d="M105 166h21l-3 17h-15Z" fill="#e1d5ee"/>
+    <path d="M115 166q-2-16 2-32"/>
+  </g>
+  <path d="M115 155q-14-1-16-13 13 0 16 13M116 145q0-13 12-17 1 13-12 17" fill="#c3b1d5"/>
+</svg>

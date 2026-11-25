@@ -1,0 +1,810 @@
+/* Align single-line UI ink, keeping font metrics out of layout and paragraph flow. */
+(() => {
+  "use strict";
+  const metricSelector =
+    ".summary-sidebar .card:not(.average-card):not(.surplus-card) .metric";
+  const selectors = [
+    "button.ui-button:not(.notification-tab) .button-label",
+    ".puzzle-confirm .game-button > .button-label",
+    ".puzzle-overlay .game-button > .button-label",
+    ".mine-cover-actions .game-button > .button-label",
+    "#importOpen .import-main > span",
+    ".sidebar-year-month-number",
+    ".month-title-year",
+    ".month-title-month",
+    ".month-title-week-label",
+    ".calendar-today-number",
+    ".calendar-today-weekday",
+    ".calendar .daystatus .pill-text",
+    ".day-date .daynum-text",
+    ".calendar .daykind",
+    ".agenda-chip-title-text",
+    ".agenda-chip-time",
+    ".calendar .day-average > span",
+    ".summary-sidebar .card-label",
+    metricSelector,
+    ".summary-sidebar [data-number-ink]",
+    ".sidebar-brand h1",
+    ".editor-day-header .editor-date",
+    ".year-analysis-header .editor-date",
+    ".batch-editor-header h2",
+    ".page-settings-header h2",
+    "dialog:not(#sourceDialog) .dialog-head h2",
+    "#calendarFoot",
+    ".calendar-footer .legend-label",
+    ".almanac-watermark-text",
+    ".analysis-manual > span",
+    ".analysis-chart-legend > span > span",
+    ".analysis-legend-label",
+    "#gameTitle",
+    "#musicTitle",
+    "#readerTitle",
+    ".vocabulary-pronunciation-play > span",
+    ".vocabulary-phonetic",
+    ".vocabulary-accent-switch > span",
+    ".shared-select-options .button-label",
+    ".onboarding-node-text",
+    ".onboarding-install-dismiss span",
+  ];
+  const targetSelector = selectors.join(",");
+  const scopeSelector =
+    ".calendar .day,.summary-sidebar .card,.target-panel,.calendar-footer,.panel-head,.calendar,.summary-sidebar,.editor,dialog,.sidebar-brand,.sidebar-actions,.analysis-manual,.analysis-chart-heading,.analysis-streak-heading,.game-toolbar,.puzzle-confirm,.puzzle-overlay,.mine-cover,.game-shell";
+  const pendingScopes = new Set();
+  let fullRefresh = false;
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  const dateInkHeights = new Map();
+  const textMetrics = new Map();
+  let dateRaster = null;
+  let dateRasterContext = null;
+  // Computed CSS can serialize keywords as percentages; Canvas only accepts keywords.
+  const stretchKeywords = {
+    "50%": "ultra-condensed",
+    "62.5%": "extra-condensed",
+    "75%": "condensed",
+    "87.5%": "semi-condensed",
+    "100%": "normal",
+    "112.5%": "semi-expanded",
+    "125%": "expanded",
+    "150%": "extra-expanded",
+    "200%": "ultra-expanded",
+  };
+  const validStretches = new Set(Object.values(stretchKeywords));
+  function canvasFontStretch(value) {
+    return (
+      stretchKeywords[value] || (validStretches.has(value) ? value : "normal")
+    );
+  }
+  // Font-size changes and historical labels must not grow these caches forever.
+  function remember(cache, key, value, limit) {
+    cache.delete(key);
+    cache.set(key, value);
+    if (cache.size > limit) cache.delete(cache.keys().next().value);
+    return value;
+  }
+  function cachedMetrics(style, text) {
+    const key = [context.font, style.fontStretch, text].join("|");
+    if (textMetrics.has(key)) {
+      const value = textMetrics.get(key);
+      return remember(textMetrics, key, value, 512);
+    }
+    return remember(textMetrics, key, context.measureText(text), 512);
+  }
+  function readFont(element) {
+    const style = getComputedStyle(element);
+    // Snapshot live computed properties once; repeated getters may synchronize style.
+    return {
+      fontStyle: style.fontStyle,
+      fontWeight: style.fontWeight,
+      fontSize: style.fontSize,
+      fontFamily: style.fontFamily,
+      fontStretch: style.fontStretch,
+    };
+  }
+  function dateInkHeight(style, text) {
+    const scale = devicePixelRatio || 1,
+      key = [context.font, style.fontStretch, text, scale].join("|");
+    if (dateInkHeights.has(key))
+      return remember(dateInkHeights, key, dateInkHeights.get(key), 128);
+    const size = parseFloat(style.fontSize);
+    if (!dateRaster) {
+      dateRaster = document.createElement("canvas");
+      dateRasterContext = dateRaster.getContext("2d", {
+        willReadFrequently: true,
+      });
+    }
+    const raster = dateRaster,
+      ink = dateRasterContext,
+      width = Math.ceil(
+        Math.max(size * 5, cachedMetrics(style, text).width + 8) * scale,
+      ),
+      rasterHeight = Math.ceil(size * 3 * scale);
+    if (raster.width !== width) raster.width = width;
+    if (raster.height !== rasterHeight) raster.height = rasterHeight;
+    ink.setTransform(1, 0, 0, 1, 0, 0);
+    ink.clearRect(0, 0, width, rasterHeight);
+    ink.setTransform(scale, 0, 0, scale, 0, 0);
+    ink.font = context.font;
+    if ("fontStretch" in ink)
+      ink.fontStretch = canvasFontStretch(style.fontStretch);
+    ink.fillText(text, 4, size * 2);
+    const pixels = ink.getImageData(0, 0, raster.width, raster.height).data;
+    const bounds = pixelBounds(
+      pixels,
+      raster.width,
+      raster.width,
+      raster.height,
+      0,
+      scale,
+      size,
+    );
+    return remember(dateInkHeights, key, bounds, 128);
+  }
+  function pixelBounds(pixels, stride, width, rasterHeight, top, scale, size) {
+    let first = rasterHeight,
+      last = -1,
+      left = width,
+      right = -1;
+    // Only each row's outer pixels affect the bounds; skip the glyph interior.
+    for (let y = 0; y < rasterHeight; y++) {
+      const row = (y + top) * stride * 4;
+      let start = 0;
+      while (start < width && !pixels[row + start * 4 + 3]) start++;
+      if (start === width) continue;
+      let end = width - 1;
+      while (end > start && !pixels[row + end * 4 + 3]) end--;
+      first = Math.min(first, y);
+      last = y;
+      left = Math.min(left, start);
+      right = Math.max(right, end);
+    }
+    const height = last >= first ? (last - first + 1) / scale : size;
+    return {
+      height,
+      center: last >= first ? (first + last + 1) / (2 * scale) - size * 2 : 0,
+      centerX: right >= left ? (left + right + 1) / (2 * scale) - 4 : 0,
+    };
+  }
+  function inkRequest(style, text) {
+    const scale = devicePixelRatio || 1,
+      size = parseFloat(style.fontSize);
+    return {
+      style,
+      text,
+      scale,
+      size,
+      font: context.font,
+      stretch: canvasFontStretch(style.fontStretch),
+      key: [context.font, style.fontStretch, text, scale].join("|"),
+      width: Math.ceil(
+        Math.max(size * 5, cachedMetrics(style, text).width + 8) * scale,
+      ),
+      height: Math.ceil(size * 3 * scale),
+    };
+  }
+  function measureInkRequests(measurements) {
+    const groups = new Map(),
+      bounds = new Map(dateInkHeights);
+    for (const { ink } of measurements) {
+      if (!ink) continue;
+      if (bounds.has(ink.key)) {
+        const cached = bounds.get(ink.key);
+        if (cached) remember(dateInkHeights, ink.key, cached, 128);
+        continue;
+      }
+      bounds.set(ink.key, null);
+      const key = [ink.font, ink.stretch, ink.size, ink.scale].join("|");
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(ink);
+    }
+    function flush(batch, width, height) {
+      if (!batch.length) return;
+      if (!dateRaster) {
+        dateRaster = document.createElement("canvas");
+        dateRasterContext = dateRaster.getContext("2d", {
+          willReadFrequently: true,
+        });
+      }
+      const raster = dateRaster,
+        ink = dateRasterContext;
+      if (raster.width !== width) raster.width = width;
+      if (raster.height !== height) raster.height = height;
+      ink.setTransform(1, 0, 0, 1, 0, 0);
+      ink.clearRect(0, 0, width, height);
+      ink.font = batch[0].font;
+      if ("fontStretch" in ink) ink.fontStretch = batch[0].stretch;
+      for (const item of batch) {
+        // Integer device-pixel row origins preserve each original glyph's hinting.
+        ink.save();
+        ink.setTransform(1, 0, 0, 1, 0, 0);
+        ink.beginPath();
+        ink.rect(0, item.top, item.width, item.height);
+        ink.clip();
+        ink.setTransform(item.scale, 0, 0, item.scale, 0, item.top);
+        ink.fillText(item.text, 4, item.size * 2);
+        ink.restore();
+      }
+      const pixels = ink.getImageData(0, 0, width, height).data;
+      for (const item of batch) {
+        const value = pixelBounds(
+          pixels,
+          width,
+          item.width,
+          item.height,
+          item.top,
+          item.scale,
+          item.size,
+        );
+        bounds.set(item.key, value);
+        remember(dateInkHeights, item.key, value, 128);
+      }
+    }
+    for (const items of groups.values()) {
+      let batch = [],
+        width = 0,
+        height = 0;
+      for (const item of items) {
+        if (item.width > 1024 || item.height > 1024) {
+          context.font = item.font;
+          if ("fontStretch" in context) context.fontStretch = item.stretch;
+          bounds.set(item.key, dateInkHeight(item.style, item.text));
+          continue;
+        }
+        if (height + item.height > 1024) {
+          flush(batch, width, height);
+          batch = [];
+          width = height = 0;
+        }
+        batch.push({ ...item, top: height });
+        width = Math.max(width, item.width);
+        height += item.height;
+      }
+      flush(batch, width, height);
+    }
+    for (const item of measurements)
+      item.dateBounds = item.ink ? bounds.get(item.ink.key) : null;
+  }
+  let scheduled = false;
+  let frame = 0;
+  let suspended = false;
+  let disposed = true;
+  let preparingFirstPaint = false;
+  const probe = document.createElement("i");
+  probe.setAttribute("aria-hidden", "true");
+  probe.style.cssText =
+    "display:inline-block;width:0;height:0;padding:0;margin:0;border:0;vertical-align:baseline;font-size:0;line-height:0";
+  function alignTexts(targets) {
+    const viewport = { left: scrollX, top: scrollY };
+    const representatives = [...targets];
+    // Read visibility before changing line boxes, then initialize all text layers.
+    const visible = representatives.filter(
+      (element) =>
+        element.textContent.trim() && element.getClientRects().length,
+    );
+    for (const element of visible) {
+      element.classList.add("ui-aligned-text");
+      element.style.setProperty("--ui-ink-offset", "0px");
+      if (element.matches(".day-average-value"))
+        element.parentElement
+          .querySelector(".trend-icon")
+          ?.style.setProperty("--average-trend-offset", "0px");
+      // Clear both axes before measuring; retaining a previous translation
+      // makes parent-centered labels alternate offsets on each refresh.
+      if (element.matches(".day-date .daynum-text,.onboarding-node-text"))
+        element.style.setProperty("--ui-ink-offset-x", "0px");
+    }
+    const measurements = [];
+    for (const element of visible) {
+      const style = readFont(element);
+      // Ink offsets describe one baseline. Apply no offset to wrapped labels,
+      // headings or footers; measuring their combined text as one canvas line
+      // would move the whole paragraph and can clip the first/last line.
+      if (
+        !element.matches(metricSelector) &&
+        !element.querySelector(".summary-number-accessible")
+      ) {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const rects = [...range.getClientRects()].filter(
+          (rect) => rect.width && rect.height,
+        );
+        if (
+          rects.some((rect) =>
+            rects.some((other) => other.top >= rect.bottom - 1),
+          )
+        )
+          continue;
+      }
+      context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      if ("fontStretch" in context)
+        context.fontStretch = canvasFontStretch(style.fontStretch);
+      // Date changes must retain one baseline, regardless of weekday glyph bounds.
+      const metric = element.matches(metricSelector);
+      const number = element.querySelector(".summary-number-accessible");
+      const text = element.matches(".editor-day-header .editor-date")
+        ? "0123456789 · 周日一二三四五六"
+        : number ||
+            element.matches(".calendar-today-number,.calendar-today-weekday")
+          ? "0123456789"
+          : element.textContent.trim();
+      const baselineHost =
+        metric || number ? document.createElement("span") : element;
+      if (baselineHost !== element) {
+        // Numeric views share one reference baseline, independent of their value
+        // and of outgoing animation glyphs. Never measure the visual subtree.
+        baselineHost.style.cssText =
+          "position:absolute;top:0;left:0;visibility:hidden;line-height:1.3";
+        baselineHost.textContent = "0";
+      }
+      measurements.push({
+        element,
+        metrics: cachedMetrics(style, text),
+        // Mixed Latin/CJK legends also need hinted pixel bounds, not outline metrics.
+        ink: element.matches(
+          ".day-date .daynum-text,.calendar .daykind,.agenda-chip-title-text,.agenda-chip-time,.calendar-footer .legend-label,.day-average-value,.button-label,#importOpen .import-main > span,.sidebar-year-month-number,.onboarding-node-text,.onboarding-install-dismiss span,.vocabulary-pronunciation-play > span,.vocabulary-phonetic",
+        )
+          ? inkRequest(style, text)
+          : null,
+        baselineProbe: probe.cloneNode(),
+        baselineHost,
+        trendIcon: element.matches(".day-average-value")
+          ? element.parentElement.querySelector(".trend-icon")
+          : null,
+      });
+    }
+    measureInkRequests(measurements);
+    // Apply date geometry and add every zero-size baseline probe in one write phase.
+    for (const item of measurements) {
+      if (item.dateBounds && item.element.matches(".day-date .daynum-text"))
+        item.element
+          .closest(".day-date")
+          .style.setProperty(
+            "--date-ink-height",
+            item.dateBounds.height.toFixed(3) + "px",
+          );
+      if (item.baselineHost !== item.element)
+        item.element.appendChild(item.baselineHost);
+      item.baselineHost.appendChild(item.baselineProbe);
+    }
+    // No DOM writes between the first and last geometry reads.
+    for (const item of measurements) {
+      item.box = item.element.getBoundingClientRect();
+      item.baseline = item.baselineProbe.getBoundingClientRect().top;
+      item.trendBox = item.trendIcon?.getBoundingClientRect();
+      item.centerBox = item.element.matches(".onboarding-node-text")
+        ? item.element.parentElement.getBoundingClientRect()
+        : item.box;
+    }
+    for (const {
+      element,
+      metrics,
+      dateBounds,
+      baselineProbe,
+      baselineHost,
+      box,
+      baseline,
+      trendIcon,
+      trendBox,
+      centerBox,
+    } of measurements) {
+      baselineProbe.remove();
+      if (baselineHost !== element) baselineHost.remove();
+      const inkCenter =
+        baseline +
+        (dateBounds
+          ? dateBounds.center
+          : (metrics.actualBoundingBoxDescent -
+              metrics.actualBoundingBoxAscent) /
+            2);
+      const offset = centerBox.top + centerBox.height / 2 - inkCenter;
+      if (trendBox) {
+        const sameLine = trendBox.bottom > box.top && trendBox.top < box.bottom;
+        trendIcon.style.setProperty(
+          "--average-trend-offset",
+          (sameLine
+            ? inkCenter + offset - (trendBox.top + trendBox.height / 2)
+            : 0
+          ).toFixed(3) + "px",
+        );
+      }
+      if (
+        element.matches(".day-date .daynum-text,.onboarding-node-text") &&
+        dateBounds
+      ) {
+        const x =
+          centerBox.left + centerBox.width / 2 - box.left - dateBounds.centerX;
+        if (Number.isFinite(x))
+          element.style.setProperty("--ui-ink-offset-x", x.toFixed(3) + "px");
+      }
+      if (Number.isFinite(offset))
+        element.style.setProperty("--ui-ink-offset", offset.toFixed(3) + "px");
+    }
+    // Temporary line-box changes must not move a focused mobile page's scroll anchor.
+    if (scrollX !== viewport.left || scrollY !== viewport.top)
+      window.scrollTo({ ...viewport, behavior: "instant" });
+  }
+  function refresh(scopes = null) {
+    if (disposed || suspended || document.hidden) return;
+    if (
+      document.documentElement.classList.contains("app-loading") &&
+      !preparingFirstPaint
+    ) {
+      if (scopes) for (const scope of scopes) pendingScopes.add(scope);
+      else fullRefresh = true;
+      return;
+    }
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    scheduled = false;
+    pendingScopes.clear();
+    fullRefresh = false;
+    observer.disconnect();
+    const targets = new Set();
+    const candidates = new Set();
+    const roots = scopes || [document];
+    for (const scope of roots) {
+      if (roots.some((other) => other !== scope && other.contains(scope)))
+        continue;
+      if (scope instanceof Element && scope.matches(targetSelector))
+        candidates.add(scope);
+      scope
+        .querySelectorAll(targetSelector)
+        .forEach((element) => candidates.add(element));
+    }
+    candidates.forEach((element) => {
+      // The game covers and inerts these panels. Measuring their temporary
+      // line boxes can resize the workspace and interrupt the expansion.
+      // Restoring root overflow on exit schedules their next full refresh.
+      if (element.closest(".workspace.is-game-expanded > [inert]")) return;
+      // These cards align the complete metric, including its placeholder.
+      if (
+        element.hasAttribute("data-number-ink") &&
+        element.parentElement.matches(metricSelector)
+      )
+        return;
+      // Outgoing date surfaces already carry the source's measured ink offsets.
+      if (element.closest(".calendar-navigation-copy")) return;
+      // Components declare text layers; alignment never changes their structure.
+      targets.add(element);
+    });
+    // Different font families can share a baseline while CJK ink still extends
+    // below the Latin wordmark. Match their visible bottoms at every font size.
+    for (const heading of targets) {
+      if (!heading.matches(".sidebar-brand h1")) continue;
+      const name = heading.querySelector(".sidebar-brand-name"),
+        subtitle = heading.querySelector(".sidebar-brand-subtitle");
+      if (!name || !subtitle) continue;
+      const descent = (element) => {
+        const style = readFont(element);
+        context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+        if ("fontStretch" in context)
+          context.fontStretch = canvasFontStretch(style.fontStretch);
+        const text =
+          element.querySelector(".summary-number-accessible")?.textContent ||
+          element.textContent.trim();
+        return cachedMetrics(style, text).actualBoundingBoxDescent;
+      };
+      heading.style.setProperty(
+        "--brand-subtitle-offset",
+        (descent(name) - descent(subtitle)).toFixed(3) + "px",
+      );
+    }
+    alignTexts(targets);
+    observe();
+  }
+  function prepareFirstPaint() {
+    preparingFirstPaint = true;
+    try {
+      refresh();
+    } finally {
+      preparingFirstPaint = false;
+    }
+  }
+  function queue(scope = null) {
+    // Startup reveals only after fonts and application mounting finish. Its
+    // explicit refresh owns the first layout; measuring partially mounted
+    // panels here forces the same text and line boxes through layout twice.
+    if (scope) pendingScopes.add(scope);
+    else fullRefresh = true;
+    if (
+      document.documentElement.dataset.appState === "initializing" ||
+      document.documentElement.classList.contains("app-loading")
+    )
+      return;
+    if (!disposed && !suspended && !document.hidden && !scheduled) {
+      scheduled = true;
+      frame = requestAnimationFrame(() => {
+        const scopes = fullRefresh
+          ? null
+          : [...pendingScopes].filter((root) => root.isConnected);
+        refresh(scopes);
+      });
+    }
+  }
+  function schedule() {
+    queue();
+  }
+  function observe() {
+    const roots = [
+      ...document.querySelectorAll(
+        ".workspace,dialog,main.wrap > footer,.sidebar-brand",
+      ),
+    ];
+    for (const root of roots) {
+      if (roots.some((other) => other !== root && other.contains(root)))
+        continue;
+      observer.observe(root, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ["class", "style", "open", "hidden"],
+      });
+    }
+    // Root typography and replacement of component containers still require a full pass.
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeOldValue: true,
+      attributeFilter: ["class", "style"],
+    });
+    observer.observe(document.body, {
+      childList: true,
+      attributes: true,
+      attributeOldValue: true,
+      attributeFilter: ["class", "style"],
+    });
+    const main = document.querySelector("main.wrap");
+    if (main)
+      observer.observe(main, {
+        childList: true,
+        attributes: true,
+        attributeOldValue: true,
+        attributeFilter: ["class", "style"],
+      });
+  }
+  // Surface motion does not change font or line boxes. Ignore its bookkeeping,
+  // including cleanup, while still observing mixed motion/layout class changes.
+  const motionClasses = new Set([
+    "motion-enter",
+    "motion-content",
+    "motion-day",
+    "motion-selection",
+    "motion-calendar-view",
+    "motion-calendar-year",
+    "motion-year-month",
+    "motion-startup",
+    "motion-sidebar-forward",
+    "motion-sidebar-back",
+    "motion-dialog-preparing",
+    "is-game-expanded",
+    "is-game-transitioning",
+    "game-origin-muted",
+  ]);
+  const calendarSurfaceClasses = new Set([
+    "is-batch-editing",
+    "batch-eligible",
+    "batchselected",
+    "selected",
+    "agenda-week-leaving",
+  ]);
+  function isMotionMetadata(record) {
+    if (record.type !== "attributes") return false;
+    const element = record.target;
+    if (record.attributeName === "class") {
+      const before = new Set(
+        (record.oldValue || "").split(/\s+/).filter(Boolean),
+      );
+      const after = new Set(element.classList);
+      const changed = [...new Set([...before, ...after])].filter(
+        (token) => before.has(token) !== after.has(token),
+      );
+      // Revealing an already measured page changes visibility, not text metrics.
+      if (
+        element === document.documentElement &&
+        changed.every((token) => token === "app-loading") &&
+        !pendingScopes.size &&
+        !fullRefresh
+      )
+        return true;
+      return changed.every(
+        (token) =>
+          motionClasses.has(token) ||
+          (token === "is-copying" &&
+            element.matches("#dayShareTemplates,#batchShareTemplates")) ||
+          (element.matches(".calendar,.calendar > .day") &&
+            calendarSurfaceClasses.has(token)),
+      );
+    }
+    if (record.attributeName !== "style") return false;
+    const before = document.createElement("i").style;
+    before.cssText = record.oldValue || "";
+    const after = document.createElement("i").style;
+    after.cssText = element.getAttribute("style") || "";
+    for (const property of ["--motion-delay", "--motion-direction"]) {
+      before.removeProperty(property);
+      after.removeProperty(property);
+    }
+    // Calendar motion owns surface geometry. Font and line-height changes still
+    // invalidate ink metrics; moving or clipping an already aligned surface does not.
+    if (
+      element.matches(
+        ".calendar,.calendar > .day,.agenda-week-lane,.agenda-lane-content,.agenda-chip",
+      )
+    ) {
+      for (const property of [
+        "position",
+        "left",
+        "top",
+        "height",
+        "width",
+        "margin",
+        "z-index",
+        "overflow",
+        "flex",
+        "grid-auto-rows",
+        "grid-template-rows",
+        "opacity",
+        "transform",
+        "clip-path",
+        "will-change",
+        "contain",
+        "--agenda-span-mask",
+      ]) {
+        before.removeProperty(property);
+        after.removeProperty(property);
+      }
+    }
+    // Game fades and slides preserve text geometry. Shell size and typography
+    // changes still reach alignment through the remaining style properties.
+    if (element.matches(".game-surface,.game-toolbar,.game-content")) {
+      for (const property of ["opacity", "transform"]) {
+        before.removeProperty(property);
+        after.removeProperty(property);
+      }
+    }
+    // The charge meter changes every frame without changing any text metrics.
+    if (element.matches(".jump-charge > span")) {
+      before.removeProperty("transform");
+      after.removeProperty("transform");
+    }
+    return before.cssText === after.cssText;
+  }
+  function mutationsChanged(records) {
+    for (const record of records) {
+      const element =
+        record.target instanceof Element
+          ? record.target
+          : record.target.parentElement;
+      if (!element) continue;
+      // Snapshots already contain the source's aligned text. Their insertion,
+      // animation and removal must not trigger another pass over the live dates.
+      if (
+        element.closest(
+          ".agenda-content-outgoing,.agenda-mode-exit-clip,.calendar-artwork-outgoing,.calendar-navigation-copy,.agenda-date-edges,.agenda-week-return-exits",
+        )
+      )
+        continue;
+      if (
+        record.type === "childList" &&
+        [...record.addedNodes, ...record.removedNodes].every(
+          (node) =>
+            node instanceof Element &&
+            node.matches(
+              ".agenda-content-outgoing,.agenda-mode-exit-clip,.calendar-artwork-outgoing,.calendar-navigation-copy,.calendar-navigation-viewport,.agenda-date-edges,.agenda-week-return-exits",
+            ),
+        )
+      )
+        continue;
+      // Reparenting the live calendar into/out of a temporary clipping viewport
+      // changes no text metrics. Actual date/header mutations are handled above
+      // and below at their ordinary component scopes.
+      if (record.type === "childList") {
+        const nodes = [...record.addedNodes, ...record.removedNodes];
+        if (
+          nodes.length &&
+          nodes.every(
+            (node) =>
+              node instanceof Element &&
+              (node.matches(
+                ".calendar-navigation-copy,.calendar-navigation-viewport",
+              ) ||
+                (node.id === "calendar" &&
+                  (element.matches(".calendar-navigation-viewport") ||
+                    node.parentElement?.matches(
+                      ".calendar-navigation-viewport",
+                    ) ||
+                    nodes.some(
+                      (other) =>
+                        other instanceof Element &&
+                        other.matches(".calendar-navigation-viewport"),
+                    )))),
+          )
+        )
+          continue;
+      }
+      // Analysis geometry owns its coordinates. Its animation frames do not
+      // change the single-line text metrics handled by this observer.
+      if (
+        element.closest(
+          "#analysisPlot, #analysisStreak, .analysis-text-outgoing, .analysis-text-incoming",
+        )
+      )
+        continue;
+      // Digit tracks keep a fixed line box; their cleanup only changes visual rows.
+      // Wrapper/value replacement still reaches the observer through its parent.
+      if (element.closest(".summary-number-visual")) continue;
+      // Boards animate and mutate independently of the aligned toolbar/help text.
+      // Do not promote every tile/style change to a full game-shell measurement.
+      if (
+        element.closest(".game-content") &&
+        !element.closest(targetSelector) &&
+        !element.querySelector(targetSelector)
+      )
+        continue;
+      if (isMotionMetadata(record)) continue;
+      const scope = element.closest(scopeSelector);
+      if (scope) queue(scope);
+      else queue();
+    }
+  }
+  function stopWatching() {
+    observer.disconnect();
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    scheduled = false;
+    pendingScopes.clear();
+    fullRefresh = false;
+  }
+  function fontsLoaded() {
+    textMetrics.clear();
+    dateInkHeights.clear();
+    schedule();
+  }
+  function visibilityChanged() {
+    if (document.hidden) stopWatching();
+    else schedule();
+  }
+  function pageHidden() {
+    suspended = true;
+    stopWatching();
+  }
+  function pageShown() {
+    suspended = false;
+    schedule();
+  }
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    stopWatching();
+    textMetrics.clear();
+    dateInkHeights.clear();
+    if (dateRaster) dateRaster.width = dateRaster.height = 0;
+    dateRaster = dateRasterContext = null;
+    probe.remove();
+    window.removeEventListener("resize", schedule);
+    window.removeEventListener("pagehide", pageHidden);
+    window.removeEventListener("pageshow", pageShown);
+    document.removeEventListener("visibilitychange", visibilityChanged);
+    document.removeEventListener("worktime:failed", dispose);
+    document.fonts.removeEventListener("loadingdone", fontsLoaded);
+  }
+  const observer = new MutationObserver(mutationsChanged);
+  function mount() {
+    if (!disposed || document.documentElement.dataset.appState === "failed")
+      return;
+    disposed = false;
+    suspended = false;
+    window.addEventListener("resize", schedule, { passive: true });
+    window.addEventListener("pagehide", pageHidden);
+    window.addEventListener("pageshow", pageShown);
+    document.addEventListener("visibilitychange", visibilityChanged);
+    document.addEventListener("worktime:failed", dispose);
+    document.fonts.addEventListener("loadingdone", fontsLoaded);
+    schedule();
+  }
+  document.fonts.ready.then(schedule);
+  WorkTimeApp.ui.alignment = { refresh, prepareFirstPaint, mount, dispose };
+  mount();
+})();

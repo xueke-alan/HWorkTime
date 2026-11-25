@@ -1,0 +1,714 @@
+"use strict";
+/** Owns the shell, transitions and one game instance; never touches work records. */
+WorkTimeApp.ui.createGamesController = function ({ document, window }) {
+  const events = WorkTimeApp.ui.createEventScope();
+  const compat = WorkTimeApp.ui.animationCompat;
+  const reduced = compat.preference();
+  const motion = compat.workspaceMotion;
+  const workspace = document.querySelector(".workspace");
+  const origin = workspace.querySelector("section.panel");
+  const panels = [...workspace.children];
+  const sidebar = document.getElementById("gamesPanel");
+  const idleCover = document.createElement("div");
+  idleCover.className = "game-idle-cover";
+  idleCover.setAttribute("aria-hidden", "true");
+  const idleTime = document.createElement("time");
+  idleTime.className = "game-idle-time";
+  const idleDate = document.createElement("div");
+  idleDate.className = "game-idle-date";
+  const idleMotto = document.createElement("div");
+  idleMotto.className = "game-idle-motto";
+  idleMotto.textContent = WorkTimeApp.i18n.t("games.idleMotto");
+  idleCover.append(idleTime, idleDate, idleMotto);
+  const hoverDevice = window.matchMedia(
+    "(any-hover: hover) and (any-pointer: fine)",
+  );
+  let idleDelay = null,
+    idleTick = null,
+    idleVisible = false,
+    idleWasCovered = true;
+  let clockLocale, clockFormatter, dateFormatter;
+  let idlePointer = null;
+  function updateIdleClock(animate = idleVisible) {
+    const now = new Date();
+    const locale = WorkTimeApp.i18n.locale;
+    if (clockLocale !== locale) {
+      clockLocale = locale;
+      clockFormatter = new Intl.DateTimeFormat(locale, {
+        timeZone: "Asia/Shanghai",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+      });
+      dateFormatter = new Intl.DateTimeFormat(locale, {
+        timeZone: "Asia/Shanghai",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        weekday: "long",
+      });
+    }
+    idleTime.dateTime = now.toISOString();
+    WorkTimeApp.ui.numbers.set(idleTime, clockFormatter.format(now), {
+      animateInitial: false,
+      motion: animate,
+    });
+    const date = dateFormatter.format(now);
+    if (idleDate.textContent !== date) idleDate.textContent = date;
+  }
+  function pauseIdleClock() {
+    window.clearTimeout(idleDelay);
+    window.clearInterval(idleTick);
+    idleDelay = idleTick = null;
+    WorkTimeApp.ui.numbers.settle(idleTime);
+  }
+  function hideIdleCover() {
+    pauseIdleClock();
+    idleVisible = false;
+    idleCover.classList.remove("is-visible", "is-initial");
+  }
+  function interactingWithSidebar() {
+    if (sidebar.matches(":hover") || sidebar.querySelector(":focus-visible"))
+      return true;
+    if (!idlePointer) return false;
+    // A newly revealed panel can receive :hover/pointerenter only after its
+    // mutation observer runs. Use the last pointer position before painting.
+    const bounds = sidebar.getBoundingClientRect();
+    return (
+      idlePointer.x >= bounds.left &&
+      idlePointer.x < bounds.right &&
+      idlePointer.y >= bounds.top &&
+      idlePointer.y < bounds.bottom
+    );
+  }
+  function refreshIdleCover() {
+    const covered =
+      sidebar.hidden ||
+      workspace.classList.contains("is-game-expanded") ||
+      !["closed", "closing"].includes(state);
+    const enteringTab = idleWasCovered && !covered;
+    idleWasCovered = covered;
+    if (covered || disposed || !hoverDevice.matches) {
+      hideIdleCover();
+      return;
+    }
+    if (document.hidden) {
+      pauseIdleClock();
+      return;
+    }
+    if (idleVisible) {
+      if (idleTick === null) startIdleClock();
+      return;
+    }
+    if (interactingWithSidebar() || idleDelay !== null) return;
+    if (enteringTab) {
+      showIdleCover(true);
+      return;
+    }
+    idleDelay = window.setTimeout(() => {
+      idleDelay = null;
+      if (!document.hidden && !interactingWithSidebar()) showIdleCover();
+    }, 300);
+  }
+  function startIdleClock() {
+    updateIdleClock(false);
+    idleTick = window.setInterval(updateIdleClock, 1000);
+  }
+  function showIdleCover(immediate = false) {
+    startIdleClock();
+    idleVisible = true;
+    idleCover.classList.toggle("is-initial", immediate);
+    idleCover.classList.add("is-visible");
+  }
+  const archiveUI = WorkTimeApp.ui.createGameArchiveController({
+    document,
+    window,
+  });
+  const gameArchive = WorkTimeApp.services.gameArchive;
+  let archiveReady = false,
+    archiveFailure = null,
+    handlingArchiveChange = false;
+  gameArchive
+    .initialize()
+    .then(() => {
+      archiveReady = true;
+    })
+    .catch((error) => {
+      // Restricted storage must not stop games from running without persistence.
+      archiveFailure = ["recovery", "invalid"].includes(error.code)
+        ? error
+        : null;
+      archiveReady = true;
+      archiveUI.report(error);
+    });
+  const shell = document.createElement("div");
+  shell.className = "game-shell";
+  shell.id = "gameShell";
+  shell.hidden = true;
+  shell.tabIndex = -1;
+  shell.setAttribute("role", "dialog");
+  shell.setAttribute("aria-modal", "true");
+  shell.setAttribute("aria-labelledby", "gameTitle");
+  const surface = document.createElement("div");
+  surface.className = "game-surface";
+  surface.setAttribute("aria-hidden", "true");
+  const toolbar = document.createElement("header");
+  toolbar.className = "game-toolbar workspace-toolbar";
+  const title = document.createElement("h2");
+  title.id = "gameTitle";
+  const exitButton = document.createElement("button");
+  exitButton.type = "button";
+  exitButton.id = "gameExitButton";
+  exitButton.className = "ui-button icon-only workspace-toolbar-action";
+  exitButton.innerHTML =
+    '<svg class="ui-icon" aria-hidden="true"><use href="#ms-calendar-month"/></svg>';
+  toolbar.append(exitButton, title);
+  const content = document.createElement("div");
+  content.className = "game-content";
+  shell.append(surface, toolbar, content);
+  const disposeFooter = WorkTimeApp.ui.createSiteFooter(shell, true);
+  workspace.append(shell);
+
+  let state = "closed",
+    disposed = false,
+    instance = null,
+    abort = null,
+    currentId = null,
+    revision = 0,
+    animations = [],
+    savedInert = [],
+    savedOverflow = "",
+    savedScroll = null,
+    lastSize = null,
+    restingPanels = [];
+  let loadGeneration = 0;
+  let selectedId = WorkTimeApp.games.list()[0]?.id;
+  let sidebarMenu, shellMenu;
+  const t = (key) => WorkTimeApp.i18n.t(key);
+  const setState = (value) => {
+    state = value;
+    shell.dataset.state = value;
+    refreshIdleCover();
+  };
+  setState("closed");
+  function stopMotion() {
+    animations.forEach((animation) => animation.cancel());
+    animations = [];
+    workspace.classList.remove("is-game-transitioning");
+  }
+  function call(name, value) {
+    try {
+      instance?.[name]?.(value);
+    } catch (error) {
+      console.error("Game lifecycle: " + name, error);
+    }
+  }
+  function releaseGame() {
+    loadGeneration++;
+    content.removeAttribute("aria-busy");
+    archiveUI.detach(content);
+    abort?.abort();
+    abort = null;
+    call("dispose");
+    instance = null;
+    currentId = null;
+    lastSize = null;
+    shellMenu?.dispose();
+    shellMenu = null;
+    content.replaceChildren();
+  }
+  function translateToolbar() {
+    title.textContent = t(
+      WorkTimeApp.games.get(currentId)?.nameKey || "games.menu",
+    );
+    exitButton.setAttribute("aria-label", t("workspace.returnCalendar"));
+    exitButton.removeAttribute("title");
+  }
+  function notifySize() {
+    if (!instance || state === "closed") return;
+    const style = window.getComputedStyle(content);
+    const size = {
+      width: Math.max(
+        0,
+        content.clientWidth -
+          parseFloat(style.paddingLeft) -
+          parseFloat(style.paddingRight),
+      ),
+      height: Math.max(
+        0,
+        content.clientHeight -
+          parseFloat(style.paddingTop) -
+          parseFloat(style.paddingBottom),
+      ),
+    };
+    // ResizeObserver, transition completion and viewport events can report the
+    // same box. Do not rebuild a board or cancel its motion for duplicate sizes.
+    if (lastSize?.width === size.width && lastSize?.height === size.height)
+      return;
+    lastSize = size;
+    call("resize", size);
+  }
+  function measure() {
+    const bounds = workspace.getBoundingClientRect();
+    const narrow = window.innerWidth <= 1150;
+    shell.classList.toggle("game-shell-compact", narrow);
+    if (narrow) {
+      const viewport = window.visualViewport;
+      const height = viewport?.height || window.innerHeight;
+      const top = viewport?.offsetTop || 0;
+      const edgeToEdge = window.innerWidth <= 850;
+      Object.assign(shell.style, {
+        left: (edgeToEdge ? viewport?.offsetLeft || 0 : bounds.left) + "px",
+        top: top + "px",
+        width:
+          (edgeToEdge ? viewport?.width || window.innerWidth : bounds.width) +
+          "px",
+        height: height + "px",
+      });
+    } else {
+      Object.assign(shell.style, {
+        left: "0px",
+        top: "0px",
+        width: "100%",
+        height: "100%",
+      });
+    }
+  }
+  function originClip() {
+    const from = origin.getBoundingClientRect();
+    const to = shell.getBoundingClientRect();
+    const clamp = (value, max) => Math.max(0, Math.min(value, max));
+    return `inset(${clamp(from.top - to.top, to.height)}px ${clamp(to.right - from.right, to.width)}px ${clamp(to.bottom - from.bottom, to.height)}px ${clamp(from.left - to.left, to.width)}px round 16px)`;
+  }
+  function readFrame(element, slide = false) {
+    const style = window.getComputedStyle(element);
+    return slide
+      ? { opacity: style.opacity, transform: style.transform }
+      : { opacity: style.opacity };
+  }
+  function insetDistance(clip) {
+    const values =
+      clip
+        .split("round")[0]
+        .match(/[\d.]+(?=px)/g)
+        ?.map(Number) || [];
+    if (values.length === 1) return 4 * values[0];
+    if (values.length === 2) return 2 * (values[0] + values[1]);
+    if (values.length === 3) return values[0] + 2 * values[1] + values[2];
+    return values.reduce((sum, value) => sum + value, 0);
+  }
+  async function transition(opening, reversing = false) {
+    const token = ++revision;
+    // Snapshot all painted states and geometry together, before any cancellation
+    // or style writes. A reversal then starts at exactly the interrupted frame.
+    const collapsed = originClip();
+    const clip = window.getComputedStyle(shell).clipPath;
+    const expanded = `inset(0px round ${window.getComputedStyle(shell).borderRadius})`;
+    const painted = clip === "none" ? expanded : clip;
+    const background = panels.map((element, index) => ({
+      element,
+      slide: element !== origin,
+      from: readFrame(element, element !== origin),
+      to: opening
+        ? element === origin
+          ? { opacity: "0" }
+          : {
+              opacity: "0",
+              transform: `translateX(${element.matches(".summary-sidebar") ? -28 : 28}px)`,
+            }
+        : restingPanels[index],
+    }));
+    const surfaceFrame = readFrame(surface);
+    const toolbarFrame = readFrame(toolbar);
+    const contentFrame = readFrame(content, true);
+    const distance = insetDistance(collapsed);
+    const scale =
+      reversing && distance > 0
+        ? Math.max(0.15, Math.min(1, 1 - insetDistance(painted) / distance))
+        : 1;
+    const timing = opening ? motion.open : motion.close;
+    const hiddenContent = { opacity: "0", transform: "translateY(6px)" };
+    const visibleContent = { opacity: "1", transform: "none" };
+    stopMotion();
+    workspace.classList.toggle("is-game-expanded", opening);
+    origin.classList.toggle("game-origin-muted", opening);
+    // Keep endpoints in ordinary styles: compatibility fallback, resize and
+    // per-track completion can release fill effects without a flash or jump.
+    surface.style.opacity = toolbar.style.opacity = opening ? "1" : "0";
+    Object.assign(content.style, opening ? visibleContent : hiddenContent);
+    if (!reduced.matches && !document.hidden) {
+      workspace.classList.add("is-game-transitioning");
+      const startTime = document.timeline?.currentTime;
+      const track = (
+        element,
+        from,
+        to,
+        duration,
+        delay = 0,
+        easing = "ease-out",
+      ) => {
+        animations.push(
+          compat.animate(
+            element,
+            [from, to],
+            {
+              duration: duration * scale,
+              delay: delay * scale,
+              easing,
+              fill: "both",
+            },
+            startTime,
+          ),
+        );
+      };
+      for (const { element, slide, from, to } of background) {
+        track(
+          element,
+          { opacity: from.opacity },
+          { opacity: to.opacity },
+          slide ? timing.sides : timing.center,
+        );
+        if (slide)
+          track(
+            element,
+            { transform: from.transform },
+            { transform: to.transform },
+            timing.sides,
+            0,
+            motion.sideEase,
+          );
+      }
+      track(
+        shell,
+        { clipPath: opening ? collapsed : painted },
+        { clipPath: opening ? expanded : collapsed },
+        timing.surface,
+        0,
+        motion.expandEase,
+      );
+      track(
+        surface,
+        opening ? { opacity: "0" } : surfaceFrame,
+        { opacity: surface.style.opacity },
+        timing.surfaceFade,
+      );
+      track(
+        toolbar,
+        opening ? { opacity: "0" } : toolbarFrame,
+        { opacity: toolbar.style.opacity },
+        timing.toolbar,
+        timing.toolbarDelay,
+      );
+      const from = opening ? hiddenContent : contentFrame;
+      const to = opening ? visibleContent : hiddenContent;
+      track(
+        content,
+        { opacity: from.opacity },
+        { opacity: to.opacity },
+        timing.content,
+        timing.contentDelay,
+      );
+      track(
+        content,
+        { transform: from.transform },
+        { transform: to.transform },
+        timing.content,
+        timing.contentDelay,
+        motion.expandEase,
+      );
+      await Promise.all(animations.map((animation) => animation.finished));
+    }
+    if (disposed || token !== revision) return;
+    stopMotion();
+    if (opening) {
+      if (!content.hasAttribute("aria-busy")) setState("open");
+      notifySize();
+    } else restore();
+  }
+  function restore(focus = true) {
+    releaseGame();
+    shell.hidden = true;
+    workspace.classList.remove("is-game-expanded");
+    origin.classList.remove("game-origin-muted");
+    panels.forEach((panel, index) => (panel.inert = savedInert[index]));
+    document.documentElement.style.overflow = savedOverflow;
+    if (savedScroll) window.scrollTo(savedScroll.x, savedScroll.y);
+    savedScroll = null;
+    setState("closed");
+    sidebarMenu?.refreshProgress();
+    if (focus) WorkTimeApp.ui.dateInfo.selectTab("games");
+    if (focus)
+      document.getElementById("date-tab-games")?.focus({ preventScroll: true });
+  }
+  function renderMenu(container) {
+    if (container === sidebar) sidebarMenu?.dispose();
+    else shellMenu?.dispose();
+    const menu = WorkTimeApp.ui.renderGameMenu(container, {
+      selectedId,
+      onSelect(id) {
+        selectedId = id;
+        if (container === content) sidebarMenu.select(id);
+      },
+      onLaunch: launch,
+      archiveUI,
+    });
+    if (container === sidebar) {
+      sidebar.append(idleCover);
+      if (idleVisible) updateIdleClock();
+    }
+    return menu;
+  }
+  function showMenu() {
+    if (state !== "open") return;
+    releaseGame();
+    shellMenu = renderMenu(content);
+    translateToolbar();
+    content.querySelector('.game-menu-entry[aria-pressed="true"]')?.focus();
+  }
+  async function launch(id) {
+    if (!archiveReady) return;
+    if (archiveFailure) {
+      archiveUI.report(archiveFailure);
+      return;
+    }
+    try {
+      if (gameArchive.pendingRecovery()) {
+        archiveUI.report({ code: "recovery" });
+        return;
+      }
+    } catch {
+      // Games remain playable when the browser blocks persistent storage.
+    }
+    if (disposed || !["closed", "open"].includes(state)) return;
+    let entry = WorkTimeApp.games.get(id);
+    if (!entry) return;
+    const opening = state === "closed";
+    if (opening) {
+      savedInert = panels.map((panel) => panel.inert);
+      savedOverflow = document.documentElement.style.overflow;
+      savedScroll = { x: window.scrollX, y: window.scrollY };
+      document.documentElement.style.overflow = "hidden";
+      shell.hidden = false;
+      setState("opening");
+      // Focus leaves the underlying workspace before it becomes inert.
+      shell.focus({ preventScroll: true });
+      panels.forEach((panel) => (panel.inert = true));
+      for (const panel of panels) WorkTimeApp.ui.motion?.stop(panel);
+      restingPanels = panels.map((panel) => readFrame(panel, panel !== origin));
+      measure();
+    }
+    releaseGame();
+    const token = loadGeneration;
+    currentId = id;
+    translateToolbar();
+    content.setAttribute("aria-busy", "true");
+    if (opening) void transition(true);
+    try {
+      entry = await WorkTimeApp.games.load(id);
+      if (disposed || token !== loadGeneration || state === "closing") return;
+      content.removeAttribute("aria-busy");
+      abort = new window.AbortController();
+      instance = entry.create({ container: content, signal: abort.signal });
+      if (!instance || typeof instance.dispose !== "function")
+        throw Error("Game must return a disposable instance");
+      notifySize();
+      call(document.hidden ? "pause" : "resume");
+    } catch (error) {
+      if (disposed || token !== loadGeneration || state === "closing") return;
+      content.removeAttribute("aria-busy");
+      console.error("Game startup failed", error);
+      releaseGame();
+      const message = document.createElement("p");
+      message.dataset.gameError = "";
+      message.setAttribute("role", "alert");
+      message.textContent = t("games.failed");
+      content.append(message);
+    }
+    if (state === "opening" && !animations.length) setState("open");
+    translateToolbar();
+    exitButton.focus({ preventScroll: true });
+  }
+  function exit() {
+    if (disposed || state === "closed" || state === "closing") return;
+    loadGeneration++;
+    abort?.abort();
+    call("pause");
+    const reversing = state === "opening";
+    setState("closing");
+    void transition(false, reversing);
+  }
+  function onResize() {
+    if (state === "closed") return;
+    stopMotion();
+    measure();
+    notifySize();
+  }
+  function refreshLanguage() {
+    idleMotto.textContent = t("games.idleMotto");
+    const focused = document.activeElement;
+    const gameId = focused?.dataset.game;
+    const menu = focused?.closest(
+      ".game-menu-header, .game-library",
+    )?.parentElement;
+    const control = focused?.dataset.gameArchive;
+    const play = focused?.classList.contains("game-menu-play");
+    sidebarMenu = renderMenu(sidebar);
+    if (state !== "closed") {
+      translateToolbar();
+      if (content.querySelector("[data-game-error]"))
+        content.querySelector("[data-game-error]").textContent =
+          t("games.failed");
+      else if (!currentId) shellMenu = renderMenu(content);
+    }
+    const selector = gameId
+      ? `[data-game="${gameId}"]`
+      : control
+        ? `[data-game-archive="${control}"]`
+        : play
+          ? ".game-menu-play"
+          : null;
+    if (selector) menu?.querySelector(selector)?.focus();
+  }
+  events.listen(exitButton, "click", exit);
+  function rememberIdlePointer(event) {
+    if (event.pointerType !== "touch")
+      idlePointer = { x: event.clientX, y: event.clientY };
+  }
+  events.listen(document, "pointermove", rememberIdlePointer);
+  events.listen(document, "pointerdown", rememberIdlePointer);
+  events.listen(document, "pointerleave", () => {
+    idlePointer = null;
+    refreshIdleCover();
+  });
+  events.listen(sidebar, "pointerenter", (event) => {
+    if (!document.hidden && event.pointerType !== "touch") hideIdleCover();
+  });
+  events.listen(sidebar, "pointerleave", (event) => {
+    rememberIdlePointer(event);
+    refreshIdleCover();
+  });
+  events.listen(sidebar, "focusin", () => {
+    if (!document.hidden) hideIdleCover();
+  });
+  events.listen(sidebar, "focusout", () => {
+    window.queueMicrotask(refreshIdleCover);
+  });
+  events.listen(document, "visibilitychange", refreshIdleCover);
+  const idleObserver = new window.MutationObserver(refreshIdleCover);
+  idleObserver.observe(sidebar, {
+    attributes: true,
+    attributeFilter: ["hidden"],
+  });
+  // Shared expansion covers games, music and reader. Prepare the clock as soon
+  // as the underlying workspace starts returning, before the shell has closed.
+  idleObserver.observe(workspace, {
+    attributes: true,
+    attributeFilter: ["class"],
+  });
+  const unlistenHover = compat.listen(hoverDevice, refreshIdleCover);
+  events.listen(shell, "keydown", (event) => {
+    if (archiveUI.isOpen()) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      if (state === "open" && currentId) showMenu();
+      else exit();
+    }
+    if (event.key !== "Tab") return;
+    const buttons = [
+      ...shell.querySelectorAll(
+        "button, a[href], input, select, textarea, [tabindex]",
+      ),
+    ].filter(
+      (element) =>
+        !element.disabled &&
+        element.tabIndex >= 0 &&
+        element.getClientRects().length &&
+        !element.closest("[inert]"),
+    );
+    const index = buttons.indexOf(document.activeElement);
+    if (
+      !buttons.length ||
+      (event.shiftKey ? index <= 0 : index === buttons.length - 1 || index < 0)
+    ) {
+      event.preventDefault();
+      (event.shiftKey ? buttons.at(-1) : buttons[0])?.focus();
+    }
+  });
+  events.listen(document, "focusin", (event) => {
+    if (
+      state !== "closed" &&
+      !archiveUI.isOpen() &&
+      !shell.contains(event.target)
+    )
+      exitButton.focus({ preventScroll: true });
+  });
+  events.listen(document, "visibilitychange", () => {
+    if (state === "closed") return;
+    call(document.hidden || state === "closing" ? "pause" : "resume");
+    if (document.hidden) stopMotion();
+  });
+  events.listen(document, "worktime:languagechange", refreshLanguage);
+  events.listen(window, "resize", onResize);
+  function archiveChanged() {
+    if (handlingArchiveChange || disposed) return;
+    if (!currentId) {
+      sidebarMenu.refreshProgress();
+      shellMenu?.refreshProgress();
+      return;
+    }
+    handlingArchiveChange = true;
+    try {
+      revision++;
+      stopMotion();
+      restore(false);
+      refreshLanguage();
+    } finally {
+      handlingArchiveChange = false;
+    }
+  }
+  events.listen(window, "worktime:gamearchive", archiveChanged);
+  events.listen(window, "storage", (event) => {
+    if (event.key === gameArchive.REVISION || event.key === gameArchive.JOURNAL)
+      archiveChanged();
+    else if (
+      !currentId &&
+      (event.key === gameArchive.keys[selectedId] || event.key === null)
+    )
+      archiveChanged();
+  });
+  if (window.visualViewport)
+    events.listen(window.visualViewport, "resize", onResize);
+  const unlisten = compat.listen(reduced, () => {
+    if (reduced.matches) stopMotion();
+  });
+  const observer = new window.ResizeObserver(onResize);
+  observer.observe(workspace);
+  // Content dimensions also change when translated toolbar labels wrap.
+  const contentObserver = new window.ResizeObserver(notifySize);
+  contentObserver.observe(content);
+  refreshLanguage();
+  return {
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      disposeFooter();
+      hideIdleCover();
+      idleObserver.disconnect();
+      unlistenHover();
+      revision++;
+      stopMotion();
+      releaseGame();
+      archiveUI.dispose();
+      events.dispose();
+      unlisten();
+      observer.disconnect();
+      contentObserver.disconnect();
+      if (state !== "closed") restore(false);
+      sidebarMenu?.dispose();
+      sidebar.replaceChildren();
+      shell.remove();
+    },
+  };
+};

@@ -1,0 +1,1533 @@
+"use strict";
+
+WorkTimeApp.games.register({
+  id: "game-xiangqi",
+  nameKey: "games.xiangqi.name",
+  descriptionKey: "games.xiangqi.description",
+  icon: "game-xiangqi",
+  create({ container, signal }) {
+    const archive = WorkTimeApp.services.gameArchive;
+    const storage = archive.session();
+    const key = archive.keys["game-xiangqi"];
+    const rules = WorkTimeApp.games.xiangqiRules;
+    const levels = WorkTimeApp.data.xiangqi;
+    const compat = WorkTimeApp.ui.animationCompat;
+    const reduced = compat.preference();
+    const t = (name, params) =>
+      WorkTimeApp.i18n.t("games.xiangqi." + name, params);
+    const groupFor = ({ goal }) =>
+      goal <= 3 ? goal : goal <= 5 ? 4 : goal <= 8 ? 5 : 6;
+    const groupLabel = (group) =>
+      t(group <= 3 ? "goal" + group : "classics" + group);
+    const glyphs = {
+      K: "帥",
+      A: "仕",
+      E: "相",
+      H: "馬",
+      R: "車",
+      C: "炮",
+      P: "兵",
+      k: "將",
+      a: "士",
+      e: "象",
+      h: "馬",
+      r: "車",
+      c: "砲",
+      p: "卒",
+    };
+    let save = { version: 1, current: null, drafts: {}, completed: {} };
+    let saveFailed = false;
+    let history = null,
+      replaySnapshot = null;
+    let matchHistory = null,
+      matchReplaySnapshot = null;
+    const replaying = () => history?.active || matchHistory?.active;
+    try {
+      const raw = storage.getItem(key);
+      if (raw !== null)
+        save = archive.normalize("game-xiangqi", JSON.parse(raw));
+    } catch {
+      saveFailed = true;
+    }
+    let level = levels.find(({ id }) => id === save.current);
+    let returnLevel = level;
+    let selectedGroup = level ? groupFor(level) : 1;
+    let path = save.drafts[save.current]?.path ?? [];
+    let position = level ? rules.restore(level, path) : null;
+    let selected = null;
+    let focus = position?.board.search(/[AEHRCPK]/) ?? 0;
+    let message = null;
+    let paused = false;
+    let presentation = null;
+    let resultEffect = null;
+    const initialPosition = rules.initialPosition;
+    const versusLevel = { id: "versus", position: initialPosition };
+    let versus = false;
+    let difficulty = "normal";
+    let humanRed = true;
+    const handicaps = new Set();
+    const undoLimit = 4;
+    let undosRemaining = 0;
+    let versusInitialBoard = rules.parse(initialPosition);
+    if (!level && save.match) {
+      versus = true;
+      level = versusLevel;
+      difficulty = save.match.difficulty;
+      humanRed = save.match.humanRed;
+      save.match.handicaps.forEach((piece) => handicaps.add(piece));
+      undosRemaining = save.match.undosRemaining;
+      versusInitialBoard = save.match.initialBoard;
+      path = [...save.match.path];
+      position = rules.restoreMatch(save.match);
+      focus = path.length ? rules.decode(path.at(-1))[1] : humanRed ? 76 : 13;
+    }
+    const humanTurn = () => (path.length % 2 === 0) === humanRed;
+    save.matchSession ||= archive.newMatchSession();
+    if (save.match && rules.restoreMatch(save.match).status !== "playing")
+      save.matchSession.recorded = true;
+    const puzzleReplyPending = () =>
+      !versus &&
+      !!level &&
+      position?.status === "playing" &&
+      path.length % 2 === 1;
+    const flipped = () => versus && !humanRed;
+    let engine = null;
+    let thinking = false;
+    let renderedPathLength = 0;
+    let engineError = false;
+    let engineReady = false;
+    let searchGeneration = 0;
+    let thought = null;
+
+    function node(parent, tag, className) {
+      const element = document.createElement(tag);
+      element.className = className;
+      parent.append(element);
+      return element;
+    }
+    function listen(target, type, callback) {
+      target.addEventListener(type, callback, { signal });
+    }
+    function button(parent, action, callback) {
+      const element = node(parent, "button", "game-button");
+      element.type = "button";
+      element.dataset.xiangqiAction = action;
+      listen(element, "click", (event) => {
+        if (!paused && !signal.aborted) callback(event.detail === 0);
+      });
+      return element;
+    }
+    const root = node(container, "section", "game-xiangqi game-session");
+    const catalog = WorkTimeApp.games.createLevelPage(
+      root,
+      "xiangqi-level-page",
+      signal,
+    );
+    const categories = catalog.categories;
+    categories.setAttribute("role", "group");
+    const groups = [1, 2, 3, 4, 5, 6].map((group) => ({
+      group,
+      control: button(categories, "goal" + group, () => {
+        versus = false;
+        selectedGroup = group;
+        render();
+      }),
+      entries: node(catalog.entries, "div", "xiangqi-levels game-level-grid"),
+    }));
+    const levelButtons = levels.map((entry, index) =>
+      button(groups[groupFor(entry) - 1].entries, entry.id, (keyboard) =>
+        start(index, keyboard),
+      ),
+    );
+    groups.forEach(({ group, entries }) => {
+      entries.classList.toggle("xiangqi-named-levels", group >= 4);
+    });
+    const divider = node(categories, "div", "xiangqi-category-divider");
+    divider.setAttribute("role", "separator");
+    const versusMode = button(categories, "versus", () => switchMode(true));
+    const setup = node(catalog.entries, "div", "xiangqi-versus-setup");
+    const setupTitle = node(setup, "h3", "xiangqi-setup-title");
+    const difficultyOptions = node(setup, "div", "xiangqi-difficulties");
+    difficultyOptions.setAttribute("role", "group");
+    const difficultyButtons = ["normal", "hard", "master"].map((value) => ({
+      value,
+      control: button(difficultyOptions, "difficulty-" + value, () => {
+        difficulty = value;
+        render();
+      }),
+    }));
+    const handicapSetup = node(setup, "div", "xiangqi-handicap-setup");
+    const handicapTitle = node(handicapSetup, "h4", "xiangqi-start-title");
+    const handicapOptions = node(handicapSetup, "div", "xiangqi-handicaps");
+    handicapOptions.setAttribute("role", "group");
+    const handicapButtons = ["R", "H", "C"].map((value) => ({
+      value,
+      control: button(handicapOptions, "handicap-" + value, () => {
+        if (handicaps.has(value)) handicaps.delete(value);
+        else handicaps.add(value);
+        render();
+      }),
+    }));
+    const handicapHint = node(handicapSetup, "p", "xiangqi-detail");
+    const startTitle = node(setup, "h4", "xiangqi-start-title");
+    const startOptions = node(setup, "div", "xiangqi-start-options");
+    const startButtons = [true, false].map((red) => ({
+      red,
+      control: button(
+        startOptions,
+        red ? "start-red" : "start-black",
+        (keyboard) => {
+          humanRed = red;
+          startVersus(keyboard);
+        },
+      ),
+    }));
+    const engineName = node(setup, "p", "xiangqi-detail");
+    const play = node(root, "div", "xiangqi-play");
+    const stage = node(play, "div", "xiangqi-stage");
+    const captures = node(stage, "div", "xiangqi-captures");
+    const captureTop = node(captures, "div", "xiangqi-capture-top");
+    const captureBottom = node(captures, "div", "xiangqi-capture-bottom");
+    let captureHistory = [];
+    let captureSource = null;
+    const captureAnimations = new Map();
+    const pendingCaptures = new Map();
+    captureTop.setAttribute("role", "group");
+    captureBottom.setAttribute("role", "group");
+    const board = node(stage, "div", "xiangqi-board");
+    board.setAttribute("role", "group");
+    const art = node(board, "div", "xiangqi-art");
+    art.setAttribute("aria-hidden", "true");
+    art.innerHTML = `<svg viewBox="0 0 9 10" focusable="false">
+      <path d="M.5 .5H8.5V9.5H.5Z M.5 1.5h8m-8 1h8m-8 1h8m-8 1h8
+        m-8 1h8m-8 1h8m-8 1h8m-8 1h8
+        M1.5 .5v4m1-4v4m1-4v4m1-4v4m1-4v4m1-4v4m1-4v4
+        M1.5 5.5v4m1-4v4m1-4v4m1-4v4m1-4v4m1-4v4m1-4v4
+        M3.5 .5l2 2m0-2-2 2m0 5 2 2m0-2-2 2"/>
+      <text x="2.5" y="5.02">楚河</text><text x="6.5" y="5.02">漢界</text>
+    </svg>`;
+    const cells = Array.from(
+      { length: rules.rows * rules.columns },
+      (_, square) => {
+        const cell = node(board, "button", "xiangqi-cell");
+        cell.type = "button";
+        cell.dataset.square = square;
+        const piece = node(cell, "span", "xiangqi-piece");
+        piece.setAttribute("aria-hidden", "true");
+        listen(cell, "click", () => {
+          if (paused || signal.aborted || presentation) return;
+          setFocus(square);
+          activate(square);
+        });
+        return { cell, piece };
+      },
+    );
+    const resultLayer = node(board, "div", "xiangqi-result");
+    resultLayer.hidden = true;
+    resultLayer.setAttribute("aria-hidden", "true");
+    const resultFrame = node(resultLayer, "div", "xiangqi-result-frame");
+    const resultWash = node(resultFrame, "div", "xiangqi-result-wash");
+    const resultSplash = node(resultFrame, "div", "xiangqi-result-splash");
+    const resultArt = node(resultFrame, "img", "xiangqi-result-art");
+    resultArt.alt = "";
+    resultArt.draggable = false;
+    for (const name of ["win", "loss", "stalemate"]) {
+      const preload = new Image();
+      preload.src = "assets/images/xiangqi/" + name + "-brush.png";
+    }
+    const controls = node(play, "div", "xiangqi-controls");
+    const objective = node(controls, "div", "xiangqi-objective");
+    const levelTitle = node(objective, "h3", "xiangqi-level-title");
+    const fastest = node(objective, "p", "xiangqi-detail");
+    const played = node(objective, "p", "xiangqi-detail");
+    const status = node(controls, "p", "xiangqi-status");
+    status.setAttribute("role", "status");
+    const thinkingIndicator = node(controls, "div", "xiangqi-thinking");
+    thinkingIndicator.setAttribute("aria-hidden", "true");
+    // Material Symbols Rounded Psychology, Apache-2.0; Google revision 737e3324305806514d7909874fa1818ae1808232.
+    thinkingIndicator.innerHTML = `<svg class="xiangqi-thinking-icon" viewBox="0 -960 960 960" focusable="false">
+      <path d="M240-252q-57-52-88.5-121.5T120-520q0-150 105-255t255-105q125 0 221.5 73.5T827-615l52 205q5 19-7 34.5T840-360h-80v120q0 33-23.5 56.5T680-160h-80v40q0 17-11.5 28.5T560-80q-17 0-28.5-11.5T520-120v-80q0-17 11.5-28.5T560-240h120v-160q0-17 11.5-28.5T720-440h68l-38-155q-23-91-98-148t-172-57q-116 0-198 81t-82 197q0 60 24.5 114t69.5 96l26 24v168q0 17-11.5 28.5T280-80q-17 0-28.5-11.5T240-120v-132Zm254-188Z" />
+      <path class="xiangqi-thinking-gear" d="m434-410 4 32q1 8 6.5 13t13.5 5h44q8 0 13.5-5t6.5-13l4-32q8-3 14.5-7t11.5-9l30 13q7 3 14 1t11-9l22-38q4-7 2.5-14t-7.5-12l-26-19q2-8 2-16t-2-16l26-19q6-5 7.5-12t-2.5-14l-22-38q-4-7-11-9t-14 1l-30 13q-5-5-11.5-9t-14.5-7l-4-32q-1-8-6.5-13t-13.5-5h-44q-8 0-13.5 5t-6.5 13l-4 32q-8 3-14.5 7t-11.5 9l-30-13q-7-3-14-1t-11 9l-22 38q-4 7-2.5 14t7.5 12l26 19q-2 8-2 16t2 16l-26 19q-6 5-7.5 12t2.5 14l22 38q4 7 11 9t14-1l30-13q5 5 11.5 9t14.5 7Zm46-50q-25 0-42.5-17.5T420-520q0-25 17.5-42.5T480-580q25 0 42.5 17.5T540-520q0 25-17.5 42.5T480-460Z" />
+    </svg>`;
+    const actions = node(controls, "div", "xiangqi-actions");
+    const undo = button(actions, "undo", undoRound);
+    const restart = button(actions, "restart", (keyboard) => {
+      if (versus) {
+        restartPrompt.open(restart);
+        return;
+      }
+      cancelSearch();
+      stopPresentation();
+      path = [];
+      updatePosition();
+      render();
+      if (keyboard) focusBoard();
+    });
+    const restartPrompt = WorkTimeApp.games.createRestartPrompt({
+      host: stage,
+      signal,
+      onOpen() {
+        paused = true;
+        cancelSearch();
+        settle();
+      },
+      onCancel() {
+        paused = false;
+        render();
+        replyVersus();
+      },
+      onConfirm() {
+        paused = false;
+        startVersus(true);
+      },
+    });
+    const next = button(actions, "next", (keyboard) =>
+      start(levels.indexOf(level) + 1, keyboard),
+    );
+    actions.prepend(next);
+    const choose = button(actions, "choose", () => {
+      if (versus) {
+        cancelSearch();
+        level = null;
+        render();
+        versusMode.focus();
+        return;
+      }
+      cancelSearch();
+      stopPresentation();
+      const index = levels.indexOf(level);
+      level = null;
+      save.current = null;
+      persist();
+      render();
+      levelButtons[index].focus();
+    });
+    const warning = node(root, "p", "xiangqi-warning");
+    warning.setAttribute("role", "status");
+
+    function persist() {
+      if (replaying()) return;
+      try {
+        storage.setItem(key, JSON.stringify(save));
+        saveFailed = false;
+      } catch {
+        saveFailed = true;
+      }
+    }
+
+    function cancelSearch(release = false) {
+      const searching = thinking;
+      searchGeneration++;
+      thought?.cancel();
+      thought = null;
+      thinking = false;
+      board.removeAttribute("data-replying");
+      if (release || searching || engine?.busy) {
+        engine?.dispose();
+        engine = null;
+        engineReady = false;
+      }
+    }
+
+    function switchMode(value) {
+      cancelSearch(!value);
+      stopPresentation();
+      versus = value;
+      engineError = false;
+      level = null;
+      position = null;
+      path = [];
+      selected = message = null;
+      render();
+      if (value) prepareEngine();
+    }
+
+    function startVersus(keyboard = false) {
+      save.matchSession = archive.newMatchSession();
+      cancelSearch();
+      stopPresentation();
+      level = versusLevel;
+      path = [];
+      undosRemaining = undoLimit - handicaps.size;
+      const initialBoard = rules.parse(initialPosition).split("");
+      const pairs = humanRed
+        ? [
+            [0, 8],
+            [1, 7],
+            [19, 25],
+          ]
+        : [
+            [81, 89],
+            [82, 88],
+            [64, 70],
+          ];
+      ["R", "H", "C"].forEach((piece, index) => {
+        if (handicaps.has(piece)) {
+          const square = pairs[index][Math.random() < 0.5 ? 0 : 1];
+          initialBoard[square] = ".";
+        }
+      });
+      versusInitialBoard = initialBoard.join("");
+      position = { board: versusInitialBoard, status: "playing" };
+      saveMatch();
+      selected = message = null;
+      engineError = false;
+      focus = 76;
+      if (!humanRed) focus = 13;
+      render();
+      if (keyboard) focusBoard();
+      prepareEngine();
+      if (!humanRed) replyVersus();
+    }
+
+    async function prepareEngine() {
+      const generation = searchGeneration;
+      try {
+        engine ??= WorkTimeApp.games.createXiangqiEngine();
+        await engine.load();
+        if (generation !== searchGeneration || signal.aborted) return;
+        engineError = false;
+        engineReady = true;
+        render();
+      } catch {
+        if (generation !== searchGeneration || signal.aborted) return;
+        engineError = true;
+        render();
+      }
+    }
+
+    function saveMatch() {
+      if (replaying()) return;
+      save.match = {
+        difficulty,
+        humanRed,
+        handicaps: [...handicaps],
+        undosRemaining,
+        initialBoard: versusInitialBoard,
+        path: [...path],
+      };
+      if (["won", "lost"].includes(position.status))
+        archive.recordMatch(save, "game-xiangqi", save.match, path);
+      save.current = null;
+      persist();
+    }
+
+    function versusPosition() {
+      position = rules.matchPosition(versusInitialBoard, path, humanRed);
+      selected = message = null;
+      saveMatch();
+    }
+
+    function fen(value) {
+      value = value.replace(
+        /[heHE]/g,
+        (piece) => ({ h: "n", H: "N", e: "b", E: "B" })[piece],
+      );
+      return (
+        Array.from({ length: 10 }, (_, row) =>
+          value
+            .slice(row * 9, row * 9 + 9)
+            .replace(/\.+/g, (empty) => String(empty.length)),
+        ).join("/") +
+        (path.length % 2 === 0 ? " w" : " b") +
+        " - - 0 1"
+      );
+    }
+
+    async function searchMove(board, red, difficulty, timeout = 0) {
+      engine ??= WorkTimeApp.games.createXiangqiEngine();
+      const moveText = await engine.search(fen(board), difficulty, timeout);
+      if (!/^[a-i][0-9][a-i][0-9]$/.test(moveText))
+        throw Error("Invalid engine move");
+      const square = (file, rank) =>
+        (9 - Number(rank)) * 9 + file.charCodeAt(0) - 97;
+      const move = rules.encode(
+        square(moveText[0], moveText[1]),
+        square(moveText[2], moveText[3]),
+      );
+      if (!rules.legalMoves(board, red).includes(move))
+        throw Error("Illegal engine move");
+      return move;
+    }
+
+    function puzzleThinkTurn(value) {
+      return WorkTimeApp.games.createThinkTurn({
+        simple: rules.legalMoves(value, false).length === 1,
+        advanced: groupFor(level) === 6,
+      });
+    }
+
+    async function replyPuzzle() {
+      if (
+        replaying() ||
+        !puzzleReplyPending() ||
+        presentation ||
+        thinking ||
+        paused ||
+        document.hidden ||
+        signal.aborted
+      )
+        return;
+      const generation = searchGeneration;
+      const redBoard = position.board;
+      const turn = puzzleThinkTurn(redBoard);
+      thought = turn;
+      thinking = true;
+      render();
+      let defense;
+      try {
+        defense = await searchMove(redBoard, false, "hard", 10000);
+      } catch {
+        if (generation !== searchGeneration || signal.aborted) return;
+        defense = rules.suggest(redBoard, false);
+      }
+      if (generation !== searchGeneration || signal.aborted) return;
+      turn.wait(() => {
+        if (
+          generation !== searchGeneration ||
+          paused ||
+          document.hidden ||
+          signal.aborted
+        )
+          return;
+        thought = null;
+        thinking = false;
+        const redMove = path.at(-1);
+        path = [...path, defense];
+        updatePosition();
+        showRound(redBoard, redMove, defense, true);
+      });
+    }
+
+    async function replyVersus() {
+      if (replaying()) return;
+      if (restartPrompt.isOpen()) return;
+      if (
+        thinking ||
+        paused ||
+        document.hidden ||
+        signal.aborted ||
+        !level ||
+        !versus ||
+        humanTurn() ||
+        position.status !== "playing"
+      )
+        return;
+      const generation = searchGeneration;
+      thinking = true;
+      engineError = false;
+      const turn = WorkTimeApp.games.createThinkTurn({
+        simple:
+          path.length < 4 ||
+          rules.legalMoves(position.board, !humanRed).length === 1,
+        advanced: difficulty !== "normal",
+      });
+      thought = turn;
+      render();
+      try {
+        let move = await searchMove(position.board, !humanRed, difficulty);
+        if (generation !== searchGeneration || signal.aborted) return;
+        engineReady = true;
+        move = rules.avoidPerpetualCheck(versusInitialBoard, path, move);
+        turn.wait(() => {
+          if (
+            generation !== searchGeneration ||
+            signal.aborted ||
+            paused ||
+            document.hidden
+          )
+            return;
+          thought = null;
+          path.push(move);
+          versusPosition();
+          thinking = false;
+          render();
+          if (position.status !== "playing") showResult();
+        });
+        return;
+      } catch {
+        if (generation !== searchGeneration || signal.aborted) return;
+        turn.cancel();
+        thought = null;
+        engineError = true;
+      }
+      if (generation !== searchGeneration || signal.aborted) return;
+      thinking = false;
+      render();
+      if (position.status !== "playing") showResult();
+    }
+
+    function updatePosition(
+      nextPosition = rules.restore(level, path),
+      record = false,
+    ) {
+      position = nextPosition;
+      if (position.status !== "won") {
+        save.drafts[level.id] = { path };
+        save.current = level.id;
+      } else {
+        if (record) archive.addCompletion(save, level.id, path);
+        save.completed[level.id] ??= { path };
+        delete save.drafts[level.id];
+        save.current = null;
+      }
+      selected = message = null;
+      persist();
+    }
+
+    function stopPresentation(cancelCaptures = true) {
+      if (cancelCaptures) cancelCaptureAnimations();
+      clearResult();
+      const current = presentation;
+      if (!current) return;
+      presentation = null;
+      current.thought?.cancel();
+      board.removeAttribute("data-replying");
+      current.animation?.cancel();
+    }
+
+    function clearResult() {
+      const effect = resultEffect;
+      resultEffect = null;
+      clearTimeout(effect?.timer);
+      effect?.animations.forEach((animation) => animation.cancel());
+      resultLayer.hidden = true;
+      delete resultLayer.dataset.result;
+    }
+
+    function showResult() {
+      if (replaying()) return;
+      clearResult();
+      if (
+        paused ||
+        signal.aborted ||
+        document.hidden ||
+        position.status === "draw" ||
+        position.status === "playing"
+      )
+        return;
+      const outcome =
+        position.status === "won"
+          ? position.outcome === "stalemate"
+            ? "stalemate"
+            : "win"
+          : "loss";
+      const effect = { animations: [] };
+      resultEffect = effect;
+      resultLayer.dataset.result = outcome;
+      resultArt.src = "assets/images/xiangqi/" + outcome + "-brush.png";
+      resultLayer.hidden = false;
+      const animated =
+        !reduced.matches && typeof resultArt.animate === "function";
+      resultWash.hidden = resultSplash.hidden = !animated;
+      if (animated) {
+        const track = (element, frames, options) => {
+          effect.animations.push(
+            compat.animate(element, frames, { fill: "both", ...options }),
+          );
+        };
+        track(
+          resultArt,
+          [
+            { opacity: 0, transform: "scale(1.55) rotate(-8deg)", offset: 0 },
+            {
+              opacity: 1,
+              transform: "scale(0.97) rotate(-4deg)",
+              offset: 0.122,
+            },
+            { opacity: 1, transform: "scale(1) rotate(-4deg)", offset: 0.19 },
+            { opacity: 1, transform: "scale(1) rotate(-4deg)", offset: 0.75 },
+            { opacity: 0, transform: "scale(1.04) rotate(-4deg)", offset: 1 },
+          ],
+          { duration: 1800, easing: "ease-out" },
+        );
+        track(
+          resultFrame,
+          [
+            { transform: "translate(0, 0)" },
+            { transform: "translate(-2px, 1px)" },
+            { transform: "translate(2px, -1px)" },
+            { transform: "translate(-1px, 0)" },
+            { transform: "translate(0, 0)" },
+          ],
+          { duration: 100, delay: 170 },
+        );
+        track(
+          resultWash,
+          [
+            { opacity: 0, transform: "scale(.45)", offset: 0 },
+            { opacity: 0.8, transform: "scale(.85)", offset: 0.32 },
+            { opacity: 0.5, transform: "scale(1)", offset: 0.6 },
+            { opacity: 0, transform: "scale(1.1)", offset: 1 },
+          ],
+          { duration: 1550, delay: 100, easing: "ease-out" },
+        );
+        track(
+          resultSplash,
+          [
+            { opacity: 0, transform: "scale(.4)", offset: 0 },
+            { opacity: 0.75, transform: "scale(.85)", offset: 0.13 },
+            { opacity: 0.45, transform: "scale(1)", offset: 0.4 },
+            { opacity: 0, transform: "scale(1.07)", offset: 1 },
+          ],
+          { duration: 1250, delay: 150, easing: "ease-out" },
+        );
+      }
+      effect.timer = setTimeout(() => {
+        if (resultEffect === effect) clearResult();
+      }, 1800);
+    }
+
+    function showRound(before, move, reply, redAlreadyShown = false) {
+      const redBoard = redAlreadyShown ? before : rules.apply(before, move);
+      const round = {
+        board: redAlreadyShown ? position.board : redBoard,
+        red: rules.decode(move),
+        black: redAlreadyShown ? rules.decode(reply) : [],
+        waiting: !redAlreadyShown && reply !== null,
+        thought: null,
+      };
+      presentation = round;
+      render();
+
+      function slide([from, to], duration, done) {
+        if (reduced.matches || typeof cells[to].piece.animate !== "function") {
+          releaseCapture(to);
+          done();
+          return;
+        }
+        const source = cells[from].cell.getBoundingClientRect();
+        const target = cells[to].cell.getBoundingClientRect();
+        round.animation = compat.animate(
+          cells[to].piece,
+          [
+            {
+              transform: `translate(${source.x - target.x}px, ${source.y - target.y}px)`,
+            },
+            { transform: "none" },
+          ],
+          { duration, easing: "ease-out" },
+        );
+        round.animation.finished.then(() => {
+          if (presentation === round) done();
+        });
+        releaseCapture(to, round.animation);
+      }
+
+      function finish() {
+        stopPresentation(false);
+        render();
+        showResult();
+      }
+
+      function afterRed() {
+        if (reply === undefined) {
+          stopPresentation(false);
+          replyPuzzle();
+          return;
+        }
+        if (reply === null) {
+          finish();
+          return;
+        }
+        round.thought = puzzleThinkTurn(redBoard);
+        if (paused || document.hidden) round.thought.pause();
+        round.thought.wait(() => {
+          if (
+            presentation !== round ||
+            paused ||
+            document.hidden ||
+            signal.aborted
+          )
+            return;
+          round.board = position.board;
+          round.black = rules.decode(reply);
+          round.waiting = false;
+          render();
+          slide(round.black, 150, finish);
+        });
+      }
+
+      if (redAlreadyShown) slide(round.black, 150, finish);
+      else slide(round.red, 110, afterRed);
+    }
+
+    function start(index, keyboard) {
+      cancelSearch();
+      stopPresentation();
+      level = levels[index];
+      returnLevel = level;
+      selectedGroup = groupFor(level);
+      path = save.drafts[level.id]?.path ?? [];
+      updatePosition();
+      focus = position.board.search(/[AEHRCPK]/);
+      render();
+      board.toggleAttribute("data-pointer-entry", !keyboard);
+      focusBoard();
+      replyPuzzle();
+    }
+
+    function canUndo() {
+      return (
+        path.length > (versus && !humanRed ? 1 : 0) &&
+        (!versus || undosRemaining > 0)
+      );
+    }
+
+    function undoRound(keyboard) {
+      if (!canUndo()) return;
+      stopPresentation();
+      cancelSearch();
+      path = path.slice(
+        0,
+        versus ? (humanTurn() ? -2 : -1) : path.length % 2 ? -1 : -2,
+      );
+      if (versus) {
+        undosRemaining--;
+        versusPosition();
+      } else updatePosition();
+      render();
+      if (versus) prepareEngine();
+      if (keyboard || undo.disabled) focusBoard();
+    }
+
+    function activate(square) {
+      if (versus && (thinking || !humanTurn())) return;
+      if (puzzleReplyPending()) return;
+      if (position.status !== "playing") return;
+      message = null;
+      if (
+        position.board[square] !== "." &&
+        rules.side(position.board[square]) === (!versus || humanRed)
+      ) {
+        selected = selected === square ? null : square;
+        render();
+      } else if (selected !== null) attempt(square);
+      else render();
+    }
+
+    function attempt(square) {
+      const before = position.board;
+      const move = rules.encode(selected, square);
+      if (versus) {
+        if (
+          thinking ||
+          !humanTurn() ||
+          !rules.destinations(before, humanRed, selected).includes(move)
+        ) {
+          message = "illegal";
+          render();
+          return;
+        }
+        path.push(move);
+        versusPosition();
+        render();
+        if (position.status !== "playing") showResult();
+        else replyVersus();
+        return;
+      }
+      const scripted = position.node?.[1][move] !== undefined;
+      const nextPosition = rules.playRound(
+        position,
+        move,
+        scripted ? undefined : null,
+      );
+      if (!nextPosition) {
+        message = "illegal";
+        render();
+      } else {
+        const { defense } = nextPosition;
+        path = defense === null ? [...path, move] : [...path, move, defense];
+        updatePosition(scripted ? nextPosition : undefined, true);
+        showRound(before, move, puzzleReplyPending() ? undefined : defense);
+      }
+    }
+
+    function setFocus(square) {
+      cells[focus].cell.tabIndex = -1;
+      focus = square;
+      cells[focus].cell.tabIndex = 0;
+    }
+    function focusBoard() {
+      cells[focus].cell.focus({ preventScroll: true });
+    }
+    listen(board, "focusin", (event) => {
+      if (event.target.matches(".xiangqi-cell"))
+        setFocus(Number(event.target.dataset.square));
+    });
+    listen(board, "focusout", () => {
+      board.removeAttribute("data-pointer-entry");
+    });
+
+    listen(root, "keydown", (event) => {
+      if (paused || signal.aborted) return;
+      board.removeAttribute("data-pointer-entry");
+      if (event.key === "Escape" && presentation) {
+        event.preventDefault();
+        event.stopPropagation();
+        settle();
+        return;
+      }
+      if (event.key === "Escape" && selected !== null) {
+        event.preventDefault();
+        event.stopPropagation();
+        selected = message = null;
+        render();
+        return;
+      }
+      if (!board.contains(event.target)) return;
+      const offset = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+      }[event.key];
+      if (!Array.isArray(offset)) return;
+      event.preventDefault();
+      if (presentation) return;
+      const direction = flipped() ? -1 : 1;
+      const x = (focus % rules.columns) + offset[0] * direction;
+      const y = Math.floor(focus / rules.columns) + offset[1] * direction;
+      if (x >= 0 && x < rules.columns && y >= 0 && y < rules.rows) {
+        setFocus(y * rules.columns + x);
+        focusBoard();
+      }
+    });
+
+    function settle() {
+      if (presentation?.waiting) {
+        if (paused || document.hidden) presentation.thought?.pause();
+      } else stopPresentation();
+      render();
+    }
+
+    function levelLabel(entry, index) {
+      return entry.title ?? t("level", { number: index + 1 });
+    }
+
+    function render() {
+      history?.render();
+      matchHistory?.render();
+      const reverse = flipped();
+      art.querySelectorAll("text").forEach((text, index) => {
+        text.setAttribute("x", String((index === 0) !== reverse ? 2.5 : 6.5));
+      });
+      root.dataset.mode = versus ? "versus" : "puzzles";
+      root.dataset.thinking = String(thinking || !!presentation?.waiting);
+      root.dataset.plies = String(versus ? path.length : 0);
+      root.dataset.category = versus ? "ai" : String(selectedGroup);
+      setupTitle.textContent = t("aiVersus");
+      engineName.textContent = t("engineName");
+      difficultyOptions.setAttribute("aria-label", t("aiDifficulty"));
+      difficultyButtons.forEach(({ value, control }) => {
+        control.textContent = t("ai" + value);
+        control.setAttribute("aria-pressed", String(difficulty === value));
+      });
+      handicapTitle.textContent = t("aiHandicap");
+      handicapOptions.setAttribute("aria-label", t("aiHandicap"));
+      handicapButtons.forEach(({ value, control }) => {
+        control.textContent = t("aiHandicap" + value);
+        control.setAttribute("aria-pressed", String(handicaps.has(value)));
+      });
+      handicapHint.textContent = t("aiHandicapHint", { limit: undoLimit });
+      startTitle.textContent = t("aiStartMatch");
+      startButtons.forEach(({ red, control }) => {
+        control.replaceChildren();
+        node(control, "strong", "xiangqi-start-heading").textContent =
+          t("aiStartButton");
+        node(control, "span", "xiangqi-start-side").textContent = t(
+          red ? "aiRed" : "aiBlack",
+        );
+      });
+      versusMode.textContent = t("aiVersus");
+      versusMode.setAttribute("aria-pressed", String(versus));
+      setup.hidden = !versus || !!level;
+      catalog.setReturn(
+        !versus && returnLevel
+          ? () => start(levels.indexOf(returnLevel), true)
+          : null,
+      );
+      catalog.page.hidden = !!level;
+      root.dataset.playing = String(!!level);
+      play.hidden = !level;
+      warning.hidden = !saveFailed;
+      warning.textContent = t("saveFailed");
+      const warningParent = level ? controls : root;
+      if (warning.parentElement !== warningParent)
+        warningParent.append(warning);
+      if (!level) {
+        cancelCaptureAnimations();
+        captureSource = null;
+        captureHistory = [];
+        catalog.refresh();
+        catalog.selectCategory(versus ? "ai" : selectedGroup);
+        categories.setAttribute("aria-label", t("categories"));
+        for (const { group, control, entries } of groups) {
+          const active = !versus && group === selectedGroup;
+          control.textContent =
+            group >= 4
+              ? groupLabel(group).replace(/\s*([（(])/u, "\n$1")
+              : groupLabel(group);
+          control.setAttribute("aria-pressed", String(active));
+          entries.hidden = !active;
+        }
+        levelButtons.forEach((element, index) => {
+          const entry = levels[index];
+          const { id } = entry;
+          WorkTimeApp.games.paintLevelCard(element, {
+            number: index + 1,
+            text: entry.title,
+            label: levelLabel(entry, index),
+            complete: Object.hasOwn(save.completed, id),
+            draft: !!save.drafts[id]?.path.length,
+          });
+        });
+        return;
+      }
+      const index = levels.indexOf(level);
+      const won = position.status === "won";
+      const ended = position.status !== "playing";
+      const displayed = presentation?.board ?? position.board;
+      renderCaptures();
+      const blackTurn =
+        !!presentation?.waiting ||
+        puzzleReplyPending() ||
+        (versus && !humanTurn() && !ended);
+      const active = selected;
+      const redTurn = presentation
+        ? presentation.black.length > 0
+        : path.length % 2 === 0;
+      const checkedSquare = rules.checked(displayed, redTurn)
+        ? displayed.indexOf(redTurn ? "K" : "k")
+        : -1;
+      levelTitle.textContent = versus
+        ? t("aiVersus") + " · " + t("ai" + difficulty)
+        : levelLabel(level, index);
+      fastest.hidden = false;
+      WorkTimeApp.games.paintDetailNumbers(
+        fastest,
+        versus
+          ? [
+              t(humanRed ? "aiRed" : "aiBlack"),
+              ...["R", "H", "C"]
+                .filter((piece) => handicaps.has(piece))
+                .map((piece) => t("aiHandicap" + piece)),
+            ].join(" · ")
+          : t("fastest", {
+              goal: t("longGoal", { number: level.goal }),
+            }),
+      );
+      WorkTimeApp.games.paintDetailNumbers(
+        played,
+        t(versus ? "aiPlayed" : "played", {
+          played: versus ? path.length : Math.ceil(path.length / 2),
+        }),
+      );
+      const loading = versus && !engineReady && !engineError && !ended;
+      status.textContent =
+        versus && engineError
+          ? t("aiError")
+          : loading
+            ? t("aiLoading")
+            : versus
+              ? t(
+                  message ??
+                    (ended
+                      ? position.outcome === "repetition"
+                        ? "aiDrawRepetition"
+                        : position.outcome === "perpetualCheck"
+                          ? won
+                            ? "aiWonPerpetualCheck"
+                            : "aiLostPerpetualCheck"
+                          : won
+                            ? "aiWon"
+                            : "aiLost"
+                      : blackTurn
+                        ? humanRed
+                          ? "replying"
+                          : "redThinking"
+                        : checkedSquare !== -1
+                          ? "inCheck"
+                          : "aiTurn"),
+                )
+              : t(
+                  message ??
+                    (blackTurn
+                      ? "replying"
+                      : ended && !presentation
+                        ? position.outcome === "repetition"
+                          ? "aiDrawRepetition"
+                          : won && position.outcome === "stalemate"
+                            ? "blackStalemate"
+                            : position.status
+                        : redTurn && checkedSquare !== -1
+                          ? "inCheck"
+                          : "turn"),
+                );
+      thinkingIndicator.toggleAttribute(
+        "data-active",
+        versus ? !ended && !engineError && (loading || thinking) : blackTurn,
+      );
+      if (versus)
+        thinkingIndicator.dataset.side = loading
+          ? path.length % 2 === 0
+            ? "red"
+            : "black"
+          : humanRed
+            ? "black"
+            : "red";
+      else if (blackTurn) thinkingIndicator.dataset.side = "black";
+      else delete thinkingIndicator.dataset.side;
+      board.setAttribute("aria-label", t("board"));
+      board.toggleAttribute("data-replying", blackTurn);
+      for (const [control, name, icon] of [
+        [undo, "undo", "undo"],
+        [restart, "restart", "restart-alt"],
+        [next, "next", "play-arrow"],
+        [choose, "choose", "grid-4x4"],
+      ]) {
+        const symbol = WorkTimeApp.games.createIcon(icon);
+        const caption = t(name);
+        control.replaceChildren();
+        if (control === undo && versus) {
+          const icons = node(control, "span", "xiangqi-undo-icons");
+          icons.setAttribute("aria-hidden", "true");
+          icons.append(symbol);
+          node(icons, "span", "xiangqi-undo-dot");
+          node(icons, "span", "xiangqi-undo-count").textContent =
+            String(undosRemaining);
+          control.setAttribute(
+            "aria-label",
+            t("undoRemaining", { remaining: undosRemaining }),
+          );
+        } else {
+          control.append(symbol);
+          control.setAttribute("aria-label", caption);
+        }
+        node(control, "span", "xiangqi-action-label").textContent = caption;
+      }
+      undo.disabled = !canUndo();
+      next.hidden =
+        versus || !won || !!presentation || index === levels.length - 1;
+      if (versus) {
+        choose.querySelector("span.xiangqi-action-label").textContent =
+          t("aiSettings");
+        choose.setAttribute("aria-label", t("aiSettings"));
+      }
+
+      const legal = new Set(
+        active === null || presentation
+          ? []
+          : rules
+              .destinations(displayed, versus ? humanRed : true, active)
+              .map((move) => rules.decode(move)[1]),
+      );
+      const singleMove = path.length % 2 === 1;
+      const red =
+        presentation?.red ??
+        (path.length ? rules.decode(path.at(singleMove ? -1 : -2)) : []);
+      const black =
+        presentation?.black ??
+        (path.length >= (singleMove ? 3 : 2)
+          ? rules.decode(path.at(singleMove ? -2 : -1))
+          : []);
+      cells.forEach(({ cell, piece }, square) => {
+        const displaySquare = reverse ? cells.length - 1 - square : square;
+        cell.style.gridRow = String(
+          Math.floor(displaySquare / rules.columns) + 1,
+        );
+        cell.style.gridColumn = String((displaySquare % rules.columns) + 1);
+        const occupant = displayed[square];
+        const own = rules.side(occupant);
+        piece.textContent = glyphs[occupant] ?? "";
+        cell.tabIndex = square === focus ? 0 : -1;
+        cell.classList.toggle("is-red", own);
+        cell.classList.toggle("is-selected", active === square);
+        cell.classList.toggle("is-legal", legal.has(square));
+        cell.classList.toggle(
+          "is-capture",
+          legal.has(square) && occupant !== ".",
+        );
+        cell.classList.toggle(
+          "is-last-from",
+          red[0] === square || black[0] === square,
+        );
+        cell.classList.toggle(
+          "is-last-to",
+          red[1] === square || black[1] === square,
+        );
+        cell.classList.toggle("is-last-red", red.includes(square));
+        cell.classList.toggle("is-check", checkedSquare === square);
+        cell.setAttribute("aria-pressed", String(active === square));
+        cell.setAttribute(
+          "aria-disabled",
+          String(ended || !!presentation || thinking || puzzleReplyPending()),
+        );
+        cell.setAttribute(
+          "aria-label",
+          t("square", {
+            column: (displaySquare % rules.columns) + 1,
+            row: Math.floor(displaySquare / rules.columns) + 1,
+            piece:
+              occupant === "."
+                ? t("empty")
+                : t(own ? "red" : "black", {
+                    piece: t("piece" + occupant.toLowerCase()),
+                  }),
+          }),
+        );
+      });
+      if (path.length < renderedPathLength) renderedPathLength = path.length;
+      if (versus && path.length > renderedPathLength) {
+        const [from, to] = rules.decode(path.at(-1));
+        const movingPiece = cells[to].piece;
+        const fromRect = cells[from].cell.getBoundingClientRect();
+        const toRect = cells[to].cell.getBoundingClientRect();
+        renderedPathLength = path.length;
+        if (
+          !reduced.matches &&
+          typeof movingPiece.animate === "function" &&
+          fromRect.width > 0 &&
+          toRect.width > 0
+        ) {
+          const motion = movingPiece.animate(
+            [
+              {
+                transform: `translate(${fromRect.left - toRect.left}px, ${fromRect.top - toRect.top}px)`,
+              },
+              { transform: "translate(0, 0)" },
+            ],
+            { duration: 240, easing: "cubic-bezier(.2,.75,.25,1)" },
+          );
+          releaseCapture(to, motion);
+        }
+      }
+    }
+    function renderCaptures() {
+      syncCaptureSize();
+      const taken = { red: [], black: [] };
+      let value = versus ? versusInitialBoard : rules.parse(level.position);
+      const source = value;
+      if (versus) {
+        const fullBoard = rules.parse(initialPosition);
+        for (let square = 0; square < fullBoard.length; square++) {
+          if (fullBoard[square] !== "." && value[square] === ".")
+            taken[humanRed ? "red" : "black"].push({
+              piece: fullBoard[square],
+              square,
+              id: "handicap-" + square,
+              ply: -1,
+            });
+        }
+      }
+      // A scripted defense is recorded before its animation is shown.
+      const hiddenDefense = presentation?.waiting && path.length % 2 === 0;
+      const visiblePlies = path.length - Number(hiddenDefense ?? false);
+      const visiblePath = path.slice(0, visiblePlies);
+      const continuing =
+        source === captureSource &&
+        captureHistory.every((move, index) => visiblePath[index] === move);
+      const flights = [];
+      for (const [ply, move] of visiblePath.entries()) {
+        const [, to] = rules.decode(move);
+        const victim = value[to];
+        if (victim !== ".")
+          taken[rules.side(victim) ? "black" : "red"].push({
+            piece: victim,
+            square: to,
+            id: "ply-" + ply,
+            ply,
+          });
+        value = rules.apply(value, move);
+      }
+      for (const [tray, red, bottom] of [
+        [captureTop, flipped(), false],
+        [captureBottom, !flipped(), true],
+      ]) {
+        const pieces = taken[red ? "red" : "black"];
+        tray.setAttribute(
+          "aria-label",
+          t(red ? "capturedByRed" : "capturedByBlack"),
+        );
+        const existing = new Map(
+          [...tray.children].map((token) => [token.dataset.captureId, token]),
+        );
+        pieces.forEach(({ piece, square, id, ply }, index) => {
+          const previous = existing.get(id);
+          const token =
+            previous ??
+            node(tray, "span", "xiangqi-piece xiangqi-captured-piece");
+          token.dataset.captureId = id;
+          existing.delete(id);
+          if (
+            !previous &&
+            continuing &&
+            ply >= captureHistory.length &&
+            !reduced.matches &&
+            typeof token.animate === "function"
+          )
+            flights.push({ token, square });
+          token.textContent = glyphs[piece];
+          token.classList.toggle("is-red", rules.side(piece));
+          token.style.gridColumn = String(3 - (index % 3));
+          const row = Math.floor(index / 3);
+          token.style.gridRow = String(
+            bottom ? Math.ceil(pieces.length / 3) - row : row + 1,
+          );
+          token.setAttribute(
+            "aria-label",
+            t(rules.side(piece) ? "red" : "black", {
+              piece: t("piece" + piece.toLowerCase()),
+            }),
+          );
+        });
+        for (const token of existing.values()) {
+          captureAnimations.get(token)?.cancel();
+          captureAnimations.delete(token);
+          token.remove();
+        }
+      }
+      captureSource = source;
+      captureHistory = visiblePath;
+      for (const { token, square } of flights) {
+        const from = cells[square].piece.getBoundingClientRect();
+        const to = token.getBoundingClientRect();
+        if (!from.width || !to.width) continue;
+        const dx = from.left - to.left;
+        const dy = from.top - to.top;
+        const distance = Math.hypot(dx, dy);
+        const bend = Math.min(from.width * 0.65, distance * 0.12);
+        const frames = Array.from({ length: 21 }, (_, index) => {
+          const t = index / 20;
+          return {
+            transform: `translate(${dx * (1 - t)}px, ${dy * (1 - t) - 4 * bend * t * (1 - t)}px)`,
+            offset: t,
+          };
+        });
+        const animation = token.animate(frames, {
+          duration: Math.min(520, Math.max(340, 280 + distance * 0.4)),
+          easing: "cubic-bezier(.35,0,.2,1)",
+          fill: "both",
+        });
+        animation.pause();
+        animation.currentTime = 0;
+        captureAnimations.set(token, animation);
+        pendingCaptures.set(square, { token, animation });
+        animation.finished.then(
+          () => captureAnimations.delete(token),
+          () => {},
+        );
+      }
+    }
+    function syncCaptureSize() {
+      const piece = cells[0].piece;
+      const pieceRect = piece.getBoundingClientRect();
+      const cellRect = cells[0].cell.getBoundingClientRect();
+      stage.style.setProperty(
+        "--capture-column-gap",
+        Math.max(0, cellRect.width - pieceRect.width) + "px",
+      );
+      stage.style.setProperty(
+        "--capture-row-gap",
+        Math.max(0, cellRect.height - pieceRect.height) + "px",
+      );
+      stage.style.setProperty(
+        "--capture-size",
+        piece.getBoundingClientRect().width + "px",
+      );
+      stage.style.setProperty(
+        "--capture-font",
+        getComputedStyle(piece).fontSize,
+      );
+      stage.style.setProperty(
+        "--capture-inset",
+        Math.max(
+          0,
+          (cells[0].cell.getBoundingClientRect().height -
+            piece.getBoundingClientRect().height) /
+            2 +
+            parseFloat(getComputedStyle(board).borderTopWidth),
+        ) + "px",
+      );
+    }
+    function releaseCapture(square, motion = null) {
+      const pending = pendingCaptures.get(square);
+      if (!pending) return;
+      pendingCaptures.delete(square);
+      const play = () => {
+        if (captureAnimations.get(pending.token) === pending.animation)
+          pending.animation.play();
+      };
+      if (motion)
+        motion.finished.then(play, () => {
+          pending.animation.cancel();
+          captureAnimations.delete(pending.token);
+        });
+      else play();
+    }
+    function cancelCaptureAnimations() {
+      for (const animation of captureAnimations.values()) animation.cancel();
+      captureAnimations.clear();
+      pendingCaptures.clear();
+    }
+    const captureResize = new ResizeObserver(() => {
+      cancelCaptureAnimations();
+      if (level) syncCaptureSize();
+    });
+    captureResize.observe(board);
+    listen(document, "worktime:languagechange", render);
+    listen(window, "blur", settle);
+    listen(document, "visibilitychange", () => {
+      if (document.hidden) {
+        if (versus || puzzleReplyPending()) cancelSearch(true);
+        settle();
+      } else if (versus) {
+        prepareEngine();
+        replyVersus();
+      } else {
+        presentation?.thought?.resume();
+        replyPuzzle();
+      }
+    });
+    const unlisten = compat.listen(reduced, settle);
+    signal.addEventListener(
+      "abort",
+      () => {
+        captureResize.disconnect();
+        stopPresentation();
+        cancelSearch(true);
+        unlisten();
+      },
+      { once: true },
+    );
+    matchHistory = WorkTimeApp.games.createCompletionHistory({
+      root,
+      host: categories,
+      playbackHost: controls,
+      kind: "match",
+      signal,
+      records: () => save.matchHistory ?? [],
+      title: (record, date) =>
+        WorkTimeApp.games.matchRecordTitle("game-xiangqi", record, date),
+      onStart(record) {
+        matchReplaySnapshot = {
+          path,
+          position,
+          selected,
+          focus,
+          message,
+          level,
+          returnLevel,
+          versus,
+          difficulty,
+          humanRed,
+          undosRemaining,
+          versusInitialBoard,
+          handicaps: [...handicaps],
+        };
+        cancelSearch();
+        stopPresentation();
+        versus = true;
+        level = versusLevel;
+        ({ difficulty, humanRed, undosRemaining } = record.config);
+        versusInitialBoard = record.config.initialBoard;
+        handicaps.clear();
+        record.config.handicaps.forEach((piece) => handicaps.add(piece));
+        selected = message = null;
+      },
+      onFrame(prefix) {
+        path = prefix;
+        position = rules.matchPosition(versusInitialBoard, path, humanRed);
+        render();
+      },
+      onExit() {
+        ({
+          path,
+          position,
+          selected,
+          focus,
+          message,
+          level,
+          returnLevel,
+          versus,
+          difficulty,
+          humanRed,
+          undosRemaining,
+          versusInitialBoard,
+        } = matchReplaySnapshot);
+        handicaps.clear();
+        matchReplaySnapshot.handicaps.forEach((piece) => handicaps.add(piece));
+        matchReplaySnapshot = null;
+        render();
+        if (level) {
+          if (versus) replyVersus();
+          else replyPuzzle();
+        }
+      },
+    });
+    history = WorkTimeApp.games.createCompletionHistory({
+      root,
+      host: controls,
+      before: actions,
+      signal,
+      records: () =>
+        !level || versus ? null : (save.completionHistory?.[level.id] ?? []),
+      steps: (path) => Math.ceil(path.length / 2),
+      onStart() {
+        replaySnapshot = { path, position, selected, focus, message };
+        cancelSearch();
+        stopPresentation();
+        selected = message = null;
+      },
+      onFrame(prefix, finished) {
+        path = prefix;
+        position = finished
+          ? rules.restore(level, path)
+          : {
+              ...rules.restore(level, []),
+              board: path.reduce(
+                (board, move) => rules.apply(board, move),
+                rules.parse(level.position),
+              ),
+            };
+        render();
+      },
+      onExit() {
+        ({ path, position, selected, focus, message } = replaySnapshot);
+        replaySnapshot = null;
+        render();
+        replyPuzzle();
+      },
+    });
+    render();
+    replyPuzzle();
+    return {
+      pause() {
+        history.pause();
+        matchHistory.pause();
+        paused = true;
+        if (versus || puzzleReplyPending()) cancelSearch(true);
+        settle();
+      },
+      resume() {
+        paused = false;
+        presentation?.thought?.resume();
+        if (versus) {
+          prepareEngine();
+          replyVersus();
+        } else replyPuzzle();
+      },
+      resize() {
+        if (presentation) settle();
+      },
+      dispose() {
+        history.dispose();
+        matchHistory.dispose();
+        captureResize.disconnect();
+        cancelSearch(true);
+        stopPresentation();
+        root.remove();
+      },
+    };
+  },
+});

@@ -1,0 +1,4810 @@
+"use strict";
+(() => {
+  const labels = {
+    "zh-CN": "自动朗读",
+    en: "Automatic reading",
+    "zh-TW": "自動朗讀",
+    "zh-HK": "自動朗讀",
+    ja: "自動読み上げ",
+    ko: "자동 읽기",
+  };
+  for (const [language, label] of Object.entries(labels))
+    WorkTimeApp.data.locales[language]["vocabulary.autoRead"] = label;
+})();
+(() => {
+  const labels = {
+    "zh-CN": "发音预生成中",
+    en: "Pre-generating pronunciations",
+    "zh-TW": "發音預先產生中",
+    "zh-HK": "發音預先產生中",
+    ja: "発音を事前生成中",
+    ko: "발음 사전 생성 중",
+  };
+  for (const [language, label] of Object.entries(labels))
+    WorkTimeApp.data.locales[language]["footer.audioGenerating"] = label;
+  const loading = {
+    "zh-CN": "正在加载语音模型",
+    en: "Loading speech model",
+    "zh-TW": "正在載入語音模型",
+    "zh-HK": "正在載入語音模型",
+    ja: "音声モデルを読み込み中",
+    ko: "음성 모델 로딩 중",
+  };
+  for (const [language, label] of Object.entries(loading))
+    WorkTimeApp.data.locales[language]["footer.audioLoading"] = label;
+  const preparing = {
+    "zh-CN": "正在准备音频",
+    en: "Preparing audio",
+    "zh-TW": "正在準備音訊",
+    "zh-HK": "正在準備音訊",
+    ja: "音声を準備中",
+    ko: "오디오 준비 중",
+  };
+  for (const [language, label] of Object.entries(preparing))
+    WorkTimeApp.data.locales[language]["footer.audioPreparing"] = label;
+  const phases = {
+    ready: [
+      "语音模型已就绪",
+      "Speech model ready",
+      "語音模型已就緒",
+      "語音模型已就緒",
+      "音声モデルの準備完了",
+      "음성 모델 준비 완료",
+    ],
+    checkingFolder: [
+      "正在检查运行文件夹",
+      "Checking runtime folder",
+      "正在檢查執行資料夾",
+      "正在檢查執行資料夾",
+      "実行フォルダーを確認中",
+      "실행 폴더 확인 중",
+    ],
+    loadingAssets: [
+      "正在加载词库和语音组件",
+      "Loading vocabulary and speech components",
+      "正在載入詞庫與語音元件",
+      "正在載入詞庫與語音元件",
+      "単語帳と音声機能を読み込み中",
+      "단어장 및 음성 구성 요소 로딩 중",
+    ],
+    scanningCache: [
+      "正在扫描已有发音缓存",
+      "Scanning cached pronunciations",
+      "正在掃描現有發音快取",
+      "正在掃描現有發音快取",
+      "発音キャッシュを走査中",
+      "발음 캐시 검색 중",
+    ],
+    buildingQueue: [
+      "正在整理待生成单词",
+      "Building pronunciation queue",
+      "正在整理待產生單字",
+      "正在整理待產生單字",
+      "生成する単語を整理中",
+      "생성할 단어 정리 중",
+    ],
+    checkingFiles: [
+      "正在检查文件缓存",
+      "Checking file cache",
+      "正在檢查檔案快取",
+      "正在檢查檔案快取",
+      "ファイルキャッシュを確認中",
+      "파일 캐시 확인 중",
+    ],
+    checkingBrowser: [
+      "正在检查浏览器缓存",
+      "Checking browser cache",
+      "正在檢查瀏覽器快取",
+      "正在檢查瀏覽器快取",
+      "ブラウザーキャッシュを確認中",
+      "브라우저 캐시 확인 중",
+    ],
+    loadingResources: [
+      "正在加载语音组件",
+      "Loading speech components",
+      "正在載入語音元件",
+      "正在載入語音元件",
+      "音声機能を読み込み中",
+      "음성 구성 요소 로딩 중",
+    ],
+    loadingModel: [
+      "正在加载语音模型",
+      "Loading speech model",
+      "正在載入語音模型",
+      "正在載入語音模型",
+      "音声モデルを読み込み中",
+      "음성 모델 로딩 중",
+    ],
+    initializingModel: [
+      "正在初始化语音模型",
+      "Initializing speech model",
+      "正在初始化語音模型",
+      "正在初始化語音模型",
+      "音声モデルを初期化中",
+      "음성 모델 초기화 중",
+    ],
+    loading: [
+      "正在加载语音模型",
+      "Loading speech model",
+      "正在載入語音模型",
+      "正在載入語音模型",
+      "音声モデルを読み込み中",
+      "음성 모델 로딩 중",
+    ],
+    generating: [
+      "正在合成发音",
+      "Synthesizing audio",
+      "正在合成發音",
+      "正在合成發音",
+      "音声を合成中",
+      "음성 합성 중",
+    ],
+    generating_word: [
+      "正在合成单词发音",
+      "Synthesizing word audio",
+      "正在合成單詞發音",
+      "正在合成單詞發音",
+      "単語の音声を合成中",
+      "단어 음성 합성 중",
+    ],
+    generating_example: [
+      "正在合成例句发音",
+      "Synthesizing example audio",
+      "正在合成例句發音",
+      "正在合成例句發音",
+      "例文の音声を合成中",
+      "예문 음성 합성 중",
+    ],
+    generating_mixed: [
+      "正在合成单词和例句发音",
+      "Synthesizing words and examples",
+      "正在合成單詞和例句發音",
+      "正在合成單詞和例句發音",
+      "単語・例文の音声を合成中",
+      "단어·예문 음성 합성 중",
+    ],
+    savingFiles: [
+      "正在保存发音文件",
+      "Saving pronunciation file",
+      "正在儲存發音檔案",
+      "正在儲存發音檔案",
+      "発音ファイルを保存中",
+      "발음 파일 저장 중",
+    ],
+    savingBrowser: [
+      "正在保存到浏览器缓存",
+      "Saving to browser cache",
+      "正在儲存至瀏覽器快取",
+      "正在儲存至瀏覽器快取",
+      "ブラウザーキャッシュに保存中",
+      "브라우저 캐시에 저장 중",
+    ],
+    betweenWords: [
+      "等待处理下一条音频",
+      "Waiting for the next audio item",
+      "等待處理下一條音訊",
+      "等待處理下一條音訊",
+      "次の音声の処理を待機中",
+      "다음 오디오 처리 대기 중",
+    ],
+    waitingIdle: [
+      "等待空闲后继续",
+      "Waiting for idle time",
+      "等待閒置後繼續",
+      "等待閒置後繼續",
+      "操作終了後の再開を待機中",
+      "유휴 시간 대기 중",
+    ],
+    waitingInput: [
+      "等待输入结束后继续",
+      "Waiting for typing to finish",
+      "等待輸入結束後繼續",
+      "等待輸入結束後繼續",
+      "入力終了を待機中",
+      "입력 종료 대기 중",
+    ],
+    waitingDrag: [
+      "等待拖拽结束后继续",
+      "Waiting for dragging to finish",
+      "等待拖曳結束後繼續",
+      "等待拖曳結束後繼續",
+      "ドラッグ終了を待機中",
+      "드래그 종료 대기 중",
+    ],
+    waitingGame: [
+      "等待 AI 模型任务结束",
+      "Waiting for the AI model task",
+      "等待 AI 模型工作結束",
+      "等待 AI 模型工作結束",
+      "AIモデルの処理終了を待機中",
+      "AI 모델 작업 완료 대기 중",
+    ],
+    waitingPlayback: [
+      "等待前台发音结束",
+      "Waiting for foreground pronunciation",
+      "等待前景發音結束",
+      "等待前景發音結束",
+      "再生中の発音の終了を待機中",
+      "전경 발음 종료 대기 중",
+    ],
+    complete: [
+      "当前词库发音已全部生成",
+      "All pronunciations in this book are cached",
+      "目前詞庫發音已全部產生",
+      "目前詞庫發音已全部產生",
+      "現在の単語帳の発音生成が完了",
+      "현재 단어장 발음 생성 완료",
+    ],
+    paused: [
+      "发音预生成已暂停",
+      "Pronunciation pre-generation paused",
+      "發音預先產生已暫停",
+      "發音預先產生已暫停",
+      "発音の事前生成を一時停止中",
+      "발음 사전 생성 일시 중지됨",
+    ],
+    disabled: [
+      "自动预生成已关闭",
+      "Automatic pre-generation disabled",
+      "自動預先產生已關閉",
+      "自動預先產生已關閉",
+      "自動事前生成は無効",
+      "자동 사전 생성 꺼짐",
+    ],
+    folder: [
+      "等待运行文件夹写入授权",
+      "Waiting for runtime folder write access",
+      "等待執行資料夾寫入授權",
+      "等待執行資料夾寫入授權",
+      "実行フォルダーへの書き込み許可を待機中",
+      "실행 폴더 쓰기 권한 대기 중",
+    ],
+    capacity: [
+      "缓存已满，请调整容量",
+      "Cache full; increase the limit",
+      "快取已滿，請調整容量",
+      "快取已滿，請調整容量",
+      "キャッシュが満杯です。容量を変更してください",
+      "캐시가 가득 참; 용량을 늘려 주세요",
+    ],
+    error: [
+      "预生成失败，等待自动重试",
+      "Pre-generation failed; waiting to retry",
+      "預先產生失敗，等待自動重試",
+      "預先產生失敗，等待自動重試",
+      "事前生成に失敗。自動再試行を待機中",
+      "사전 생성 실패; 자동 재시도 대기 중",
+    ],
+    otherTab: [
+      "其他页面正在预生成发音",
+      "Another tab is pre-generating pronunciations",
+      "其他頁面正在預先產生發音",
+      "其他頁面正在預先產生發音",
+      "別のタブで発音を事前生成中",
+      "다른 탭에서 발음 사전 생성 중",
+    ],
+    unsupported: [
+      "当前环境不支持后台预生成",
+      "Background pre-generation is unsupported",
+      "目前環境不支援背景預先產生",
+      "目前環境不支援背景預先產生",
+      "この環境はバックグラウンド事前生成に非対応",
+      "현재 환경은 백그라운드 사전 생성 미지원",
+    ],
+  };
+  const languages = ["zh-CN", "en", "zh-TW", "zh-HK", "ja", "ko"];
+  for (const [phase, values] of Object.entries(phases))
+    languages.forEach((language, index) => {
+      WorkTimeApp.data.locales[language]["footer.audioPhase_" + phase] =
+        values[index];
+    });
+  const progress = {
+    "zh-CN": "{completed} / {total}",
+    en: "{completed} / {total}",
+    "zh-TW": "{completed} / {total}",
+    "zh-HK": "{completed} / {total}",
+    ja: "{completed} / {total}",
+    ko: "{completed} / {total}",
+  };
+  for (const [language, label] of Object.entries(progress))
+    WorkTimeApp.data.locales[language]["footer.audioProgress"] = label;
+  const synthesizers = [
+    "合成器：{count}",
+    "Synthesizers: {count}",
+    "合成器：{count}",
+    "合成器：{count}",
+    "合成器：{count}",
+    "합성기: {count}",
+  ];
+  languages.forEach((language, index) => {
+    WorkTimeApp.data.locales[language]["footer.audioSynthesizers"] =
+      synthesizers[index];
+  });
+})();
+
+(() => {
+  const catalogs = {
+    "zh-CN": ["申报加班时长", "参考 {date} 的日均加班工时"],
+    "zh-TW": ["申報加班時長", "參考 {date} 的日均加班工時"],
+    "zh-HK": ["申報加班時長", "參考 {date} 的日均加班工時"],
+    en: ["Declared overtime", "Average daily overtime as of {date}"],
+    ja: ["申告用の残業時間", "{date} 時点の平均残業時間"],
+    ko: ["신고용 초과 근무 시간", "{date} 기준 일평균 초과 근무 시간"],
+  };
+  for (const [locale, [label, reference]] of Object.entries(catalogs)) {
+    WorkTimeApp.data.locales[locale]["calendar.plannedHours"] = label;
+    WorkTimeApp.data.locales[locale]["calendar.plannedHoursReference"] =
+      reference;
+  }
+})();
+
+(() => {
+  const messages = {
+    "zh-CN": "补充请假",
+    "zh-TW": "補充請假",
+    "zh-HK": "補充請假",
+    en: "Add past leave",
+    ja: "過去の休暇を追加",
+    ko: "지난 휴가 추가",
+  };
+  for (const [locale, message] of Object.entries(messages))
+    WorkTimeApp.data.locales[locale]["editor.supplementLeave"] = message;
+})();
+
+(() => {
+  const messages = {
+    "zh-CN": "已自动填入剪切板记录",
+    "zh-TW": "已自動填入剪貼簿記錄",
+    "zh-HK": "已自動填入剪貼簿記錄",
+    en: "Clipboard records filled automatically",
+    ja: "クリップボードの記録を自動入力しました",
+    ko: "클립보드 기록을 자동으로 입력했습니다",
+  };
+  for (const [locale, message] of Object.entries(messages))
+    WorkTimeApp.data.locales[locale]["import.clipboardAutofilled"] = message;
+})();
+
+(() => {
+  const keys = [
+    "matchHeading",
+    "matchEmpty",
+    "matchRecord",
+    "victory",
+    "defeat",
+    "local",
+    "sideVictory",
+    "xSide",
+    "oSide",
+  ];
+  const catalogs = {
+    "zh-CN": [
+      "对局记录",
+      "暂无对局记录",
+      "对局记录-{date}-{detail}-{result}",
+      "胜利",
+      "失败",
+      "人人对战",
+      "{side}胜利",
+      "X方",
+      "O方",
+    ],
+    "zh-TW": [
+      "對局記錄",
+      "暫無對局記錄",
+      "對局記錄-{date}-{detail}-{result}",
+      "勝利",
+      "失敗",
+      "雙人對戰",
+      "{side}勝利",
+      "X方",
+      "O方",
+    ],
+    "zh-HK": [
+      "對局記錄",
+      "暫無對局記錄",
+      "對局記錄-{date}-{detail}-{result}",
+      "勝利",
+      "失敗",
+      "雙人對戰",
+      "{side}勝利",
+      "X方",
+      "O方",
+    ],
+    en: [
+      "Match history",
+      "No completed matches",
+      "Match-{date}-{detail}-{result}",
+      "Victory",
+      "Defeat",
+      "Local multiplayer",
+      "{side} wins",
+      "X",
+      "O",
+    ],
+    ja: [
+      "対局履歴",
+      "対局履歴はありません",
+      "対局記録-{date}-{detail}-{result}",
+      "勝利",
+      "敗北",
+      "二人対戦",
+      "{side}の勝利",
+      "X側",
+      "O側",
+    ],
+    ko: [
+      "대국 기록",
+      "완료된 대국이 없습니다",
+      "대국 기록-{date}-{detail}-{result}",
+      "승리",
+      "패배",
+      "2인 대전",
+      "{side} 승리",
+      "X 측",
+      "O 측",
+    ],
+  };
+  for (const [language, values] of Object.entries(catalogs))
+    keys.forEach((key, index) => {
+      WorkTimeApp.data.locales[language]["games.history." + key] =
+        values[index];
+    });
+})();
+
+(() => {
+  const keys = [
+    "heading",
+    "empty",
+    "record",
+    "replay",
+    "play",
+    "pause",
+    "previous",
+    "next",
+    "exit",
+  ];
+  const catalogs = {
+    "zh-CN": [
+      "通关记录",
+      "暂无通关记录",
+      "通关记录-{steps}步-{date}",
+      "回放",
+      "播放",
+      "暂停",
+      "上一步",
+      "下一步",
+      "退出回放",
+    ],
+    "zh-TW": [
+      "通關記錄",
+      "暫無通關記錄",
+      "通關記錄-{steps}步-{date}",
+      "重播",
+      "播放",
+      "暫停",
+      "上一步",
+      "下一步",
+      "退出重播",
+    ],
+    "zh-HK": [
+      "通關記錄",
+      "暫無通關記錄",
+      "通關記錄-{steps}步-{date}",
+      "重播",
+      "播放",
+      "暫停",
+      "上一步",
+      "下一步",
+      "退出重播",
+    ],
+    en: [
+      "Completion history",
+      "No completions yet",
+      "Completed-{steps} moves-{date}",
+      "Replay",
+      "Play",
+      "Pause",
+      "Previous",
+      "Next",
+      "Exit replay",
+    ],
+    ja: [
+      "クリア履歴",
+      "クリア履歴はありません",
+      "クリア記録-{steps}手-{date}",
+      "リプレイ",
+      "再生",
+      "一時停止",
+      "前の手",
+      "次の手",
+      "リプレイ終了",
+    ],
+    ko: [
+      "완료 기록",
+      "완료 기록이 없습니다",
+      "완료 기록-{steps}수-{date}",
+      "다시 보기",
+      "재생",
+      "일시 정지",
+      "이전 수",
+      "다음 수",
+      "다시 보기 종료",
+    ],
+  };
+  for (const [language, values] of Object.entries(catalogs))
+    keys.forEach((key, index) => {
+      WorkTimeApp.data.locales[language]["games.history." + key] =
+        values[index];
+    });
+})();
+for (const [language, label] of Object.entries({
+  "zh-CN":
+    "未获得剪贴板权限，请在浏览器的网站设置中允许访问，或手动粘贴 OA 信息。",
+  "zh-TW":
+    "尚未取得剪貼簿權限，請在瀏覽器的網站設定中允許存取，或手動貼上 OA 資訊。",
+  "zh-HK":
+    "尚未取得剪貼簿權限，請在瀏覽器的網站設定中允許存取，或手動貼上 OA 資訊。",
+  en: "Clipboard access was not granted. Allow it in your browser's site settings, or paste OA information manually.",
+  ja: "クリップボードへのアクセスが許可されていません。ブラウザーのサイト設定で許可するか、OA 情報を手動で貼り付けてください。",
+  ko: "클립보드 접근 권한이 없습니다. 브라우저 사이트 설정에서 허용하거나 OA 정보를 직접 붙여넣으세요.",
+}))
+  WorkTimeApp.data.locales[language]["clipboard.permissionRequired"] = label;
+for (const [language, label] of Object.entries({
+  "zh-CN": "我爱上班，从不摸鱼",
+  "zh-TW": "我愛上班，絕不摸魚",
+  "zh-HK": "我愛返工，絕不偷懶",
+  en: "All work, no slacking!",
+  ja: "仕事大好き、サボりません！",
+  ko: "일이 좋아요, 딴짓은 안 해요!",
+}))
+  WorkTimeApp.data.locales[language]["games.idleMotto"] = label;
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["正在加载，请稍候…", "加载失败，请重试。"],
+  "zh-TW": ["正在載入，請稍候…", "載入失敗，請重試。"],
+  "zh-HK": ["正在載入，請稍候…", "載入失敗，請重試。"],
+  en: ["Loading, please wait…", "Loading failed. Please retry."],
+  ja: ["読み込み中です…", "読み込めませんでした。再試行してください。"],
+  ko: ["불러오는 중입니다…", "불러오지 못했습니다. 다시 시도하세요."],
+})) {
+  WorkTimeApp.data.locales[language]["secondary.loading"] = labels[0];
+  WorkTimeApp.data.locales[language]["secondary.failed"] = labels[1];
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["可选", "进行中", "已通关", "未解锁", "选择关卡", "关闭"],
+  "zh-TW": ["可選", "進行中", "已通關", "未解鎖", "選擇關卡", "關閉"],
+  "zh-HK": ["可選", "進行中", "已通關", "未解鎖", "選擇關卡", "關閉"],
+  en: [
+    "Available",
+    "In progress",
+    "Completed",
+    "Locked",
+    "Choose stage",
+    "Close",
+  ],
+  ja: ["選択可能", "進行中", "クリア済み", "未解放", "ステージ選択", "閉じる"],
+  ko: ["선택 가능", "진행 중", "완료", "잠김", "스테이지 선택", "닫기"],
+})) {
+  const keys = ["available", "draft", "complete", "locked", "choose", "close"];
+  keys.forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["games.levelStatus." + key] =
+      labels[index];
+  });
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["仅显示工作日（包含加班和计划加班）", "本周没有工作日"],
+  "zh-TW": ["僅顯示工作日（包含加班和計劃加班）", "本週沒有工作日"],
+  "zh-HK": ["僅顯示工作日（包含加班和計劃加班）", "本週沒有工作日"],
+  en: [
+    "Show working days only (including overtime and planned overtime)",
+    "No working days this week",
+  ],
+  ja: ["勤務日のみ表示（残業・予定残業を含む）", "今週は勤務日がありません"],
+  ko: [
+    "근무일만 표시 (초과 근무 및 예정 초과 근무 포함)",
+    "이번 주에 근무일이 없습니다",
+  ],
+})) {
+  WorkTimeApp.data.locales[language]["agenda.workdaysOnly"] = labels[0];
+  WorkTimeApp.data.locales[language]["agenda.noWorkdays"] = labels[1];
+}
+for (const [language, label] of Object.entries({
+  "zh-CN": "休息",
+  "zh-TW": "休息",
+  "zh-HK": "休息",
+  en: "Break",
+  ja: "休憩",
+  ko: "휴식",
+}))
+  WorkTimeApp.data.locales[language]["agenda.timetableBreak"] = label;
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "{month}月{day}日{hour}h{minute}m已备份",
+    "已发起备份下载，但备份时间未保存。",
+  ],
+  "zh-TW": [
+    "{month}月{day}日{hour}h{minute}m已備份",
+    "已發起備份下載，但備份時間未儲存。",
+  ],
+  "zh-HK": [
+    "{month}月{day}日{hour}h{minute}m已備份",
+    "已發起備份下載，但備份時間未儲存。",
+  ],
+  en: [
+    "Backed up on {month}/{day} at {hour}h{minute}m",
+    "Backup download requested, but its time was not saved.",
+  ],
+  ja: [
+    "{month}月{day}日{hour}h{minute}mにバックアップ済み",
+    "バックアップのダウンロードを要求しましたが、時刻を保存できませんでした。",
+  ],
+  ko: [
+    "{month}월 {day}일 {hour}h{minute}m 백업 완료",
+    "백업 다운로드를 요청했지만 시간을 저장하지 못했습니다.",
+  ],
+})) {
+  ["savedDate", "timeFailed"].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["autoBackup." + key] = labels[index];
+  });
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "自动备份",
+    "关闭",
+    "每天",
+    "每 3 天",
+    "每周",
+    "启用后，下次打开网页时首次下载；以后按北京时间，在间隔到期后首次打开时下载完整备份。下载位置由浏览器决定，网页只能确认已发起下载。",
+    "自动备份设置未保存，请重新选择以重试。",
+    "已发起备份下载，但日期未保存，下次打开可能再次下载。",
+  ],
+  "zh-TW": [
+    "自動備份",
+    "關閉",
+    "每天",
+    "每 3 天",
+    "每週",
+    "啟用後，下次開啟網頁時首次下載；之後按北京時間，在間隔到期後首次開啟時下載完整備份。下載位置由瀏覽器決定，網頁只能確認已發起下載。",
+    "自動備份設定未儲存，請重新選擇以重試。",
+    "已發起備份下載，但日期未儲存，下次開啟可能再次下載。",
+  ],
+  "zh-HK": [
+    "自動備份",
+    "關閉",
+    "每天",
+    "每 3 天",
+    "每週",
+    "啟用後，下次開啟網頁時首次下載；之後按北京時間，在間隔到期後首次開啟時下載完整備份。下載位置由瀏覽器決定，網頁只能確認已發起下載。",
+    "自動備份設定未儲存，請重新選擇以重試。",
+    "已發起備份下載，但日期未儲存，下次開啟可能再次下載。",
+  ],
+  en: [
+    "Auto backup",
+    "Off",
+    "Daily",
+    "Every 3 days",
+    "Weekly",
+    "The first full backup downloads the next time you open the page. Later backups download when you first open it after the interval, using Beijing time. Your browser controls the save location; the page can only confirm that a download was requested.",
+    "Automatic backup settings were not saved. Select again to retry.",
+    "Backup download requested, but its date was not saved. Opening the page again may download another copy.",
+  ],
+  ja: [
+    "自動バックアップ",
+    "オフ",
+    "毎日",
+    "3 日ごと",
+    "毎週",
+    "有効にすると、次にページを開いた際に完全バックアップをダウンロードします。以降は北京時間で指定の間隔が経過した後、最初に開いた際に実行します。保存先はブラウザーが決定し、ページではダウンロード要求の送信のみ確認できます。",
+    "自動バックアップ設定を保存できませんでした。もう一度選択してください。",
+    "ダウンロードを要求しましたが、日付を保存できませんでした。次回もダウンロードされる可能性があります。",
+  ],
+  ko: [
+    "자동 백업",
+    "끄기",
+    "매일",
+    "3일마다",
+    "매주",
+    "설정 후 다음에 페이지를 열 때 전체 백업을 다운로드합니다. 이후 베이징 시간을 기준으로 설정한 간격이 지난 뒤 처음 열 때 실행합니다. 저장 위치는 브라우저가 결정하며, 페이지에서는 다운로드 요청 여부만 확인할 수 있습니다.",
+    "자동 백업 설정을 저장하지 못했습니다. 다시 선택해 주세요.",
+    "백업 다운로드를 요청했지만 날짜를 저장하지 못했습니다. 다음에 페이지를 열면 다시 다운로드할 수 있습니다.",
+  ],
+})) {
+  [
+    "label",
+    "option0",
+    "option1",
+    "option3",
+    "option7",
+    "help",
+    "saveFailed",
+    "dateFailed",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["autoBackup." + key] = labels[index];
+  });
+}
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "作息",
+  "zh-TW": "作息",
+  "zh-HK": "作息",
+  en: "Routine",
+  ja: "勤務",
+  ko: "근무",
+}))
+  WorkTimeApp.data.locales[language]["analysis.sidebarShortTitle"] = label;
+
+// Linked routine sidebar; observations describe the filtered records, not health.
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "作息解读",
+    "本月观察",
+    "关注日期",
+    "数据范围",
+    "{value} 分钟",
+    "上班时间相差 {start}\n下班时间相差 {end}。",
+    "仅有一天记录，暂不足以比较作息差异。",
+    "暂无完整工作日记录。",
+    "20:00 后下班主要集中在{period}。",
+    "月初",
+    "月中",
+    "月末",
+    "20:00 后下班共 {count} 天。",
+    "补充完整记录后，这里会显示月度观察。",
+    "工作日",
+    "有效工时",
+    "较工作日平均下班",
+    "未来手录计划",
+    "不纳入已发生统计",
+    "已扣除休息时段",
+    "暂无可查看的完整记录",
+    "有效记录",
+    "休息日",
+    "已纳入",
+    "未纳入",
+    "比较范围：{current} ↔ {previous}",
+  ],
+  "zh-TW": [
+    "作息解讀",
+    "本月觀察",
+    "關注日期",
+    "資料範圍",
+    "{value} 分鐘",
+    "上班時間相差 {start}\n下班時間相差 {end}。",
+    "僅有一天紀錄，暫不足以比較作息差異。",
+    "暫無完整工作日紀錄。",
+    "20:00 後下班主要集中在{period}。",
+    "月初",
+    "月中",
+    "月末",
+    "20:00 後下班共 {count} 天。",
+    "補充完整紀錄後，這裡會顯示月度觀察。",
+    "工作日",
+    "有效工時",
+    "較工作日平均下班",
+    "未來手動計畫",
+    "不納入已發生統計",
+    "已扣除休息時段",
+    "暫無可查看的完整紀錄",
+    "有效紀錄",
+    "休息日",
+    "已納入",
+    "未納入",
+    "比較範圍：{current} ↔ {previous}",
+  ],
+  "zh-HK": [
+    "作息解讀",
+    "本月觀察",
+    "關注日期",
+    "資料範圍",
+    "{value} 分鐘",
+    "上班時間相差 {start}\n下班時間相差 {end}。",
+    "僅有一天記錄，暫不足以比較作息差異。",
+    "暫無完整工作日記錄。",
+    "20:00 後下班主要集中在{period}。",
+    "月初",
+    "月中",
+    "月末",
+    "20:00 後下班共 {count} 天。",
+    "補充完整記錄後，這裡會顯示月度觀察。",
+    "工作日",
+    "有效工時",
+    "較工作日平均下班",
+    "未來手動計劃",
+    "不納入已發生統計",
+    "已扣除休息時段",
+    "暫無可查看的完整記錄",
+    "有效記錄",
+    "休息日",
+    "已納入",
+    "未納入",
+    "比較範圍：{current} ↔ {previous}",
+  ],
+  en: [
+    "Routine insights",
+    "This month",
+    "Focus dates",
+    "Data scope",
+    "{value} min",
+    "Arrivals span {start}\nDepartures span {end}.",
+    "One record is not enough to compare routines.",
+    "No complete workday records.",
+    "Departures after 20:00 occur mainly {period}.",
+    "early in the month",
+    "mid-month",
+    "late in the month",
+    "{count} days ended after 20:00.",
+    "Complete records will reveal monthly patterns.",
+    "Workdays",
+    "Effective hours",
+    "Vs. avg. workday end",
+    "Future manual plan",
+    "Excluded from observed totals",
+    "Breaks deducted",
+    "No complete records to inspect",
+    "Valid records",
+    "Rest days",
+    "Included",
+    "Excluded",
+    "Compare: {current} ↔ {previous}",
+  ],
+  ja: [
+    "勤務リズム",
+    "今月の傾向",
+    "注目日",
+    "集計範囲",
+    "{value} 分",
+    "出勤時刻の幅は {start}\n退勤時刻の幅は {end}。",
+    "1日分のみのため、時刻の差は比較できません。",
+    "完全な勤務日記録がありません。",
+    "20:00 より後の退勤は{period}に集中しています。",
+    "上旬",
+    "中旬",
+    "下旬",
+    "20:00 より後の退勤は {count} 日。",
+    "完全な記録を追加すると月の傾向を表示します。",
+    "勤務日",
+    "実働時間",
+    "勤務日の平均退勤との差",
+    "今後の手入力予定",
+    "実績集計から除外",
+    "休憩時間を控除済み",
+    "確認できる完全な記録はありません",
+    "有効記録",
+    "休日",
+    "含む",
+    "含まない",
+    "比較範囲：{current} ↔ {previous}",
+  ],
+  ko: [
+    "근무 패턴",
+    "이번 달",
+    "주요 날짜",
+    "집계 범위",
+    "{value}분",
+    "출근 시각 차이 {start}\n퇴근 시각 차이 {end}.",
+    "기록이 하루뿐이라 패턴을 비교하기 어렵습니다.",
+    "완전한 근무일 기록이 없습니다.",
+    "20:00 이후 퇴근은 {period}에 집중됩니다.",
+    "월초",
+    "월중",
+    "월말",
+    "20:00 이후 퇴근 {count}일.",
+    "완전한 기록을 추가하면 월별 패턴을 표시합니다.",
+    "근무일",
+    "실근무 시간",
+    "근무일 평균 퇴근 대비",
+    "향후 수동 입력 계획",
+    "실적 집계 제외",
+    "휴식 시간 차감",
+    "조회할 완전한 기록이 없습니다",
+    "유효 기록",
+    "휴일",
+    "포함",
+    "제외",
+    "비교 범위: {current} ↔ {previous}",
+  ],
+})) {
+  [
+    "sidebarTitle",
+    "sidebarObservation",
+    "sidebarFocus",
+    "sidebarScope",
+    "sidebarMinutes",
+    "sidebarSpread",
+    "sidebarOneRecord",
+    "sidebarNoWorkdays",
+    "sidebarLateCluster",
+    "sidebarPeriod0",
+    "sidebarPeriod1",
+    "sidebarPeriod2",
+    "sidebarLateCount",
+    "sidebarRecordsHint",
+    "sidebarWorkday",
+    "sidebarEffective",
+    "sidebarDepartureDelta",
+    "sidebarPlanned",
+    "sidebarExcluded",
+    "sidebarBreaksDeducted",
+    "sidebarNoFocus",
+    "sidebarValidDays",
+    "sidebarRestDays",
+    "sidebarIncluded",
+    "sidebarNotIncluded",
+    "sidebarComparisonRange",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["analysis." + key] = labels[index];
+  });
+}
+for (const [language, label] of Object.entries({
+  "zh-CN": "拖动右端调整结束日期",
+  "zh-TW": "拖曳右端調整結束日期",
+  "zh-HK": "拖曳右端調整結束日期",
+  en: "Drag the right edge to change the end date",
+  ja: "右端をドラッグして終了日を変更",
+  ko: "오른쪽 끝을 드래그하여 종료 날짜 변경",
+}))
+  WorkTimeApp.data.locales[language]["agenda.resizeEnd"] = label;
+for (const [language, label] of Object.entries({
+  "zh-CN": "完成",
+  "zh-TW": "完成",
+  "zh-HK": "完成",
+  en: "Done",
+  ja: "完了",
+  ko: "완료",
+}))
+  WorkTimeApp.data.locales[language]["agenda.pickerDone"] = label;
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["日期与时间", "同日结束"],
+  "zh-TW": ["日期與時間", "同日結束"],
+  "zh-HK": ["日期與時間", "同日結束"],
+  en: ["Date & time", "Same day"],
+  ja: ["日付と時刻", "同日に終了"],
+  ko: ["날짜 및 시간", "같은 날 종료"],
+})) {
+  ["dateTime", "sameDay"].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["agenda." + key] = labels[index];
+  });
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["自动选择", "选择本月所有可批量填写且信息不全的日期"],
+  "zh-TW": ["自動選取", "選取本月所有可批次填寫且資料不完整的日期"],
+  "zh-HK": ["自動選擇", "選擇本月所有可批量填寫且資料不完整的日期"],
+  en: [
+    "Auto-select",
+    "Select all eligible dates with incomplete records this month",
+  ],
+  ja: [
+    "自動選択",
+    "今月の一括入力可能な日付のうち、記録が不完全な日をすべて選択",
+  ],
+  ko: [
+    "자동 선택",
+    "이번 달 일괄 입력 가능한 날짜 중 기록이 불완전한 날짜 모두 선택",
+  ],
+})) {
+  WorkTimeApp.data.locales[language]["batch.autoSelect"] = labels[0];
+  WorkTimeApp.data.locales[language]["batch.autoSelectHint"] = labels[1];
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["工时溢出", "工时仍欠"],
+  "zh-TW": ["工時溢出", "工時仍欠"],
+  "zh-HK": ["工時溢出", "工時仍欠"],
+  en: ["Hours surplus", "Hours owed"],
+  ja: ["超過時間", "不足時間"],
+  ko: ["초과 시간", "부족 시간"],
+})) {
+  WorkTimeApp.data.locales[language]["summary.hoursSurplus"] = labels[0];
+  WorkTimeApp.data.locales[language]["summary.hoursOwed"] = labels[1];
+}
+for (const [language, values] of Object.entries({
+  "zh-CN": [
+    "新的最佳纪录！",
+    "已探索 {opened} / {total} 个安全格",
+    "右键或长按插旗 · 点击数字快速展开",
+    "周围旗数需与数字一致；确认旗帜正确后再展开。",
+  ],
+  "zh-TW": [
+    "新的最佳紀錄！",
+    "已探索 {opened} / {total} 個安全格",
+    "右鍵或長按插旗 · 點選數字快速展開",
+    "周圍旗數需與數字一致；確認旗幟正確後再展開。",
+  ],
+  "zh-HK": [
+    "新的最佳紀錄！",
+    "已探索 {opened} / {total} 個安全格",
+    "右鍵或長按插旗 · 按數字快速展開",
+    "周圍旗數需與數字一致；確認旗幟正確後再展開。",
+  ],
+  en: [
+    "A new personal best!",
+    "Explored {opened} / {total} safe squares",
+    "Right-click or hold to flag · Click numbers to expand",
+    "Match the number with surrounding flags. Check the flags before opening neighbors.",
+  ],
+  ja: [
+    "最速記録を更新！",
+    "安全なマス {opened} / {total}",
+    "右クリック・長押しで旗 · 数字を押して一括開放",
+    "周囲の旗を数字と一致させ、旗が正しいか確認してから開きましょう。",
+  ],
+  ko: [
+    "새로운 최고 기록!",
+    "안전한 칸 {opened} / {total}개 탐색",
+    "오른쪽 클릭·길게 눌러 깃발 · 숫자를 눌러 펼치기",
+    "주변 깃발 수를 숫자와 맞추고 깃발이 올바른지 확인하세요.",
+  ],
+})) {
+  ["newRecord", "progress", "quickHint", "chordHint"].forEach((name, index) => {
+    WorkTimeApp.data.locales[language]["games.mine." + name] = values[index];
+  });
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["最佳时间", "通关次数"],
+  "zh-TW": ["最佳時間", "通關次數"],
+  "zh-HK": ["最佳時間", "通關次數"],
+  en: ["Best time", "Wins"],
+  ja: ["最速記録", "クリア回数"],
+  ko: ["최고 기록", "승리 횟수"],
+})) {
+  WorkTimeApp.data.locales[language]["games.mine.bestLabel"] = labels[0];
+  WorkTimeApp.data.locales[language]["games.mine.winsLabel"] = labels[1];
+}
+for (const [language, values] of Object.entries({
+  "zh-CN": ["玩法", "返回游戏"],
+  "zh-TW": ["玩法", "返回遊戲"],
+  "zh-HK": ["玩法", "返回遊戲"],
+  en: ["How to play", "Back to game"],
+  ja: ["遊び方", "ゲームに戻る"],
+  ko: ["게임 방법", "게임으로 돌아가기"],
+})) {
+  WorkTimeApp.data.locales[language]["games.help"] = values[0];
+  WorkTimeApp.data.locales[language]["games.backToGame"] = values[1];
+}
+// Minesweeper shares the shell, but owns its save, rules and messages.
+(() => {
+  const keys = [
+    "name",
+    "description",
+    "subtitle",
+    "remaining",
+    "time",
+    "difficulty",
+    "easy",
+    "medium",
+    "hard",
+    "mode",
+    "reveal",
+    "flag",
+    "pause",
+    "resume",
+    "restart",
+    "confirmTitle",
+    "confirmHint",
+    "cancel",
+    "confirm",
+    "paused",
+    "pauseHint",
+    "again",
+    "won",
+    "lost",
+    "wonHint",
+    "lostHint",
+    "best",
+    "wins",
+    "hint",
+    "ready",
+    "playing",
+    "flagHint",
+    "saveFailed",
+    "board",
+    "cell",
+    "wrong",
+    "mine",
+    "flagged",
+    "number",
+    "empty",
+    "covered",
+  ];
+  const messages = {
+    "zh-CN": [
+      "扫雷",
+      "一格一步，享受推理 · 首击安全与自动续局",
+      "一格一步，从容推理",
+      "剩余雷数",
+      "用时",
+      "难度",
+      "初级",
+      "中级",
+      "高级",
+      "操作模式",
+      "开格",
+      "插旗",
+      "暂停",
+      "继续",
+      "新局",
+      "开始新的探索？",
+      "当前棋局将被替换，最佳时间与通关纪录会保留。",
+      "取消",
+      "开始新局",
+      "已暂停",
+      "棋盘已遮住，计时已停止。准备好后继续。",
+      "再来一局",
+      "排雷完成！",
+      "踩到地雷了",
+      "用时 {time}，这次通关已记入纪录。",
+      "用时 {time}。看看雷区与错误旗帜，再试一次。",
+      "最佳时间 {time}",
+      "已通关 {count} 次",
+      "鼠标左键开格，右键或长按插旗。数字周围旗数足够时，点击数字快捷开格。方向键移动，Enter 开格，F 插旗。",
+      "任意开一格开始：首格及周围一圈安全。",
+      "根据数字推理；错误插旗后的快捷开格可能触雷。",
+      "插旗模式：点击格子放置或移除旗帜。",
+      "无法保存进度，你仍可继续游玩。",
+      "扫雷棋盘，{rows} 行 {columns} 列",
+      "第 {row} 行，第 {column} 列，{value}",
+      "错误旗帜",
+      "地雷",
+      "已插旗",
+      "周围 {count} 颗雷",
+      "空白",
+      "未打开",
+    ],
+    "zh-TW": [
+      "踩地雷",
+      "一格一步，享受推理 · 首次安全與自動續玩",
+      "一格一步，從容推理",
+      "剩餘地雷",
+      "時間",
+      "難度",
+      "初級",
+      "中級",
+      "高級",
+      "操作模式",
+      "開格",
+      "插旗",
+      "暫停",
+      "繼續",
+      "新局",
+      "開始新的探索？",
+      "目前棋局將被取代，最佳時間與通關紀錄會保留。",
+      "取消",
+      "開始新局",
+      "已暫停",
+      "棋盤已遮住，計時已停止。準備好後繼續。",
+      "再玩一次",
+      "排雷完成！",
+      "踩到地雷了",
+      "用時 {time}，這次通關已記入紀錄。",
+      "用時 {time}。看看雷區與錯誤旗幟，再試一次。",
+      "最佳時間 {time}",
+      "已通關 {count} 次",
+      "滑鼠左鍵開格，右鍵或長按插旗。數字周圍旗數足夠時，點選數字快速開格。方向鍵移動，Enter 開格，F 插旗。",
+      "任意開一格開始：首格及周圍一圈安全。",
+      "根據數字推理；錯誤插旗後快速開格可能觸雷。",
+      "插旗模式：點選格子放置或移除旗幟。",
+      "無法儲存進度，你仍可繼續遊玩。",
+      "踩地雷棋盤，{rows} 列 {columns} 欄",
+      "第 {row} 列，第 {column} 欄，{value}",
+      "錯誤旗幟",
+      "地雷",
+      "已插旗",
+      "周圍 {count} 顆地雷",
+      "空白",
+      "未開啟",
+    ],
+    "zh-HK": [
+      "踩地雷",
+      "一格一步，享受推理 · 首次安全與自動續玩",
+      "一格一步，從容推理",
+      "剩餘地雷",
+      "時間",
+      "難度",
+      "初級",
+      "中級",
+      "高級",
+      "操作模式",
+      "開格",
+      "插旗",
+      "暫停",
+      "繼續",
+      "新局",
+      "開始新的探索？",
+      "目前棋局將被取代，最佳時間與通關紀錄會保留。",
+      "取消",
+      "開始新局",
+      "已暫停",
+      "棋盤已遮住，計時已停止。準備好後繼續。",
+      "再玩一次",
+      "排雷完成！",
+      "踩到地雷了",
+      "用時 {time}，這次通關已記入紀錄。",
+      "用時 {time}。看看雷區與錯誤旗幟，再試一次。",
+      "最佳時間 {time}",
+      "已通關 {count} 次",
+      "滑鼠左鍵開格，右鍵或長按插旗。數字周圍旗數足夠時，按一下數字快速開格。方向鍵移動，Enter 開格，F 插旗。",
+      "任意開一格開始：首格及周圍一圈安全。",
+      "根據數字推理；錯誤插旗後快速開格可能觸雷。",
+      "插旗模式：按一下格子放置或移除旗幟。",
+      "無法儲存進度，你仍可繼續遊玩。",
+      "踩地雷棋盤，{rows} 行 {columns} 欄",
+      "第 {row} 行，第 {column} 欄，{value}",
+      "錯誤旗幟",
+      "地雷",
+      "已插旗",
+      "周圍 {count} 顆地雷",
+      "空白",
+      "未開啟",
+    ],
+    en: [
+      "Mines",
+      "One square at a time · Safe first move and autosave",
+      "One square at a time",
+      "Mines left",
+      "Time",
+      "Difficulty",
+      "Beginner",
+      "Intermediate",
+      "Expert",
+      "Input mode",
+      "Reveal",
+      "Flag",
+      "Pause",
+      "Resume",
+      "New game",
+      "Start a new exploration?",
+      "This replaces your board. Best times and wins are kept.",
+      "Cancel",
+      "Start new game",
+      "Paused",
+      "The board is hidden and the clock is stopped. Resume when ready.",
+      "Play again",
+      "All clear!",
+      "You hit a mine",
+      "Completed in {time}. Your win has been recorded.",
+      "Time: {time}. Review the mines and incorrect flags, then try again.",
+      "Best time {time}",
+      "Wins {count}",
+      "Left-click to reveal; right-click or hold to flag. Click a revealed number to open neighbors when enough flags surround it. Arrow keys move, Enter reveals, F flags.",
+      "Open any square: the first square and its neighbors are safe.",
+      "Follow the numbers. Opening neighbors with incorrect flags can hit a mine.",
+      "Flag mode: tap a square to place or remove a flag.",
+      "Progress could not be saved. You can still keep playing.",
+      "Minesweeper board, {rows} rows and {columns} columns",
+      "Row {row}, column {column}, {value}",
+      "Incorrect flag",
+      "Mine",
+      "Flagged",
+      "{count} adjacent mines",
+      "Empty",
+      "Covered",
+    ],
+    ja: [
+      "マインスイーパー",
+      "一マスずつ推理 · 初手安全・自動保存",
+      "一マスずつ、じっくり推理",
+      "残りの地雷",
+      "時間",
+      "難易度",
+      "初級",
+      "中級",
+      "上級",
+      "操作モード",
+      "開く",
+      "旗",
+      "一時停止",
+      "再開",
+      "新規",
+      "新しい探索を始めますか？",
+      "現在の盤面は置き換わります。最速記録とクリア回数は残ります。",
+      "キャンセル",
+      "新しく始める",
+      "一時停止中",
+      "盤面を隠し、時計を停止しました。準備ができたら再開してください。",
+      "もう一度",
+      "地雷除去完了！",
+      "地雷を踏みました",
+      "{time} でクリア。記録を保存しました。",
+      "時間：{time}。地雷と間違った旗を確認して再挑戦しましょう。",
+      "最速 {time}",
+      "クリア {count} 回",
+      "左クリックで開き、右クリックか長押しで旗を立てます。周囲の旗が数字と一致したら数字をクリックして一括で開きます。矢印で移動、Enter で開く、F で旗。",
+      "好きなマスから開始。初手とその周囲は安全です。",
+      "数字を手がかりに推理しましょう。旗が間違っていると一括開放で地雷を踏むことがあります。",
+      "旗モード：マスをタップして旗を立てる・外す。",
+      "進行状況を保存できません。ゲームは続けられます。",
+      "マインスイーパー、{rows} 行 {columns} 列",
+      "{row} 行 {column} 列、{value}",
+      "間違った旗",
+      "地雷",
+      "旗あり",
+      "周囲に地雷 {count} 個",
+      "空白",
+      "未開放",
+    ],
+    ko: [
+      "지뢰찾기",
+      "한 칸씩 추리하기 · 첫 클릭 안전 및 자동 저장",
+      "한 칸씩, 차분하게 추리하기",
+      "남은 지뢰",
+      "시간",
+      "난이도",
+      "초급",
+      "중급",
+      "고급",
+      "조작 모드",
+      "열기",
+      "깃발",
+      "일시 정지",
+      "계속",
+      "새 게임",
+      "새로운 탐색을 시작할까요?",
+      "현재 보드는 교체되며 최고 기록과 승리 횟수는 유지됩니다.",
+      "취소",
+      "새로 시작",
+      "일시 정지됨",
+      "보드를 가리고 시간을 멈췄어요. 준비되면 계속하세요.",
+      "다시 하기",
+      "지뢰 제거 완료!",
+      "지뢰를 밟았어요",
+      "{time} 만에 완료했어요. 승리 기록을 저장했어요.",
+      "소요 시간 {time}. 지뢰와 잘못된 깃발을 확인한 후 다시 도전하세요.",
+      "최고 기록 {time}",
+      "승리 {count}회",
+      "왼쪽 클릭으로 열고, 오른쪽 클릭이나 길게 누르면 깃발을 놓아요. 주변 깃발 수가 숫자와 같으면 숫자를 클릭해 한 번에 열어요. 방향키로 이동, Enter로 열기, F로 깃발.",
+      "아무 칸이나 열어 시작하세요. 첫 칸과 주변은 안전해요.",
+      "숫자를 보고 추리하세요. 깃발이 틀리면 주변을 열 때 지뢰를 밟을 수 있어요.",
+      "깃발 모드: 칸을 눌러 깃발을 놓거나 제거하세요.",
+      "진행 상황을 저장할 수 없어요. 게임은 계속할 수 있어요.",
+      "지뢰찾기 보드, {rows}행 {columns}열",
+      "{row}행 {column}열, {value}",
+      "잘못된 깃발",
+      "지뢰",
+      "깃발 있음",
+      "주변 지뢰 {count}개",
+      "빈칸",
+      "열지 않은 칸",
+    ],
+  };
+  for (const [language, values] of Object.entries(messages)) {
+    if (values.length !== keys.length)
+      throw Error("Invalid minesweeper translations: " + language);
+    keys.forEach((key, index) => {
+      WorkTimeApp.data.locales[language]["games.mine." + key] = values[index];
+    });
+  }
+})();
+// 2048 keeps its save and controls separate from the timesheet.
+(() => {
+  const messages = {
+    "zh-CN": [
+      "AI 演绎",
+      "算法演绎中 · 不计入个人记录",
+      "AI 演绎结束 · 不计入个人记录",
+      "算法最高分",
+      "开始算法演绎",
+      "从新棋局开始，保留个人进度和最高分。",
+    ],
+    en: [
+      "AI demo",
+      "Algorithm demo running · Personal record unchanged",
+      "AI demo complete · Personal record unchanged",
+      "Algorithm best",
+      "Start algorithm demo",
+      "The demo starts a new game. Your progress and best score are saved.",
+    ],
+    "zh-TW": [
+      "AI 演繹",
+      "演算法演繹中 · 不計入個人紀錄",
+      "AI 演繹結束 · 不計入個人紀錄",
+      "演算法最高分",
+      "開始演算法演繹",
+      "從新棋局開始，保留個人進度與最高分。",
+    ],
+    "zh-HK": [
+      "AI 演繹",
+      "演算法演繹中 · 不計入個人紀錄",
+      "AI 演繹結束 · 不計入個人紀錄",
+      "演算法最高分",
+      "開始演算法演繹",
+      "從新棋局開始，保留個人進度與最高分。",
+    ],
+    ja: [
+      "AI デモ",
+      "アルゴリズムデモ実行中 · 個人記録には含まれません",
+      "AI デモ終了 · 個人記録には含まれません",
+      "アルゴリズム最高得点",
+      "アルゴリズムデモを開始",
+      "新しい盤面でデモを開始します。進行状況と自己ベストは保存されます。",
+    ],
+    ko: [
+      "AI 시연",
+      "알고리즘 시연 중 · 개인 기록에 포함되지 않아요",
+      "AI 시연 종료 · 개인 기록에 포함되지 않아요",
+      "알고리즘 최고 점수",
+      "알고리즘 시연 시작",
+      "새 게임에서 시연을 시작해요. 진행 상황과 최고 점수는 유지돼요.",
+    ],
+  };
+  for (const [locale, values] of Object.entries(messages)) {
+    [
+      "ai",
+      "aiRunning",
+      "aiFinished",
+      "aiBest",
+      "aiStart",
+      "aiConfirmHint",
+    ].forEach((key, index) => {
+      WorkTimeApp.data.locales[locale]["games.puzzle." + key] = values[index];
+    });
+  }
+})();
+(() => {
+  const keys = [
+    "score",
+    "best",
+    "hint",
+    "undo",
+    "restart",
+    "cancel",
+    "confirm",
+    "confirmTitle",
+    "confirmHint",
+    "board",
+    "empty",
+    "won",
+    "lost",
+    "wonHint",
+    "lostHint",
+    "continue",
+    "up",
+    "left",
+    "down",
+    "right",
+    "playing",
+    "saveFailed",
+  ];
+  const rows = {
+    "zh-CN": [
+      "得分",
+      "最高分",
+      "用方向键、WASD 或滑动合并相同数字，向 2048 挑战。",
+      "撤销",
+      "重新开始",
+      "取消",
+      "开始新局",
+      "开始新局",
+      "当前棋局会被替换，最高分将保留",
+      "2048 棋盘",
+      "空格",
+      "达成 2048！",
+      "游戏结束",
+      "做得好！你可以继续合并，挑战更大的数字。",
+      "没有可移动的方块了。试试撤销，或开始新局。",
+      "继续挑战",
+      "向上",
+      "向左",
+      "向下",
+      "向右",
+      "合并相同数字",
+      "无法保存进度。你仍可继续游玩。",
+    ],
+    en: [
+      "Score",
+      "Best",
+      "Use arrow keys, WASD or swipe to merge matching tiles and reach 2048.",
+      "Undo",
+      "Restart",
+      "Cancel",
+      "New game",
+      "Start a new game",
+      "This replaces your board and keeps your best score",
+      "2048 board",
+      "Empty",
+      "You reached 2048!",
+      "Game over",
+      "Well done! Keep merging to reach even higher tiles.",
+      "No moves left. Undo your last move or start a new game.",
+      "Keep playing",
+      "Move up",
+      "Move left",
+      "Move down",
+      "Move right",
+      "Merge matching tiles",
+      "Progress could not be saved. You can still keep playing.",
+    ],
+    "zh-TW": [
+      "得分",
+      "最高分",
+      "使用方向鍵、WASD 或滑動合併相同數字，挑戰 2048。",
+      "復原",
+      "重新開始",
+      "取消",
+      "開始新局",
+      "開始新局",
+      "目前棋局將被取代，最高分會保留",
+      "2048 棋盤",
+      "空格",
+      "達成 2048！",
+      "遊戲結束",
+      "做得好！你可以繼續合併，挑戰更大的數字。",
+      "沒有可移動的方塊了。試試復原，或開始新局。",
+      "繼續挑戰",
+      "向上",
+      "向左",
+      "向下",
+      "向右",
+      "合併相同數字",
+      "無法儲存進度。你仍可繼續遊玩。",
+    ],
+    "zh-HK": [
+      "得分",
+      "最高分",
+      "使用方向鍵、WASD 或滑動合併相同數字，挑戰 2048。",
+      "復原",
+      "重新開始",
+      "取消",
+      "開始新局",
+      "開始新局",
+      "目前棋局將被取代，最高分會保留",
+      "2048 棋盤",
+      "空格",
+      "達成 2048！",
+      "遊戲結束",
+      "做得好！你可以繼續合併，挑戰更大的數字。",
+      "沒有可移動的方塊了。試試復原，或開始新局。",
+      "繼續挑戰",
+      "向上",
+      "向左",
+      "向下",
+      "向右",
+      "合併相同數字",
+      "無法儲存進度。你仍可繼續遊玩。",
+    ],
+    ja: [
+      "スコア",
+      "ベスト",
+      "矢印キー、WASD またはスワイプで同じ数字を合体させ、2048 を目指しましょう。",
+      "元に戻す",
+      "やり直す",
+      "キャンセル",
+      "新しいゲーム",
+      "新しいゲームを始めますか",
+      "現在の盤面は置き換わり、ベストスコアは残ります",
+      "2048 の盤面",
+      "空きマス",
+      "2048 達成！",
+      "ゲームオーバー",
+      "おめでとう！さらに大きな数字を目指して続けられます。",
+      "動かせるタイルがありません。一手戻すか、新しいゲームを始めてください。",
+      "続ける",
+      "上へ移動",
+      "左へ移動",
+      "下へ移動",
+      "右へ移動",
+      "同じ数字を合体",
+      "進行状況を保存できません。ゲームは続けられます。",
+    ],
+    ko: [
+      "점수",
+      "최고 점수",
+      "방향키, WASD 또는 스와이프로 같은 숫자를 합쳐 2048에 도전하세요.",
+      "되돌리기",
+      "다시 시작",
+      "취소",
+      "새 게임",
+      "새 게임을 시작할까요",
+      "현재 보드는 교체되며 최고 점수는 유지됩니다",
+      "2048 보드",
+      "빈칸",
+      "2048 달성!",
+      "게임 종료",
+      "축하해요! 계속 합쳐 더 큰 숫자에 도전할 수 있어요.",
+      "더 이상 움직일 수 없어요. 한 수 되돌리거나 새 게임을 시작하세요.",
+      "계속하기",
+      "위로 이동",
+      "왼쪽으로 이동",
+      "아래로 이동",
+      "오른쪽으로 이동",
+      "같은 숫자 합치기",
+      "진행 상황을 저장할 수 없어요. 게임은 계속할 수 있어요.",
+    ],
+  };
+  const descriptions = {
+    "zh-CN": "合并数字，挑战 2048 · 自动保存进度",
+    en: "Merge tiles and reach 2048 · Progress saved automatically",
+    "zh-TW": "合併數字，挑戰 2048 · 自動儲存進度",
+    "zh-HK": "合併數字，挑戰 2048 · 自動儲存進度",
+    ja: "数字を合体させて 2048 へ · 進行状況は自動保存",
+    ko: "숫자를 합쳐 2048에 도전 · 진행 상황 자동 저장",
+  };
+  for (const [locale, values] of Object.entries(rows)) {
+    const catalog = WorkTimeApp.data.locales[locale];
+    catalog["games.puzzleName"] = "2048";
+    catalog["games.puzzleDescription"] = descriptions[locale];
+    keys.forEach((key, index) => {
+      catalog["games.puzzle." + key] = values[index];
+    });
+  }
+})();
+for (const [language, text] of Object.entries({
+  "zh-CN": "暂无数据",
+  "zh-TW": "暫無資料",
+  "zh-HK": "暫無資料",
+  en: "No data",
+  ja: "データなし",
+  ko: "데이터 없음",
+}))
+  WorkTimeApp.data.locales[language]["analysis.emptyChart"] = text;
+(() => {
+  const messages = {
+    "zh-CN": [
+      "每日上下班",
+      "每日上下班双轨图，共用日期横轴，各有独立的时间纵轴，两轨时间均从上往下由早到晚。同一天的上下班点由完整竖线连接，不连接不同日期；两轨之间不画刻度和网格，菱形表示晚于21:00下班。顶部卡片显示上下班的最早、最晚和算术平均时间。",
+    ],
+    "zh-TW": [
+      "每日上下班",
+      "每日上下班雙軌圖，共用日期橫軸，各有獨立的時間縱軸，兩軌時間均從上往下由早到晚。同一天的上下班點由完整直線連接，不連接不同日期；兩軌之間不畫刻度和網格，菱形表示晚於21:00下班。頂部卡片顯示上下班的最早、最晚和算術平均時間。",
+    ],
+    "zh-HK": [
+      "每日上下班",
+      "每日上下班雙軌圖，共用日期橫軸，各有獨立的時間縱軸，兩軌時間均從上往下由早到晚。同一天的上下班點由完整直線連接，不連接不同日期；兩軌之間不畫刻度和網格，菱形表示晚於21:00下班。頂部卡片顯示上下班的最早、最晚和算術平均時間。",
+    ],
+    en: [
+      "Daily arrival and departure",
+      "Two clock-time tracks share a date axis and use separate time scales, both increasing from top to bottom. Each continuous vertical line joins arrival and departure on the same date, never across dates. The gap between tracks has no ticks or grid. Diamonds mark departures after 21:00. Top cards show earliest, latest and arithmetic mean arrival and departure times.",
+    ],
+    ja: [
+      "毎日の出退勤",
+      "日付軸を共有する出退勤の2つの時刻軸は、どちらも上から下へ早い時刻から遅い時刻の順に表示します。同日の出退勤点を1本の直線で結び、異なる日付は結びません。軸の間に目盛りやグリッドは表示しません。ひし形は21:00より後の退勤です。上部カードには最も早い・遅い出退勤時刻と算術平均を表示します。",
+    ],
+    ko: [
+      "일별 출퇴근",
+      "두 출퇴근 시간 축은 날짜 축을 공유하며 각각 위에서 아래로 이른 시간부터 늦은 시간 순으로 표시합니다. 같은 날짜의 출퇴근 점을 하나의 연속 수직선으로 연결하며 다른 날짜는 연결하지 않습니다. 두 축 사이에는 눈금과 격자를 그리지 않습니다. 마름모는 21:00 이후 퇴근을 나타냅니다. 상단 카드에는 가장 이른 출퇴근 시간, 가장 늦은 시간과 산술 평균을 표시합니다.",
+    ],
+  };
+  for (const [language, values] of Object.entries(messages)) {
+    WorkTimeApp.data.locales[language]["analysis.dailyChart"] = values[0];
+    WorkTimeApp.data.locales[language]["analysis.dailyDescription"] = values[1];
+  }
+})();
+// Game shell and catalog labels are shared by the sidebar and expanded menu.
+(() => {
+  const keys = [
+    "tab",
+    "menu",
+    "exit",
+    "empty",
+    "demoName",
+    "demoDescription",
+    "demoHint",
+    "failed",
+  ];
+  const messages = {
+    "zh-CN": [
+      "游戏",
+      "游戏菜单",
+      "退出游戏",
+      "暂无游戏",
+      "容器演示",
+      "预览游戏空间与切换效果",
+      "游戏空间已就绪。你可以返回游戏菜单，或退出并继续工作记录。",
+      "游戏启动失败，请返回菜单重试。",
+    ],
+    en: [
+      "Games",
+      "Game menu",
+      "Exit games",
+      "No games yet",
+      "Container demo",
+      "Preview the game space and transitions",
+      "Your game space is ready. Return to the game menu or exit to continue your work records.",
+      "The game could not start. Return to the menu and try again.",
+    ],
+    "zh-TW": [
+      "遊戲",
+      "遊戲選單",
+      "離開遊戲",
+      "暫無遊戲",
+      "容器示範",
+      "預覽遊戲空間與切換效果",
+      "遊戲空間已就緒。你可以返回遊戲選單，或離開並繼續工作記錄。",
+      "遊戲啟動失敗，請返回選單重試。",
+    ],
+    "zh-HK": [
+      "遊戲",
+      "遊戲選單",
+      "離開遊戲",
+      "暫無遊戲",
+      "容器示範",
+      "預覽遊戲空間與切換效果",
+      "遊戲空間已就緒。你可以返回遊戲選單，或離開並繼續工作記錄。",
+      "遊戲啟動失敗，請返回選單重試。",
+    ],
+    ja: [
+      "ゲーム",
+      "ゲームメニュー",
+      "終了",
+      "ゲームはまだありません",
+      "コンテナデモ",
+      "ゲーム領域と切り替え効果を確認",
+      "ゲーム領域の準備ができました。ゲームメニューに戻るか、終了して勤務記録を続けられます。",
+      "ゲームを開始できませんでした。メニューに戻って再試行してください。",
+    ],
+    ko: [
+      "게임",
+      "게임 메뉴",
+      "게임 종료",
+      "아직 게임이 없습니다",
+      "컨테이너 데모",
+      "게임 공간과 전환 효과 미리 보기",
+      "게임 공간이 준비되었습니다. 게임 메뉴로 돌아가거나 종료하여 근무 기록을 계속할 수 있습니다.",
+      "게임을 시작하지 못했습니다. 메뉴로 돌아가 다시 시도하세요.",
+    ],
+  };
+  for (const [language, values] of Object.entries(messages))
+    keys.forEach((key, index) => {
+      WorkTimeApp.data.locales[language]["games." + key] = values[index];
+    });
+})();
+// Linked routine trends and the full-month overtime rhythm.
+for (const [language, text] of Object.entries({
+  "zh-CN": "休息日加班",
+  "zh-TW": "休息日加班",
+  "zh-HK": "休息日加班",
+  en: "Rest-day overtime",
+  ja: "休日出勤",
+  ko: "휴일 초과근무",
+}))
+  WorkTimeApp.data.locales[language]["analysis.restOvertime"] = text;
+
+(() => {
+  const keys = [
+    "trend",
+    "observed",
+    "schedule",
+    "lateMark",
+    "distribution",
+    "medianLabel",
+    "lateBadge",
+    "trendHint",
+    "overtime",
+    "workedOvertime",
+    "recorded",
+    "missing",
+    "future",
+    "longestRange",
+    "dualDescription",
+  ];
+  const messages = {
+    "zh-CN": [
+      "作息趋势",
+      "实际记录",
+      "班次基准",
+      "21:00 后",
+      "加班分布",
+      "中位 {time}",
+      "21:00 后下班 · {count}",
+      "悬停日期，或聚焦数据点后用方向键浏览，查看上下班与加班详情",
+      "加班",
+      "加班",
+      "已记录 · 无加班",
+      "无纳入记录",
+      "未来日期",
+      "最长 {count} · {range}",
+      "上下班双轨时间趋势，共用日期横轴，各有独立的时间纵轴；缺失日期断线，菱形表示晚于21:00下班。中位数显示在各轨标题旁。",
+    ],
+    "zh-TW": [
+      "作息趨勢",
+      "實際紀錄",
+      "班次基準",
+      "21:00 後",
+      "加班分布",
+      "中位 {time}",
+      "21:00 後下班 · {count}",
+      "懸停日期，或聚焦資料點後用方向鍵瀏覽，查看上下班與加班詳情",
+      "加班",
+      "加班",
+      "已記錄 · 無加班",
+      "無納入紀錄",
+      "未來日期",
+      "最長 {count} · {range}",
+      "上下班雙軌時間趨勢，共用日期橫軸，各有獨立的時間縱軸；缺失日期斷線，菱形表示晚於21:00下班。中位數顯示在各軌標題旁。",
+    ],
+    "zh-HK": [
+      "作息趨勢",
+      "實際記錄",
+      "班次基準",
+      "21:00 後",
+      "加班分布",
+      "中位 {time}",
+      "21:00 後下班 · {count}",
+      "懸停日期，或聚焦資料點後用方向鍵瀏覽，查看上下班與加班詳情",
+      "加班",
+      "加班",
+      "已記錄 · 無加班",
+      "無納入記錄",
+      "未來日期",
+      "最長 {count} · {range}",
+      "上下班雙軌時間趨勢，共用日期橫軸，各有獨立的時間縱軸；缺失日期斷線，菱形表示晚於21:00下班。中位數顯示在各軌標題旁。",
+    ],
+    en: [
+      "Routine trends",
+      "Observed",
+      "Scheduled",
+      "After 21:00",
+      "Overtime rhythm",
+      "Median {time}",
+      "After 21:00 · {count}",
+      "Hover a date, or focus a point and use arrow keys, to explore arrival, departure and overtime",
+      "Overtime",
+      "Overtime",
+      "Recorded · no overtime",
+      "No included record",
+      "Upcoming",
+      "Longest {count} · {range}",
+      "Arrival and departure trends share a date axis and have separate clock-time scales. Missing dates break the lines. Diamonds mark departures after 21:00. Each track header shows its median.",
+    ],
+    ja: [
+      "勤務時刻の推移",
+      "実際の記録",
+      "所定時刻",
+      "21:00 より後",
+      "残業の分布",
+      "中央値 {time}",
+      "21:00 より後の退勤 · {count}",
+      "日付にポインターを合わせるか、点にフォーカスして矢印キーで移動すると出退勤と残業の詳細を表示します",
+      "残業",
+      "残業",
+      "記録あり · 残業なし",
+      "対象記録なし",
+      "未来の日付",
+      "最長 {count} · {range}",
+      "出勤と退勤の推移は日付軸を共有し、時刻軸はそれぞれ独立しています。記録のない日付で線は途切れます。ひし形は21:00より後の退勤を示します。各見出しに中央値を表示します。",
+    ],
+    ko: [
+      "출퇴근 추이",
+      "실제 기록",
+      "정규 시간",
+      "21:00 이후",
+      "초과근무 분포",
+      "중앙값 {time}",
+      "21:00 이후 퇴근 · {count}",
+      "날짜에 마우스를 올리거나 점에 초점을 맞춘 뒤 방향키로 출퇴근 및 초과근무 세부 정보를 확인하세요",
+      "초과근무",
+      "초과근무",
+      "기록 있음 · 초과근무 없음",
+      "집계 기록 없음",
+      "미래 날짜",
+      "최장 {count} · {range}",
+      "출근과 퇴근 추이는 날짜 축을 공유하며 각각 별도의 시간 축을 사용합니다. 기록이 없는 날짜에서는 선이 끊깁니다. 마름모는21:00이후 퇴근을 나타냅니다. 각 제목 옆에 중앙값을 표시합니다.",
+    ],
+  };
+  for (const [language, values] of Object.entries(messages))
+    keys.forEach((key, index) => {
+      WorkTimeApp.data.locales[language]["analysis." + key] = values[index];
+    });
+})();
+// Monthly analysis labels are shared by the offline and published entrypoints.
+for (const [language, value] of Object.entries({
+  "zh-CN": "返回月历",
+  "zh-TW": "返回月曆",
+  "zh-HK": "返回月曆",
+  en: "Back to calendar",
+  ja: "月間カレンダーに戻る",
+  ko: "월간 달력으로 돌아가기",
+}))
+  WorkTimeApp.data.locales[language]["analysis.calendar"] = value;
+(() => {
+  const keys = [
+    "title",
+    "toggle",
+    "manual",
+    "chart",
+    "arrival",
+    "departure",
+    "streak",
+    "naturalDays",
+    "footer",
+    "earliest",
+    "latest",
+    "overtimeDays",
+    "longest",
+    "nextDay",
+    "days",
+    "allDates",
+    "baseline",
+    "chartDescription",
+    "start",
+    "end",
+    "coverage",
+    "ratio",
+    "empty",
+    "emptyOA",
+    "medianStart",
+    "medianEnd",
+    "late",
+    "median",
+    "noOvertime",
+    "baselineLegend",
+  ];
+  const messages = {
+    "zh-CN": [
+      "本月作息",
+      "作息分析",
+      "包含手录数据",
+      "每日上下班时间",
+      "● 上班",
+      "■ 下班",
+      "连续加班",
+      "按连续自然日统计",
+      "仅统计截至今天的完整记录，不含未来日期",
+      "最早上班",
+      "最晚下班",
+      "加班 / 记录",
+      "最长连续加班",
+      "次日",
+      "{count} 天",
+      "查看全部 {count} 个日期",
+      "下班基准",
+      "每日上下班时间范围；横轴为日期，纵轴为时间，圆点表示上班，方块表示下班",
+      "上班",
+      "下班",
+      "{count} 天完整记录 · 其中 {manual} 天含手录数据",
+      "占记录天数 {value}",
+      "暂无符合条件的完整上下班记录",
+      "暂无完整 OA 记录，可开启“包含手录数据”查看已填写记录",
+      "典型上班时间",
+      "典型下班时间",
+      "21:00 后下班",
+      "典型时间采用中位数",
+      "暂无加班记录",
+      "虚线：当天班次下班基准 · 浅色区域：21:00 后",
+    ],
+    "zh-TW": [
+      "本月作息",
+      "作息分析",
+      "包含手動資料",
+      "每日上下班時間",
+      "● 上班",
+      "■ 下班",
+      "連續加班",
+      "按連續日曆日統計",
+      "僅統計截至今天的完整紀錄，不含未來日期",
+      "最早上班",
+      "最晚下班",
+      "加班 / 紀錄",
+      "最長連續加班",
+      "次日",
+      "{count} 天",
+      "查看全部 {count} 個日期",
+      "下班基準",
+      "每日上下班時間範圍；橫軸為日期，縱軸為時間，圓點表示上班，方塊表示下班",
+      "上班",
+      "下班",
+      "{count} 天完整紀錄 · 其中 {manual} 天含手動資料",
+      "占紀錄天數 {value}",
+      "暫無符合條件的完整上下班紀錄",
+      "暫無完整 OA 紀錄，可開啟「包含手動資料」查看已填寫紀錄",
+      "典型上班時間",
+      "典型下班時間",
+      "21:00 後下班",
+      "典型時間採用中位數",
+      "暫無加班紀錄",
+      "虛線：當天班次下班基準 · 淺色區域：21:00 後",
+    ],
+    "zh-HK": [
+      "本月作息",
+      "作息分析",
+      "包含手動資料",
+      "每日上下班時間",
+      "● 上班",
+      "■ 下班",
+      "連續加班",
+      "按連續日曆日統計",
+      "僅統計截至今天的完整記錄，不含未來日期",
+      "最早上班",
+      "最晚下班",
+      "加班 / 記錄",
+      "最長連續加班",
+      "次日",
+      "{count} 天",
+      "查看全部 {count} 個日期",
+      "下班基準",
+      "每日上下班時間範圍；橫軸為日期，縱軸為時間，圓點表示上班，方塊表示下班",
+      "上班",
+      "下班",
+      "{count} 天完整記錄 · 其中 {manual} 天含手動資料",
+      "佔記錄天數 {value}",
+      "暫無符合條件的完整上下班記錄",
+      "暫無完整 OA 記錄，可開啟「包含手動資料」查看已填寫記錄",
+      "典型上班時間",
+      "典型下班時間",
+      "21:00 後下班",
+      "典型時間採用中位數",
+      "暫無加班記錄",
+      "虛線：當天班次下班基準 · 淺色區域：21:00 後",
+    ],
+    en: [
+      "Monthly routine",
+      "Routine analysis",
+      "Include manual entries",
+      "Daily arrival and departure",
+      "● Arrival",
+      "■ Departure",
+      "Overtime streak",
+      "Consecutive calendar days",
+      "Complete records through today; future dates excluded",
+      "Earliest arrival",
+      "Latest departure",
+      "Overtime days / recorded days",
+      "Longest overtime streak",
+      "Next day",
+      "{count} days",
+      "Show all {count} dates",
+      "Scheduled departure",
+      "Daily arrival and departure ranges; dates on the horizontal axis, times on the vertical axis; circles indicate arrival and squares departure",
+      "Arrival",
+      "Departure",
+      "{count} complete days · {manual} include manual entries",
+      "{value} of recorded days",
+      "No eligible complete arrival and departure records",
+      "No complete OA records. Enable manual entries to include filled records.",
+      "Typical arrival time",
+      "Typical departure time",
+      "Departure after 21:00",
+      "Typical times use the median",
+      "No overtime records",
+      "Dashed: scheduled departure for each day · Shaded: after 21:00",
+    ],
+    ja: [
+      "今月の勤務傾向",
+      "勤務分析",
+      "手入力を含める",
+      "毎日の出退勤時刻",
+      "● 出勤",
+      "■ 退勤",
+      "連続残業",
+      "暦日の連続で集計",
+      "本日までの完全な記録のみ。未来の日付は除外",
+      "最も早い出勤",
+      "最も遅い退勤",
+      "残業日数 / 記録日数",
+      "最長連続残業",
+      "翌日",
+      "{count} 日",
+      "全 {count} 日を表示",
+      "所定退勤時刻",
+      "毎日の出退勤範囲。横軸は日付、縦軸は時刻。丸は出勤、四角は退勤",
+      "出勤",
+      "退勤",
+      "完全な記録 {count} 日 · 手入力を含む {manual} 日",
+      "記録日数の {value}",
+      "対象となる完全な出退勤記録はありません",
+      "完全な OA 記録がありません。手入力を有効にすると入力済みの記録を表示します。",
+      "通常の出勤時刻",
+      "通常の退勤時刻",
+      "21:00 より後の退勤",
+      "通常の時刻は中央値を使用",
+      "残業記録はありません",
+      "破線：各日の所定退勤時刻 · 網掛け：21:00 より後",
+    ],
+    ko: [
+      "이번 달 근무 패턴",
+      "근무 분석",
+      "수동 입력 포함",
+      "일별 출퇴근 시간",
+      "● 출근",
+      "■ 퇴근",
+      "연속 초과근무",
+      "연속 달력 날짜 기준",
+      "오늘까지의 완전한 기록만 집계하며 미래 날짜 제외",
+      "가장 이른 출근",
+      "가장 늦은 퇴근",
+      "초과근무일 / 기록일",
+      "최장 연속 초과근무",
+      "다음 날",
+      "{count}일",
+      "날짜 {count}개 모두 보기",
+      "정규 퇴근 시간",
+      "일별 출퇴근 범위. 가로축은 날짜, 세로축은 시간. 원은 출근, 사각형은 퇴근",
+      "출근",
+      "퇴근",
+      "완전한 기록 {count}일 · 수동 입력 포함 {manual}일",
+      "기록일의 {value}",
+      "조건에 맞는 완전한 출퇴근 기록이 없습니다",
+      "완전한 OA 기록이 없습니다. 수동 입력을 활성화하면 입력된 기록을 볼 수 있습니다.",
+      "일반적인 출근 시간",
+      "일반적인 퇴근 시간",
+      "21:00 이후 퇴근",
+      "일반적인 시간은 중앙값 사용",
+      "초과근무 기록이 없습니다",
+      "점선: 일별 정규 퇴근 시간 · 음영: 21:00 이후",
+    ],
+  };
+  for (const [language, values] of Object.entries(messages))
+    keys.forEach((key, index) => {
+      WorkTimeApp.data.locales[language]["analysis." + key] = values[index];
+    });
+})();
+
+(() => {
+  const messages = {
+    "zh-CN": [
+      "确认",
+      "预览中，确认后保存",
+      "重置 {count} 天",
+      "全部重置 {count} 天",
+      "填写 {count} 天",
+      "批量修改已保存。",
+      "保存失败，预览尚未录入，请重试或取消。",
+    ],
+    "zh-TW": [
+      "確認",
+      "預覽中，確認後儲存",
+      "重設 {count} 天",
+      "全部重設 {count} 天",
+      "填寫 {count} 天",
+      "批次修改已儲存。",
+      "儲存失敗，預覽尚未寫入，請重試或取消。",
+    ],
+    "zh-HK": [
+      "確認",
+      "預覽中，確認後儲存",
+      "重設 {count} 天",
+      "全部重設 {count} 天",
+      "填寫 {count} 天",
+      "批次修改已儲存。",
+      "儲存失敗，預覽尚未寫入，請重試或取消。",
+    ],
+    en: [
+      "Confirm",
+      "Preview · confirm to save",
+      "Reset {count} days",
+      "Reset all {count} days",
+      "Fill {count} days",
+      "Batch changes saved.",
+      "Save failed. Preview has not been saved. Retry or cancel.",
+    ],
+    ja: [
+      "確定",
+      "プレビュー中・確定して保存",
+      "{count} 日をリセット",
+      "全 {count} 日をリセット",
+      "{count} 日を入力",
+      "一括変更を保存しました。",
+      "保存できませんでした。プレビューは未保存です。再試行またはキャンセルしてください。",
+    ],
+    ko: [
+      "확인",
+      "미리 보기 · 확인 후 저장",
+      "{count}일 초기화",
+      "전체 {count}일 초기화",
+      "{count}일 입력",
+      "일괄 변경 사항이 저장되었습니다.",
+      "저장하지 못했습니다. 미리 보기는 저장되지 않았습니다. 다시 시도하거나 취소하세요.",
+    ],
+  };
+  const keys = [
+    "confirm",
+    "preview",
+    "resetCount",
+    "resetAllCount",
+    "fillCount",
+    "saved",
+    "saveFailed",
+  ];
+  for (const [locale, values] of Object.entries(messages))
+    keys.forEach((key, index) => {
+      WorkTimeApp.data.locales[locale]["batch." + key] = values[index];
+    });
+})();
+// Batch actions share a compact row; their existing title/ARIA keeps full scope.
+(() => {
+  for (const [language, [label, selected]] of Object.entries({
+    "zh-CN": ["全部重置", "重置所选"],
+    "zh-TW": ["全部重設", "重設所選"],
+    "zh-HK": ["全部重設", "重設所選"],
+    en: ["Reset all", "Reset"],
+    ko: ["전체 초기화", "초기화"],
+    ja: ["リセット", "リセット"],
+  })) {
+    WorkTimeApp.data.locales[language]["short.batchReset"] = label;
+    WorkTimeApp.data.locales[language]["short.batchResetSelected"] = selected;
+  }
+})();
+(() => {
+  const labels = {
+    "zh-CN": ["天气", "{days} 天", "不显示"],
+    "zh-TW": ["天氣", "{days} 天", "不顯示"],
+    "zh-HK": ["天氣", "{days} 天", "不顯示"],
+    en: ["Weather", "{days} days", "Hidden"],
+    ko: ["날씨", "{days} 일", "표시 안 함"],
+    ja: ["天気", "{days} 日", "非表示"],
+  };
+  for (const [locale, [label, days, off]] of Object.entries(labels))
+    Object.assign(WorkTimeApp.data.locales[locale], {
+      "weather.settings.label": label,
+      "weather.settings.days": days,
+      "weather.settings.off": off,
+    });
+})();
+(() => {
+  const rows = {
+    "zh-CN": ["所需加班", "可用工时"],
+    "zh-TW": ["所需加班", "可用工時"],
+    "zh-HK": ["所需加班", "可用工時"],
+    en: ["OT needed", "Available"],
+    ko: ["필요 초과", "가능 시간"],
+    ja: ["必要残業", "余裕時間"],
+  };
+  for (const [language, [needed, available]] of Object.entries(rows))
+    Object.assign(WorkTimeApp.data.locales[language], {
+      "short.needed": needed,
+      "short.available": available,
+      "short.target.remaining": "{label} · {count} d",
+    });
+})();
+(() => {
+  for (const [locale, value] of Object.entries({
+    "zh-CN": "当日加班",
+    "zh-TW": "當日加班",
+    "zh-HK": "當日加班",
+    en: "Daily overtime",
+    ko: "일일 초과근무",
+    ja: "当日の残業時間",
+  }))
+    WorkTimeApp.data.locales[locale]["preview.dailyOvertime"] = value;
+})();
+/** Short forms for fixed-width panels; full wording stays in titles/ARIA. */
+(() => {
+  const keys = [
+    "short.brand",
+    "short.target",
+    "short.workOT",
+    "short.restOT",
+    "short.averageFormula",
+    "short.balanceFormula",
+    "short.restOvertimeDays",
+    "short.preview.hours",
+    "short.preview.ot",
+    "short.preview.attendance",
+    "short.preview.through",
+    "short.preview.employment",
+    "short.preview.starts",
+  ];
+  const rows = {
+    "zh-CN": [
+      "工时记录",
+      "月度加班目标",
+      "工作日加班",
+      "休息日加班",
+      "工作日加班 ÷ 出勤",
+      "工作日加班 − 目标 × 出勤",
+      "休息日加班：{count} d",
+      "工时",
+      "加班",
+      "出勤",
+      "本月至 {date}",
+      "入职 {count} 天",
+      "距入职 {count} 天",
+    ],
+    "zh-TW": [
+      "工時記錄",
+      "每月加班目標",
+      "工作日加班",
+      "休息日加班",
+      "工作日加班 ÷ 出勤",
+      "工作日加班 − 目標 × 出勤",
+      "休息日加班：{count} d",
+      "工時",
+      "加班",
+      "出勤",
+      "本月至 {date}",
+      "到職 {count} 天",
+      "距到職 {count} 天",
+    ],
+    "zh-HK": [
+      "工時記錄",
+      "每月加班目標",
+      "工作日加班",
+      "休息日加班",
+      "工作日加班 ÷ 出勤",
+      "工作日加班 − 目標 × 出勤",
+      "休息日加班：{count} d",
+      "工時",
+      "加班",
+      "出勤",
+      "本月至 {date}",
+      "入職 {count} 天",
+      "距入職 {count} 天",
+    ],
+    en: [
+      "Timesheet",
+      "Monthly OT target",
+      "Weekday OT",
+      "Rest-day OT",
+      "Weekday OT ÷ attendance",
+      "Weekday OT − target × attendance",
+      "Rest-day OT: {count} d",
+      "Hours",
+      "OT",
+      "Attendance",
+      "Through {date}",
+      "Day {count} at work",
+      "Starts in {count} days",
+    ],
+    ko: [
+      "근무 기록",
+      "월 초과근무 목표",
+      "평일 초과",
+      "휴일 초과",
+      "평일 초과 ÷ 출근일수",
+      "평일 초과 − 목표 × 출근일수",
+      "휴일 초과근무: {count} d",
+      "근무",
+      "초과",
+      "출근",
+      "이달 {date}까지",
+      "입사 {count}일째",
+      "입사까지 {count}일",
+    ],
+    ja: [
+      "勤務記録",
+      "月間残業目標",
+      "平日残業",
+      "休日残業",
+      "平日残業 ÷ 出勤日数",
+      "平日残業 − 目標 × 出勤日数",
+      "休日残業：{count} d",
+      "勤務",
+      "残業",
+      "出勤",
+      "今月{date}まで",
+      "勤続{count}日目",
+      "開始まで{count}日",
+    ],
+  };
+  for (const [locale, values] of Object.entries(rows))
+    Object.assign(
+      WorkTimeApp.data.locales[locale],
+      Object.fromEntries(keys.map((key, index) => [key, values[index]])),
+    );
+})();
+/** Complete contextual messages shared by the new presentation paths. */
+(() => {
+  const keys = [
+    "summary.remaining",
+    "history.english",
+    "history.chinese",
+    "history.languageNote",
+    "date.tabs",
+    "calendar.kind.work",
+    "calendar.kind.off",
+    "calendar.kind.makeup",
+    "calendar.kind.extra",
+    "unit.hour",
+    "unit.hourPerDay",
+    "history.bce",
+    "editor.timeIssue",
+    "schedule.description",
+    "backup.tooLarge",
+  ];
+  const rows = {
+    "zh-CN": [
+      "{label} · 剩余 {days}",
+      "英文维基百科",
+      "中文维基百科",
+      "历史事件正文为英语。",
+      "历史与节日",
+      "工作日",
+      "休息日",
+      "调休日",
+      "奋斗日",
+      "h",
+      "h/d",
+      "公元前{year}年",
+      "时间异常：下班 {end} 早于上班 {start}，不计入工时。",
+      "{start}–{end} · {breaks}",
+      "备份超过 {size} MB 大小限制。",
+    ],
+    en: [
+      "{label} · {days} left",
+      "English Wikipedia",
+      "Chinese Wikipedia",
+      "Historical event text is in English.",
+      "History and festivals",
+      "Work",
+      "Off",
+      "Makeup",
+      "Extra",
+      "h",
+      "h/d",
+      "{year} BCE",
+      "Time issue: clock-out {end} is before clock-in {start}. Excluded from work hours.",
+      "{start}–{end} · {breaks}",
+      "Backup exceeds the {size} MB size limit.",
+    ],
+    "zh-TW": [
+      "{label} · 剩餘 {days}",
+      "英文維基百科",
+      "中文維基百科",
+      "歷史事件內文為英語。",
+      "歷史與節日",
+      "工作日",
+      "休息日",
+      "補班日",
+      "額外工作日",
+      "h",
+      "h/d",
+      "西元前{year}年",
+      "時間異常：下班 {end} 早於上班 {start}，不計入工時。",
+      "{start}–{end} · {breaks}",
+      "備份超過 {size} MB 大小限制。",
+    ],
+    "zh-HK": [
+      "{label} · 剩餘 {days}",
+      "英文維基百科",
+      "中文維基百科",
+      "歷史事件內文為英語。",
+      "歷史與節日",
+      "工作日",
+      "休息日",
+      "補班日",
+      "額外工作日",
+      "h",
+      "h/d",
+      "公元前{year}年",
+      "時間異常：下班 {end} 早於上班 {start}，不計入工時。",
+      "{start}–{end} · {breaks}",
+      "備份超過 {size} MB 大小限制。",
+    ],
+    ko: [
+      "{label} · {days} 남음",
+      "영어 위키백과",
+      "중국어 위키백과",
+      "역사 사건의 본문은 영어로 제공됩니다.",
+      "역사 및 기념일",
+      "근무",
+      "휴무",
+      "대체근무",
+      "추가근무",
+      "시간",
+      "시간/일",
+      "기원전 {year}년",
+      "시간 오류: 퇴근 {end}이 출근 {start}보다 빠릅니다. 근무 시간에서 제외됩니다.",
+      "{start}–{end} · {breaks}",
+      "백업이 {size} MB 제한을 초과합니다.",
+    ],
+    ja: [
+      "{label} · 残り{days}",
+      "英語版ウィキペディア",
+      "中国語版ウィキペディア",
+      "歴史上の出来事の本文は英語です。",
+      "歴史と祝祭日",
+      "勤務",
+      "休み",
+      "振替勤務",
+      "追加勤務",
+      "時間",
+      "時間/日",
+      "紀元前{year}年",
+      "時刻の問題：退勤{end}が出勤{start}より前です。労働時間には含めません。",
+      "{start}–{end} · {breaks}",
+      "バックアップが{size} MBの上限を超えています。",
+    ],
+  };
+  for (const [locale, values] of Object.entries(rows))
+    Object.assign(
+      WorkTimeApp.data.locales[locale],
+      Object.fromEntries(keys.map((key, index) => [key, values[index]])),
+    );
+})();
+
+(() => {
+  const rows = {
+    "zh-CN": [
+      "删除 {date} 导入的“{sources}”？将更新 {affected} 个日期，其中 {restored} 个恢复其他导入记录，{cleared} 个清除此批记录。",
+      "共 {imports} 次导入 · {dates} 个有效日期",
+    ],
+    en: [
+      "Delete “{sources}”, imported {date}? This updates {affected} dates: {restored} restored from other imports and {cleared} cleared from this batch.",
+      "{imports} imports · {dates} valid dates",
+    ],
+    "zh-TW": [
+      "刪除 {date} 匯入的「{sources}」？將更新 {affected} 個日期，其中 {restored} 個還原其他匯入記錄，{cleared} 個清除此批記錄。",
+      "共 {imports} 次匯入 · {dates} 個有效日期",
+    ],
+    "zh-HK": [
+      "刪除 {date} 匯入的「{sources}」？將更新 {affected} 個日期，其中 {restored} 個還原其他匯入記錄，{cleared} 個清除此批記錄。",
+      "共 {imports} 次匯入 · {dates} 個有效日期",
+    ],
+    ko: [
+      "{date}에 가져온 ‘{sources}’을 삭제할까요? {affected}개 날짜가 갱신됩니다. {restored}개는 다른 가져오기 기록으로 복원되고, {cleared}개는 이 묶음에서 제거됩니다.",
+      "가져오기 {imports}회 · 유효 날짜 {dates}개",
+    ],
+    ja: [
+      "{date}に取り込んだ「{sources}」を削除しますか？{affected}日分を更新し、{restored}日分は別の取込から復元、{cleared}日分はこの取込から消去します。",
+      "取込{imports}件・有効な日付{dates}日分",
+    ],
+  };
+  for (const [language, [confirmation, totals]] of Object.entries(rows))
+    Object.assign(WorkTimeApp.data.locales[language], {
+      "import.deleteSummary": confirmation,
+      "import.historyTotals": totals,
+    });
+})();
+
+// Per-card source preference and field-level OA completion.
+(() => {
+  const rows = {
+    "zh-CN": [
+      "OA 优先，缺失时间由手录补齐",
+      "仅使用手录数据",
+      "点击切换为手录优先",
+      "点击切换为 OA 优先",
+      "上班时间由手录补齐",
+      "下班时间由手录补齐",
+    ],
+    "zh-TW": [
+      "OA 優先，缺少時間由手動記錄補齊",
+      "僅使用手動記錄",
+      "點擊切換為手動優先",
+      "點擊切換為 OA 優先",
+      "上班時間由手動記錄補齊",
+      "下班時間由手動記錄補齊",
+    ],
+    "zh-HK": [
+      "OA 優先，缺少時間由手動記錄補齊",
+      "僅使用手動記錄",
+      "點擊切換為手動優先",
+      "點擊切換為 OA 優先",
+      "上班時間由手動記錄補齊",
+      "下班時間由手動記錄補齊",
+    ],
+    en: [
+      "OA first; missing times filled from manual entries",
+      "Manual entries only",
+      "Click to use manual entries only",
+      "Click to prefer OA",
+      "Start filled from manual entry",
+      "End filled from manual entry",
+    ],
+    ja: [
+      "OA 優先、不足時刻は手入力で補完",
+      "手入力のみ使用",
+      "クリックして手入力優先に切替",
+      "クリックして OA 優先に切替",
+      "出勤時刻を手入力で補完",
+      "退勤時刻を手入力で補完",
+    ],
+    ko: [
+      "OA 우선, 누락 시간은 수동 기록으로 보완",
+      "수동 기록만 사용",
+      "클릭하여 수동 우선으로 전환",
+      "클릭하여 OA 우선으로 전환",
+      "출근 시간을 수동 기록으로 보완",
+      "퇴근 시간을 수동 기록으로 보완",
+    ],
+  };
+  for (const [language, values] of Object.entries(rows))
+    [
+      "oa",
+      "manual",
+      "switchManual",
+      "switchOA",
+      "filledStart",
+      "filledEnd",
+    ].forEach((key, index) => {
+      WorkTimeApp.data.locales[language]["source." + key] = values[index];
+    });
+})();
+
+for (const [language, text] of Object.entries({
+  "zh-CN": "含手录数据",
+  "zh-TW": "含手動資料",
+  "zh-HK": "含手動資料",
+  en: "Includes manual entries",
+  ja: "手入力を含む",
+  ko: "수동 입력 포함",
+}))
+  WorkTimeApp.data.locales[language]["analysis.manualRecord"] = text;
+
+(() => {
+  const keys = [
+    "latestStart",
+    "earliestEnd",
+    "averageStart",
+    "averageEnd",
+    "average",
+  ];
+  const labels = {
+    "zh-CN": [
+      "最晚上班",
+      "最早下班",
+      "平均上班时间",
+      "平均下班时间",
+      "算术平均",
+    ],
+    "zh-TW": [
+      "最晚上班",
+      "最早下班",
+      "平均上班時間",
+      "平均下班時間",
+      "算術平均",
+    ],
+    "zh-HK": [
+      "最晚上班",
+      "最早下班",
+      "平均上班時間",
+      "平均下班時間",
+      "算術平均",
+    ],
+    en: [
+      "Latest arrival",
+      "Earliest departure",
+      "Average arrival time",
+      "Average departure time",
+      "Arithmetic mean",
+    ],
+    ja: [
+      "最も遅い出勤",
+      "最も早い退勤",
+      "平均出勤時刻",
+      "平均退勤時刻",
+      "算術平均",
+    ],
+    ko: [
+      "가장 늦은 출근",
+      "가장 이른 퇴근",
+      "평균 출근 시간",
+      "평균 퇴근 시간",
+      "산술 평균",
+    ],
+  };
+  for (const [language, values] of Object.entries(labels))
+    keys.forEach((key, index) => {
+      WorkTimeApp.data.locales[language]["analysis." + key] = values[index];
+    });
+})();
+for (const [language, label] of Object.entries({
+  "zh-CN": "开始游戏",
+  "zh-TW": "開始遊戲",
+  "zh-HK": "開始遊戲",
+  en: "Play game",
+  ja: "ゲームを開始",
+  ko: "게임 시작",
+})) {
+  WorkTimeApp.data.locales[language]["games.play"] = label;
+}
+(() => {
+  const keys = [
+    "title",
+    "empty",
+    "unavailable",
+    "saved",
+    "best",
+    "wins",
+    "completed",
+  ];
+  const messages = {
+    "zh-CN": [
+      "进度",
+      "暂无记录",
+      "无法读取",
+      "有已保存进度",
+      "最高分 {n}",
+      "获胜 {n} 局",
+      "已完成 {n} 关",
+    ],
+    "zh-TW": [
+      "進度",
+      "暫無紀錄",
+      "無法讀取",
+      "有已儲存進度",
+      "最高分 {n}",
+      "獲勝 {n} 局",
+      "已完成 {n} 關",
+    ],
+    "zh-HK": [
+      "進度",
+      "暫無紀錄",
+      "無法讀取",
+      "有已儲存進度",
+      "最高分 {n}",
+      "獲勝 {n} 局",
+      "已完成 {n} 關",
+    ],
+    en: [
+      "Progress",
+      "No record yet",
+      "Unavailable",
+      "Saved progress",
+      "Best score {n}",
+      "Wins {n}",
+      "Completed {n}",
+    ],
+    ja: [
+      "進捗",
+      "記録なし",
+      "読み込み不可",
+      "保存済みの進捗あり",
+      "最高スコア {n}",
+      "勝利数 {n}",
+      "クリア数 {n}",
+    ],
+    ko: [
+      "진행 상황",
+      "기록 없음",
+      "읽을 수 없음",
+      "저장된 진행 상황 있음",
+      "최고 점수 {n}",
+      "승리 {n}회",
+      "완료 {n}개",
+    ],
+  };
+  for (const [language, values] of Object.entries(messages))
+    keys.forEach((key, index) => {
+      WorkTimeApp.data.locales[language]["games.progress." + key] =
+        values[index];
+    });
+})();
+(() => {
+  const keys = [
+    "save",
+    "saveHint",
+    "import",
+    "paste",
+    "file",
+    "preview",
+    "before",
+    "cancel",
+    "confirm",
+    "mergeNote",
+    "conflict",
+    "local",
+    "incoming",
+    "added",
+    "merged",
+    "unchanged",
+    "improved",
+    "done",
+    "copied",
+    "downloaded",
+    "empty",
+    "invalid",
+    "wrongType",
+    "version",
+    "tooLarge",
+    "localInvalid",
+    "changed",
+    "recovery",
+    "noBackup",
+    "storageError",
+    "clipboardFallback",
+    "gameOnly",
+  ];
+  const messages = {
+    "zh-CN": [
+      "保存存档",
+      "保存游戏存档：点击复制，按住两秒下载",
+      "导入游戏存档",
+      "粘贴游戏存档",
+      "选择文件",
+      "预览合并",
+      "下载导入前备份",
+      "取消",
+      "确认合并",
+      "成绩与通关记录自动择优合并；冲突进度默认保留本机。胜场取较大值，不累加。",
+      "冲突进度来源",
+      "保留本机",
+      "采用导入的进度",
+      "新增",
+      "合并",
+      "未变化",
+      "成绩提升",
+      "游戏存档导入完成：新增 {added}，合并 {merged}，未变化 {unchanged}。",
+      "存档已复制",
+      "游戏存档已下载。",
+      "暂无游戏存档。",
+      "游戏存档数据损坏或包含不支持的游戏。",
+      "请选择游戏专用存档；此入口不支持整页备份。",
+      "不支持此游戏存档版本。",
+      "游戏存档或解压后的内容超过 16 MiB。",
+      "本机游戏存档损坏，已停止操作，原始数据未删除。",
+      "本机存档已变化，预览已刷新，请重新检查并确认。",
+      "游戏存档恢复尚未完成，请释放存储空间后重新打开页面；当前不会继续导入。",
+      "暂无导入前备份。",
+      "无法读取或保存游戏存档，请检查浏览器存储与剪贴板权限。",
+      "无法读取剪贴板，请粘贴存档或选择文件。",
+      "这是游戏专用存档，请从游戏菜单导入。",
+    ],
+    "zh-TW": [
+      "儲存存檔",
+      "儲存遊戲存檔：點選複製，按住兩秒下載",
+      "匯入遊戲存檔",
+      "貼上遊戲存檔",
+      "選擇檔案",
+      "預覽合併",
+      "下載匯入前備份",
+      "取消",
+      "確認合併",
+      "成績與通關紀錄自動擇優合併；衝突進度預設保留本機。勝場取較大值，不累加。",
+      "衝突進度來源",
+      "保留本機",
+      "採用匯入的進度",
+      "新增",
+      "合併",
+      "未變更",
+      "成績提升",
+      "遊戲存檔匯入完成：新增 {added}，合併 {merged}，未變更 {unchanged}。",
+      "存檔已複製",
+      "遊戲存檔已下載。",
+      "暫無遊戲存檔。",
+      "遊戲存檔資料損壞或包含不支援的遊戲。",
+      "請選擇遊戲專用存檔；此入口不支援整頁備份。",
+      "不支援此遊戲存檔版本。",
+      "遊戲存檔或解壓縮後的內容超過 16 MiB。",
+      "本機遊戲存檔損壞，已停止操作，原始資料未刪除。",
+      "本機存檔已變更，預覽已更新，請重新檢查並確認。",
+      "遊戲存檔還原尚未完成，請釋放儲存空間後重新開啟頁面；目前不會繼續匯入。",
+      "暫無匯入前備份。",
+      "無法讀取或儲存遊戲存檔，請檢查瀏覽器儲存與剪貼簿權限。",
+      "無法讀取剪貼簿，請貼上存檔或選擇檔案。",
+      "這是遊戲專用存檔，請從遊戲選單匯入。",
+    ],
+    "zh-HK": [
+      "儲存存檔",
+      "儲存遊戲存檔：點選複製，按住兩秒下載",
+      "匯入遊戲存檔",
+      "貼上遊戲存檔",
+      "選擇檔案",
+      "預覽合併",
+      "下載匯入前備份",
+      "取消",
+      "確認合併",
+      "成績與過關紀錄自動擇優合併；衝突進度預設保留本機。勝場取較大值，不累加。",
+      "衝突進度來源",
+      "保留本機",
+      "採用匯入的進度",
+      "新增",
+      "合併",
+      "未變更",
+      "成績提升",
+      "遊戲存檔匯入完成：新增 {added}，合併 {merged}，未變更 {unchanged}。",
+      "存檔已複製",
+      "遊戲存檔已下載。",
+      "暫無遊戲存檔。",
+      "遊戲存檔資料損壞或包含不支援的遊戲。",
+      "請選擇遊戲專用存檔；此入口不支援整頁備份。",
+      "不支援此遊戲存檔版本。",
+      "遊戲存檔或解壓縮後的內容超過 16 MiB。",
+      "本機遊戲存檔損壞，已停止操作，原始資料未刪除。",
+      "本機存檔已變更，預覽已更新，請重新檢查並確認。",
+      "遊戲存檔還原尚未完成，請釋放儲存空間後重新開啟頁面；目前不會繼續匯入。",
+      "暫無匯入前備份。",
+      "無法讀取或儲存遊戲存檔，請檢查瀏覽器儲存與剪貼簿權限。",
+      "無法讀取剪貼簿，請貼上存檔或選擇檔案。",
+      "這是遊戲專用存檔，請從遊戲選單匯入。",
+    ],
+    en: [
+      "Save games",
+      "Save games: click to copy, hold for two seconds to download",
+      "Import game saves",
+      "Paste game saves",
+      "Choose file",
+      "Preview merge",
+      "Download pre-import backup",
+      "Cancel",
+      "Confirm merge",
+      "Best scores and completed levels merge automatically. Conflicting progress keeps local data by default. Win counts use the maximum, never a sum.",
+      "Conflicting progress",
+      "Keep local",
+      "Use imported progress",
+      "Added",
+      "Merged",
+      "Unchanged",
+      "Improved record",
+      "Game saves imported: {added} added, {merged} merged, {unchanged} unchanged.",
+      "Saves copied",
+      "Game saves downloaded.",
+      "No game saves yet.",
+      "Game saves are damaged or contain an unsupported game.",
+      "Choose a game-only archive. Full-page backups are not supported here.",
+      "This game archive version is not supported.",
+      "Game saves or decompressed data exceed 16 MiB.",
+      "A local game save is damaged. The operation stopped; original data was preserved.",
+      "Local saves changed. The preview was refreshed; review and confirm again.",
+      "Game save recovery is incomplete. Free storage and reopen the page; importing is blocked for now.",
+      "No pre-import backup yet.",
+      "Unable to read or save game data. Check browser storage and clipboard permissions.",
+      "Clipboard unavailable. Paste your saves or choose a file.",
+      "This is a game-only archive. Import it from the game menu.",
+    ],
+    ja: [
+      "セーブを保存",
+      "ゲームのセーブ：クリックでコピー、2秒長押しでダウンロード",
+      "セーブを読み込む",
+      "セーブを貼り付け",
+      "ファイルを選択",
+      "統合を確認",
+      "読み込み前のバックアップ",
+      "キャンセル",
+      "統合する",
+      "最高記録とクリア済みステージを統合します。競合する進行状況は既定でこの端末を優先します。勝利数は加算せず大きい値を採用します。",
+      "競合する進行状況",
+      "この端末を優先",
+      "読み込んだ進行状況を使う",
+      "追加",
+      "統合",
+      "変更なし",
+      "記録更新",
+      "セーブの読み込み完了：追加 {added}、統合 {merged}、変更なし {unchanged}。",
+      "コピー済み",
+      "セーブをダウンロードしました。",
+      "セーブはまだありません。",
+      "セーブが破損しているか、未対応のゲームが含まれています。",
+      "ゲーム専用のセーブを選択してください。ページ全体のバックアップは使えません。",
+      "このセーブ形式のバージョンには対応していません。",
+      "セーブまたは展開後のデータが16 MiBを超えています。",
+      "この端末のセーブが破損しています。操作を停止し、元のデータを保持しました。",
+      "この端末のセーブが変更されました。更新された内容を確認して再度確定してください。",
+      "セーブの復元が未完了です。空き容量を確保してページを開き直してください。読み込みは停止しています。",
+      "読み込み前のバックアップはありません。",
+      "セーブの読み書きができません。ブラウザーの保存領域とクリップボード権限を確認してください。",
+      "クリップボードを読めません。貼り付けるかファイルを選択してください。",
+      "ゲーム専用のセーブです。ゲームメニューから読み込んでください。",
+    ],
+    ko: [
+      "저장 파일 내보내기",
+      "게임 저장: 클릭하여 복사, 2초간 눌러 다운로드",
+      "게임 저장 가져오기",
+      "게임 저장 붙여넣기",
+      "파일 선택",
+      "병합 미리보기",
+      "가져오기 전 백업 다운로드",
+      "취소",
+      "병합 확인",
+      "최고 기록과 완료한 단계를 자동 병합합니다. 충돌하는 진행 상황은 기본적으로 현재 기기를 유지합니다. 승리 횟수는 합산하지 않고 큰 값을 사용합니다.",
+      "충돌하는 진행 상황",
+      "현재 기기 유지",
+      "가져온 진행 상황 사용",
+      "추가",
+      "병합",
+      "변경 없음",
+      "기록 향상",
+      "게임 저장 가져오기 완료: 추가 {added}, 병합 {merged}, 변경 없음 {unchanged}.",
+      "복사 완료",
+      "게임 저장을 다운로드했습니다.",
+      "게임 저장이 없습니다.",
+      "저장 데이터가 손상되었거나 지원하지 않는 게임이 포함되어 있습니다.",
+      "게임 전용 저장을 선택하세요. 전체 페이지 백업은 지원하지 않습니다.",
+      "지원하지 않는 게임 저장 버전입니다.",
+      "저장 또는 압축 해제 데이터가 16 MiB를 초과합니다.",
+      "현재 기기의 저장이 손상되었습니다. 작업을 중지하고 원본 데이터를 유지했습니다.",
+      "현재 저장이 변경되었습니다. 갱신된 미리보기를 검토하고 다시 확인하세요.",
+      "게임 저장 복구가 완료되지 않았습니다. 공간을 확보하고 페이지를 다시 여세요. 가져오기가 중지되었습니다.",
+      "가져오기 전 백업이 없습니다.",
+      "게임 저장을 읽거나 쓸 수 없습니다. 브라우저 저장소와 클립보드 권한을 확인하세요.",
+      "클립보드를 읽을 수 없습니다. 저장을 붙여넣거나 파일을 선택하세요.",
+      "게임 전용 저장입니다. 게임 메뉴에서 가져오세요.",
+    ],
+  };
+  for (const [language, values] of Object.entries(messages))
+    keys.forEach((key, index) => {
+      WorkTimeApp.data.locales[language]["gameArchive." + key] = values[index];
+    });
+})();
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["新增 {count} 个草稿", "新增 {count} 个通关记录"],
+  "zh-TW": ["新增 {count} 個草稿", "新增 {count} 個通關紀錄"],
+  "zh-HK": ["新增 {count} 個草稿", "新增 {count} 個過關紀錄"],
+  en: ["{count} new drafts", "{count} new completed levels"],
+  ja: ["進行中データを {count} 件追加", "クリア記録を {count} 件追加"],
+  ko: ["새 초안 {count}개", "새 완료 기록 {count}개"],
+})) {
+  WorkTimeApp.data.locales[language]["gameArchive.draftsAdded"] = labels[0];
+  WorkTimeApp.data.locales[language]["gameArchive.completedAdded"] = labels[1];
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "完整备份（含游戏存档）：点击复制，按住两秒下载",
+    "同时包含 {count} 个游戏存档，恢复将替换此浏览器中的全部游戏存档。",
+    "此备份仅恢复工作数据，游戏存档保持不变。",
+    "不支持此完整备份版本。",
+  ],
+  "zh-TW": [
+    "完整備份（含遊戲存檔）：點擊複製，按住兩秒下載",
+    "同時包含 {count} 個遊戲存檔，還原將取代此瀏覽器中的全部遊戲存檔。",
+    "此備份僅還原工作資料，遊戲存檔保持不變。",
+    "不支援此完整備份版本。",
+  ],
+  "zh-HK": [
+    "完整備份（含遊戲存檔）：點擊複製，按住兩秒下載",
+    "同時包含 {count} 個遊戲存檔，還原將取代此瀏覽器中的全部遊戲存檔。",
+    "此備份僅還原工作資料，遊戲存檔保持不變。",
+    "不支援此完整備份版本。",
+  ],
+  en: [
+    "Full backup including game saves: click to copy, hold for two seconds to download",
+    "Also includes {count} game saves. Restoring replaces all game saves in this browser.",
+    "This backup restores work data only. Game saves remain unchanged.",
+    "This full backup version is not supported.",
+  ],
+  ja: [
+    "ゲームのセーブを含む完全バックアップ：クリックでコピー、2秒長押しでダウンロード",
+    "ゲームのセーブ {count} 件も含まれます。復元すると、このブラウザーのすべてのゲームセーブが置き換わります。",
+    "このバックアップは勤務データのみを復元します。ゲームのセーブは変更されません。",
+    "この完全バックアップのバージョンには対応していません。",
+  ],
+  ko: [
+    "게임 저장을 포함한 전체 백업: 클릭하여 복사, 2초간 눌러 다운로드",
+    "게임 저장 {count}개도 포함됩니다. 복원하면 이 브라우저의 모든 게임 저장이 교체됩니다.",
+    "이 백업은 근무 데이터만 복원합니다. 게임 저장은 변경되지 않습니다.",
+    "지원하지 않는 전체 백업 버전입니다.",
+  ],
+})) {
+  const locale = WorkTimeApp.data.locales[language];
+  locale["copy.17860d9b22"] = labels[0];
+  locale["copy.f958aadb8e"] = labels[0];
+  locale["backup.includesGames"] = labels[1];
+  locale["backup.workOnly"] = labels[2];
+  locale["backup.unsupported"] = labels[3];
+}
+// Personal agenda labels.
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "工时",
+    "日程",
+    "新增日程",
+    "标题",
+    "日期",
+    "全天",
+    "开始时间",
+    "结束时间（可选）",
+    "备注",
+    "取消编辑",
+    "保存",
+    "编辑日程",
+    "当天暂无日程",
+    "标记完成",
+    "撤销完成",
+    "删除日程",
+    "还有 {count} 条",
+    "本月共 {count} 条日程",
+    "日程概览",
+    "今日待办",
+    "近期安排",
+    "逾期未完成",
+    "暂无事项",
+    "放弃未保存的日程修改？",
+    "删除“{title}”？此操作无法撤销。",
+    "有未保存修改，切换日期或模式会保留草稿。",
+    "请填写有效标题和日期；定时日程需填写开始时间，结束时间须晚于开始时间。",
+    "保存失败，修改仍保留，请重试或检查存储状态。",
+    "日程已保存。",
+    "将恢复 {count} 条日程并替换现有日程；不含日程的旧备份会清空现有日程。",
+  ],
+  en: [
+    "Work time",
+    "Agenda",
+    "New event",
+    "Title",
+    "Date",
+    "All day",
+    "Start time",
+    "End time (optional)",
+    "Notes",
+    "Cancel edit",
+    "Save",
+    "Edit event",
+    "No events on this date",
+    "Mark complete",
+    "Undo completion",
+    "Delete event",
+    "{count} more",
+    "{count} events this month",
+    "Agenda overview",
+    "Today’s tasks",
+    "Upcoming",
+    "Overdue",
+    "No items",
+    "Discard unsaved event changes?",
+    "Delete “{title}”? This cannot be undone.",
+    "Unsaved changes. Switching dates or modes keeps this draft.",
+    "Enter a valid title and date. Timed events need a start; the end must be later than the start.",
+    "Save failed. Changes are kept; retry or check storage status.",
+    "Event saved.",
+    "Restore {count} events and replace existing events. Older backups without events will clear the current agenda.",
+  ],
+  "zh-TW": [
+    "工時",
+    "行程",
+    "新增行程",
+    "標題",
+    "日期",
+    "全天",
+    "開始時間",
+    "結束時間（選填）",
+    "備註",
+    "取消編輯",
+    "儲存",
+    "編輯行程",
+    "當天尚無行程",
+    "標記完成",
+    "取消完成",
+    "刪除行程",
+    "還有 {count} 筆",
+    "本月共 {count} 筆行程",
+    "行程總覽",
+    "今日待辦",
+    "近期安排",
+    "逾期未完成",
+    "尚無事項",
+    "捨棄尚未儲存的行程變更？",
+    "刪除「{title}」？此操作無法復原。",
+    "尚有未儲存變更，切換日期或模式會保留草稿。",
+    "請填寫有效標題及日期；定時行程需填寫開始時間，結束時間須晚於開始時間。",
+    "儲存失敗，變更仍保留，請重試或檢查儲存狀態。",
+    "行程已儲存。",
+    "將還原 {count} 筆行程並取代現有行程；不含行程的舊備份會清空現有行程。",
+  ],
+  "zh-HK": [
+    "工時",
+    "日程",
+    "新增日程",
+    "標題",
+    "日期",
+    "全日",
+    "開始時間",
+    "結束時間（選填）",
+    "備註",
+    "取消編輯",
+    "儲存",
+    "編輯日程",
+    "當日暫無日程",
+    "標記完成",
+    "取消完成",
+    "刪除日程",
+    "還有 {count} 項",
+    "本月共 {count} 項日程",
+    "日程概覽",
+    "今日待辦",
+    "近期安排",
+    "逾期未完成",
+    "暫無事項",
+    "放棄未儲存的日程修改？",
+    "刪除「{title}」？此操作無法還原。",
+    "有未儲存修改，切換日期或模式會保留草稿。",
+    "請填寫有效標題及日期；定時日程需填寫開始時間，結束時間須遲於開始時間。",
+    "儲存失敗，修改仍保留，請重試或檢查儲存狀態。",
+    "日程已儲存。",
+    "將還原 {count} 項日程並取代現有日程；不含日程的舊備份會清空現有日程。",
+  ],
+  ja: [
+    "勤務時間",
+    "予定",
+    "予定を追加",
+    "タイトル",
+    "日付",
+    "終日",
+    "開始時刻",
+    "終了時刻（任意）",
+    "メモ",
+    "編集を取り消す",
+    "保存",
+    "予定を編集",
+    "この日の予定はありません",
+    "完了にする",
+    "完了を取り消す",
+    "予定を削除",
+    "他 {count} 件",
+    "今月の予定：{count} 件",
+    "予定の概要",
+    "今日のタスク",
+    "今後の予定",
+    "期限切れ",
+    "項目はありません",
+    "未保存の予定の変更を破棄しますか？",
+    "「{title}」を削除しますか？元に戻せません。",
+    "未保存の変更があります。日付やモードを切り替えても下書きは保持されます。",
+    "有効なタイトルと日付を入力してください。時刻指定の予定には開始時刻が必要です。終了は開始より後にしてください。",
+    "保存できませんでした。変更は保持されています。再試行するか保存状態を確認してください。",
+    "予定を保存しました。",
+    "{count} 件の予定で既存の予定を置き換えます。予定を含まない古いバックアップでは現在の予定が削除されます。",
+  ],
+  ko: [
+    "근무 시간",
+    "일정",
+    "일정 추가",
+    "제목",
+    "날짜",
+    "종일",
+    "시작 시간",
+    "종료 시간 (선택)",
+    "메모",
+    "편집 취소",
+    "저장",
+    "일정 편집",
+    "이 날짜에 일정이 없습니다",
+    "완료 표시",
+    "완료 취소",
+    "일정 삭제",
+    "{count}개 더 보기",
+    "이번 달 일정 {count}개",
+    "일정 개요",
+    "오늘 할 일",
+    "다가오는 일정",
+    "기한 경과",
+    "항목 없음",
+    "저장하지 않은 일정 변경 사항을 버릴까요?",
+    "“{title}” 일정을 삭제할까요? 되돌릴 수 없습니다.",
+    "저장하지 않은 변경 사항이 있습니다. 날짜나 모드를 전환해도 초안은 유지됩니다.",
+    "유효한 제목과 날짜를 입력하세요. 시간 지정 일정에는 시작 시간이 필요하며 종료 시간은 시작 시간보다 늦어야 합니다.",
+    "저장하지 못했습니다. 변경 사항은 유지됩니다. 다시 시도하거나 저장 상태를 확인하세요.",
+    "일정을 저장했습니다.",
+    "일정 {count}개를 복원하여 기존 일정을 대체합니다. 일정이 없는 이전 백업을 복원하면 현재 일정이 삭제됩니다.",
+  ],
+})) {
+  const keys = [
+    "attendance",
+    "agenda",
+    "new",
+    "title",
+    "date",
+    "allDay",
+    "start",
+    "end",
+    "note",
+    "cancel",
+    "save",
+    "edit",
+    "empty",
+    "complete",
+    "undoComplete",
+    "delete",
+    "more",
+    "monthCount",
+    "overview",
+    "today",
+    "upcoming",
+    "overdue",
+    "none",
+    "discard",
+    "confirmDelete",
+    "draft",
+    "invalid",
+    "saveFailed",
+    "saved",
+    "restore",
+  ];
+  keys.forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["agenda." + key] = labels[index];
+  });
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "周视图",
+    "月视图",
+    "上一周",
+    "下一周",
+    "{start} — {end} · 共 {count} 条日程",
+    "日历视图",
+  ],
+  "zh-TW": [
+    "週檢視",
+    "月檢視",
+    "上一週",
+    "下一週",
+    "{start} — {end} · 共 {count} 筆行程",
+    "日曆檢視",
+  ],
+  "zh-HK": [
+    "週檢視",
+    "月檢視",
+    "上一週",
+    "下一週",
+    "{start} — {end} · 共 {count} 項日程",
+    "日曆檢視",
+  ],
+  en: [
+    "Week",
+    "Month",
+    "Previous week",
+    "Next week",
+    "{start} — {end} · {count} events",
+    "Calendar view",
+  ],
+  ja: [
+    "週表示",
+    "月表示",
+    "前の週",
+    "次の週",
+    "{start} — {end} · 予定 {count} 件",
+    "カレンダー表示",
+  ],
+  ko: [
+    "주 보기",
+    "월 보기",
+    "이전 주",
+    "다음 주",
+    "{start} — {end} · 일정 {count}개",
+    "달력 보기",
+  ],
+})) {
+  const keys = [
+    "weekView",
+    "monthView",
+    "prevWeek",
+    "nextWeek",
+    "weekCount",
+    "view",
+  ];
+  keys.forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["agenda." + key] = labels[index];
+  });
+}
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "返回本周",
+  "zh-TW": "返回本週",
+  "zh-HK": "返回本週",
+  en: "Return to this week",
+  ja: "今週に戻る",
+  ko: "이번 주로 돌아가기",
+})) {
+  WorkTimeApp.data.locales[language]["agenda.todayWeek"] = label;
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["双周视图", "切换为{view}"],
+  "zh-TW": ["雙週檢視", "切換為{view}"],
+  "zh-HK": ["雙週檢視", "切換為{view}"],
+  en: ["Two weeks", "Switch to {view}"],
+  ja: ["2週表示", "{view}に切り替え"],
+  ko: ["2주 보기", "{view}(으)로 전환"],
+})) {
+  WorkTimeApp.data.locales[language]["agenda.fortnightView"] = labels[0];
+  WorkTimeApp.data.locales[language]["agenda.switchView"] = labels[1];
+}
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "三周视图",
+  "zh-TW": "三週檢視",
+  "zh-HK": "三週檢視",
+  en: "Three weeks",
+  ja: "3週表示",
+  ko: "3주 보기",
+})) {
+  WorkTimeApp.data.locales[language]["agenda.threeWeekView"] = label;
+}
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "日程记录",
+  "zh-TW": "日程記錄",
+  "zh-HK": "日程記錄",
+  en: "Schedule records",
+  ja: "スケジュール記録",
+  ko: "일정 기록",
+})) {
+  WorkTimeApp.data.locales[language]["agenda.brand"] = label;
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["其他待办", "其他日期暂无待办"],
+  "zh-TW": ["其他待辦", "其他日期暫無待辦"],
+  "zh-HK": ["其他待辦", "其他日期暫無待辦"],
+  en: ["Other pending events", "No pending events on other dates"],
+  ja: ["他の日の未完了の予定", "他の日に未完了の予定はありません"],
+  ko: ["다른 날짜의 할 일", "다른 날짜에 미완료 일정이 없습니다"],
+})) {
+  WorkTimeApp.data.locales[language]["agenda.otherPending"] = labels[0];
+  WorkTimeApp.data.locales[language]["agenda.otherPendingEmpty"] = labels[1];
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "备忘录",
+    "记下灵感、提醒或临时事项…",
+    "自动保存",
+    "保存中…",
+    "重试保存",
+  ],
+  "zh-TW": [
+    "備忘錄",
+    "記下靈感、提醒或臨時事項…",
+    "自動儲存",
+    "儲存中…",
+    "重試儲存",
+  ],
+  "zh-HK": [
+    "備忘錄",
+    "記下靈感、提醒或臨時事項…",
+    "自動儲存",
+    "儲存中…",
+    "重試儲存",
+  ],
+  en: [
+    "Memo",
+    "Capture ideas, reminders or quick notes…",
+    "Auto-save",
+    "Saving…",
+    "Retry saving",
+  ],
+  ja: [
+    "メモ",
+    "アイデアやリマインダーを書き留める…",
+    "自動保存",
+    "保存中…",
+    "再保存",
+  ],
+  ko: [
+    "메모",
+    "아이디어나 기억할 내용을 적어 보세요…",
+    "자동 저장",
+    "저장 중…",
+    "다시 저장",
+  ],
+})) {
+  ["memo", "memoHint", "memoAutoSave", "memoSaving", "memoRetry"].forEach(
+    (key, index) => {
+      WorkTimeApp.data.locales[language]["agenda." + key] = labels[index];
+    },
+  );
+}
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "备忘录 {count} 字（将替换当前备忘录，0 字表示清空）。",
+  "zh-TW": "備忘錄 {count} 字（將取代目前備忘錄，0 字表示清空）。",
+  "zh-HK": "備忘錄 {count} 字（將取代目前備忘錄，0 字表示清空）。",
+  en: "Memo: {count} characters (replaces the current memo; 0 clears it).",
+  ja: "メモ：{count} 文字（現在のメモを置換。0 文字の場合は削除）。",
+  ko: "메모: {count}자 (현재 메모를 대체하며 0자이면 비워집니다).",
+})) {
+  WorkTimeApp.data.locales[language]["agenda.memoRestore"] = label;
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["待完成", "已完成"],
+  "zh-TW": ["待完成", "已完成"],
+  "zh-HK": ["待完成", "已完成"],
+  en: ["Pending", "Completed"],
+  ja: ["未完了", "完了"],
+  ko: ["미완료", "완료"],
+})) {
+  WorkTimeApp.data.locales[language]["agenda.statusPending"] = labels[0];
+  WorkTimeApp.data.locales[language]["agenda.statusCompleted"] = labels[1];
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["跨天", "结束日期"],
+  "zh-TW": ["跨日", "結束日期"],
+  "zh-HK": ["跨日", "結束日期"],
+  en: ["Multiple days", "End date"],
+  ja: ["複数日", "終了日"],
+  ko: ["여러 날", "종료 날짜"],
+})) {
+  WorkTimeApp.data.locales[language]["agenda.multiDay"] = labels[0];
+  WorkTimeApp.data.locales[language]["agenda.endDate"] = labels[1];
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["开始日期", "结束时间"],
+  "zh-TW": ["開始日期", "結束時間"],
+  "zh-HK": ["開始日期", "結束時間"],
+  en: ["Start date", "End time"],
+  ja: ["開始日", "終了時刻"],
+  ko: ["시작 날짜", "종료 시간"],
+})) {
+  WorkTimeApp.data.locales[language]["agenda.startDate"] = labels[0];
+  WorkTimeApp.data.locales[language]["agenda.endRequired"] = labels[1];
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "请先保存或取消右栏的日程修改，再拖动。",
+    "日程已更新或删除，请重新拖动。",
+    "无法移动到此位置",
+  ],
+  "zh-TW": [
+    "請先儲存或取消右欄的行程修改，再拖曳。",
+    "行程已更新或刪除，請重新拖曳。",
+    "無法移動到此位置",
+  ],
+  "zh-HK": [
+    "請先儲存或取消右欄的日程修改，再拖曳。",
+    "日程已更新或刪除，請重新拖曳。",
+    "無法移動到此位置",
+  ],
+  en: [
+    "Save or cancel the event edits before dragging.",
+    "This event changed or was deleted. Drag it again.",
+    "Cannot move here",
+  ],
+  ja: [
+    "右欄の予定の変更を保存またはキャンセルしてからドラッグしてください。",
+    "予定が変更または削除されました。再度ドラッグしてください。",
+    "ここには移動できません",
+  ],
+  ko: [
+    "오른쪽 일정 수정을 저장하거나 취소한 후 드래그하세요.",
+    "일정이 변경되었거나 삭제되었습니다. 다시 드래그하세요.",
+    "여기로 이동할 수 없습니다",
+  ],
+})) {
+  ["dragDraft", "dragChanged", "dragInvalid"].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["agenda." + key] = labels[index];
+  });
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["选择日程日期", "今天", "关闭"],
+  "zh-TW": ["選擇行程日期", "今天", "關閉"],
+  "zh-HK": ["選擇日程日期", "今天", "關閉"],
+  en: ["Choose event date", "Today", "Close"],
+  ja: ["予定の日付を選択", "今日", "閉じる"],
+  ko: ["일정 날짜 선택", "오늘", "닫기"],
+})) {
+  ["chooseDate", "pickerToday", "pickerClose"].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["agenda." + key] = labels[index];
+  });
+}
+
+// Agenda workspace navigation and global overview.
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "返回清单",
+    "返回当天日程",
+    "概览／备忘",
+    "日历视图",
+    "待办概览",
+    "暂无待办",
+    "展开全部 {count} 项",
+    "收起",
+  ],
+  "zh-TW": [
+    "返回清單",
+    "返回當天行程",
+    "概覽／備忘",
+    "日曆檢視",
+    "待辦概覽",
+    "暫無待辦",
+    "展開全部 {count} 項",
+    "收起",
+  ],
+  "zh-HK": [
+    "返回清單",
+    "返回當天日程",
+    "概覽／備忘",
+    "日曆檢視",
+    "待辦概覽",
+    "暫無待辦",
+    "展開全部 {count} 項",
+    "收起",
+  ],
+  en: [
+    "Back to list",
+    "Back to day",
+    "Overview / memo",
+    "Calendar view",
+    "Pending overview",
+    "No pending events",
+    "Show all {count}",
+    "Show less",
+  ],
+  ja: [
+    "一覧に戻る",
+    "当日の予定に戻る",
+    "概要／メモ",
+    "カレンダー表示",
+    "未完了の予定",
+    "未完了の予定はありません",
+    "全 {count} 件を表示",
+    "折りたたむ",
+  ],
+  ko: [
+    "목록으로",
+    "당일 일정으로",
+    "개요 / 메모",
+    "달력 보기",
+    "할 일 개요",
+    "미완료 일정이 없습니다",
+    "전체 {count}개 보기",
+    "접기",
+  ],
+})) {
+  [
+    "backToList",
+    "backToDay",
+    "overviewMemo",
+    "viewChoice",
+    "pendingOverview",
+    "pendingEmpty",
+    "showAll",
+    "showLess",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["agenda." + key] = labels[index];
+  });
+}
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "收起抽屉",
+  "zh-TW": "收起抽屜",
+  "zh-HK": "收起抽屜",
+  en: "Close drawer",
+  ja: "パネルを閉じる",
+  ko: "서랍 닫기",
+}))
+  WorkTimeApp.data.locales[language]["agenda.collapseDrawer"] = label;
+
+// Date range selection instructions, shared by pointer and keyboard interaction.
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "选择开始日期，再选择结束日期",
+    "请选择结束日期",
+    "正在修改开始日期",
+    "正在修改结束日期",
+  ],
+  "zh-TW": [
+    "選擇開始日期，再選擇結束日期",
+    "請選擇結束日期",
+    "正在修改開始日期",
+    "正在修改結束日期",
+  ],
+  "zh-HK": [
+    "選擇開始日期，再選擇結束日期",
+    "請選擇結束日期",
+    "正在修改開始日期",
+    "正在修改結束日期",
+  ],
+  en: [
+    "Choose a start date, then an end date",
+    "Choose an end date",
+    "Editing start date",
+    "Editing end date",
+  ],
+  ja: [
+    "開始日、終了日の順に選択",
+    "終了日を選択してください",
+    "開始日を編集中",
+    "終了日を編集中",
+  ],
+  ko: [
+    "시작일을 선택한 다음 종료일을 선택하세요",
+    "종료일을 선택하세요",
+    "시작일 수정 중",
+    "종료일 수정 중",
+  ],
+})) {
+  [
+    "selectRangeStart",
+    "selectRangeEnd",
+    "editRangeStart",
+    "editRangeEnd",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["agenda." + key] = labels[index];
+  });
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["状态", "切换状态", "进行中", "已取消"],
+  "zh-TW": ["狀態", "切換狀態", "進行中", "已取消"],
+  "zh-HK": ["狀態", "切換狀態", "進行中", "已取消"],
+  en: ["Status", "Change status", "In progress", "Cancelled"],
+  ja: ["状態", "状態を変更", "進行中", "キャンセル済み"],
+  ko: ["상태", "상태 변경", "진행 중", "취소됨"],
+})) {
+  ["status", "changeStatus", "statusInProgress", "statusCancelled"].forEach(
+    (key, index) => {
+      WorkTimeApp.data.locales[language]["agenda." + key] = labels[index];
+    },
+  );
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["日程标题", "添加备注、链接或待办细节…", "保存修改", "创建日程"],
+  "zh-TW": ["日程標題", "新增備註、連結或待辦細節…", "儲存修改", "建立日程"],
+  "zh-HK": ["日程標題", "新增備註、連結或待辦細節…", "儲存修改", "建立日程"],
+  en: [
+    "Event title",
+    "Add notes, links or details…",
+    "Save changes",
+    "Create event",
+  ],
+  ja: [
+    "予定のタイトル",
+    "メモやリンク、詳細を追加…",
+    "変更を保存",
+    "予定を作成",
+  ],
+  ko: [
+    "일정 제목",
+    "메모, 링크 또는 세부 정보 추가…",
+    "변경 저장",
+    "일정 만들기",
+  ],
+})) {
+  ["titlePlaceholder", "notePlaceholder", "saveChanges", "createItem"].forEach(
+    (key, index) => {
+      WorkTimeApp.data.locales[language]["agenda." + key] = labels[index];
+    },
+  );
+}
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "尚未保存",
+  "zh-TW": "尚未儲存",
+  "zh-HK": "尚未儲存",
+  en: "Unsaved changes",
+  ja: "未保存の変更",
+  ko: "저장하지 않은 변경 사항",
+}))
+  WorkTimeApp.data.locales[language]["agenda.unsavedChanges"] = label;
+
+// Grouped monthly routine summaries; all values share the same record filter.
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "最早",
+    "最晚",
+    "平均",
+    "最早",
+    "最晚",
+    "平均",
+    "19:00 后",
+    "20:00 后",
+    "21:00 后",
+    "加班 / 记录",
+    "最长连续",
+    "工作日合计",
+    "加班日均",
+    "单日最长",
+    "休息日合计",
+    "平均下班",
+    "加班占比",
+    "累计加班",
+  ],
+  "zh-TW": [
+    "最早",
+    "最晚",
+    "平均",
+    "最早",
+    "最晚",
+    "平均",
+    "19:00 後",
+    "20:00 後",
+    "21:00 後",
+    "加班 / 紀錄",
+    "最長連續",
+    "工作日合計",
+    "加班日均",
+    "單日最長",
+    "休息日合計",
+    "平均下班",
+    "加班占比",
+    "累計加班",
+  ],
+  "zh-HK": [
+    "最早",
+    "最晚",
+    "平均",
+    "最早",
+    "最晚",
+    "平均",
+    "19:00 後",
+    "20:00 後",
+    "21:00 後",
+    "加班 / 記錄",
+    "最長連續",
+    "工作日合計",
+    "加班日均",
+    "單日最長",
+    "休息日合計",
+    "平均下班",
+    "加班佔比",
+    "累計加班",
+  ],
+  en: [
+    "Earliest",
+    "Latest",
+    "Avg.",
+    "Earliest",
+    "Latest",
+    "Avg.",
+    "After 19:00",
+    "After 20:00",
+    "After 21:00",
+    "OT / days",
+    "Streak",
+    "Workday OT",
+    "Avg. / OT day",
+    "Max. OT",
+    "Rest-day OT",
+    "Avg. end",
+    "OT share",
+    "Total OT",
+  ],
+  ja: [
+    "最早",
+    "最遅",
+    "平均",
+    "最早",
+    "最遅",
+    "平均",
+    "19:00 後",
+    "20:00 後",
+    "21:00 後",
+    "残業 / 記録",
+    "最長連続",
+    "勤務日合計",
+    "残業日平均",
+    "1日最長",
+    "休日合計",
+    "平均退勤",
+    "残業日率",
+    "残業合計",
+  ],
+  ko: [
+    "가장 이른",
+    "가장 늦은",
+    "평균",
+    "가장 이른",
+    "가장 늦은",
+    "평균",
+    "19:00 이후",
+    "20:00 이후",
+    "21:00 이후",
+    "연장 / 기록",
+    "최장 연속",
+    "근무일 합계",
+    "연장일 평균",
+    "하루 최장",
+    "휴일 합계",
+    "평균 퇴근",
+    "연장일 비율",
+    "연장 합계",
+  ],
+})) {
+  [
+    "earliest",
+    "latestStart",
+    "averageStart",
+    "earliestEnd",
+    "latest",
+    "averageEnd",
+    "late1140",
+    "late1200",
+    "late1260",
+    "overtimeDays",
+    "longest",
+    "totalOvertime",
+    "averageOvertime",
+    "maximumOvertime",
+    "restOvertimeTotal",
+    "endChange",
+    "ratioChange",
+    "totalChange",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["analysis.compact." + key] =
+      labels[index];
+  });
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "上班",
+    "下班",
+    "晚下班频率",
+    "加班",
+    "较上月变化",
+    "19:00 后",
+    "20:00 后",
+    "21:00 后",
+    "工作日累计加班",
+    "每个加班日平均",
+    "单日最长加班",
+    "休息日累计加班",
+    "平均下班变化",
+    "加班占比变化",
+    "累计加班变化",
+    "无变化",
+    "推迟 {value} 分",
+    "提前 {value} 分",
+    "+{value} 百分点",
+    "−{value} 百分点",
+    "+{value}",
+    "−{value}",
+    "{start}—{end} · {count} 条有效工作日记录",
+  ],
+  "zh-TW": [
+    "上班",
+    "下班",
+    "晚下班頻率",
+    "加班",
+    "較上月變化",
+    "19:00 後",
+    "20:00 後",
+    "21:00 後",
+    "工作日累計加班",
+    "每個加班日平均",
+    "單日最長加班",
+    "休息日累計加班",
+    "平均下班變化",
+    "加班占比變化",
+    "累計加班變化",
+    "無變化",
+    "推遲 {value} 分",
+    "提前 {value} 分",
+    "+{value} 百分點",
+    "−{value} 百分點",
+    "+{value}",
+    "−{value}",
+    "{start}—{end} · {count} 筆有效工作日紀錄",
+  ],
+  "zh-HK": [
+    "上班",
+    "下班",
+    "晚下班頻率",
+    "加班",
+    "較上月變化",
+    "19:00 後",
+    "20:00 後",
+    "21:00 後",
+    "工作日累計加班",
+    "每個加班日平均",
+    "單日最長加班",
+    "休息日累計加班",
+    "平均下班變化",
+    "加班佔比變化",
+    "累計加班變化",
+    "無變化",
+    "推遲 {value} 分",
+    "提前 {value} 分",
+    "+{value} 百分點",
+    "−{value} 百分點",
+    "+{value}",
+    "−{value}",
+    "{start}—{end} · {count} 筆有效工作日紀錄",
+  ],
+  en: [
+    "Arrival",
+    "Departure",
+    "Late departures",
+    "Overtime",
+    "Change from last month",
+    "After 19:00",
+    "After 20:00",
+    "After 21:00",
+    "Workday overtime",
+    "Per overtime day",
+    "Longest overtime",
+    "Rest-day overtime",
+    "Average departure",
+    "Overtime share",
+    "Total overtime",
+    "No change",
+    "{value} min later",
+    "{value} min earlier",
+    "+{value} pp",
+    "−{value} pp",
+    "+{value}",
+    "−{value}",
+    "{start}–{end} · {count} valid workday records",
+  ],
+  ja: [
+    "出勤",
+    "退勤",
+    "遅い退勤の頻度",
+    "残業",
+    "前月との差",
+    "19:00 より後",
+    "20:00 より後",
+    "21:00 より後",
+    "勤務日の残業合計",
+    "残業日あたり平均",
+    "1日の最長残業",
+    "休日の残業合計",
+    "平均退勤時刻の差",
+    "残業日割合の差",
+    "残業合計の差",
+    "変化なし",
+    "{value} 分遅い",
+    "{value} 分早い",
+    "+{value} ポイント",
+    "−{value} ポイント",
+    "+{value}",
+    "−{value}",
+    "{start}～{end} · 有効な勤務日記録 {count} 件",
+  ],
+  ko: [
+    "출근",
+    "퇴근",
+    "늦은 퇴근 빈도",
+    "초과 근무",
+    "지난달 대비",
+    "19:00 이후",
+    "20:00 이후",
+    "21:00 이후",
+    "근무일 초과 근무 합계",
+    "초과 근무일 평균",
+    "하루 최장 초과 근무",
+    "휴일 초과 근무 합계",
+    "평균 퇴근 변화",
+    "초과 근무 비율 변화",
+    "초과 근무 합계 변화",
+    "변화 없음",
+    "{value}분 늦음",
+    "{value}분 빠름",
+    "+{value}%p",
+    "−{value}%p",
+    "+{value}",
+    "−{value}",
+    "{start}–{end} · 유효 근무일 기록 {count}건",
+  ],
+})) {
+  [
+    "groupArrival",
+    "groupDeparture",
+    "groupLate",
+    "groupOvertime",
+    "groupComparison",
+    "late1140",
+    "late1200",
+    "late1260",
+    "totalOvertime",
+    "averageOvertime",
+    "maximumOvertime",
+    "restOvertimeTotal",
+    "endChange",
+    "ratioChange",
+    "totalChange",
+    "unchanged",
+    "later",
+    "earlier",
+    "morePoints",
+    "fewerPoints",
+    "moreHours",
+    "fewerHours",
+    "comparisonPeriod",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["analysis." + key] = labels[index];
+  });
+}
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "正在准备备份…",
+  "zh-TW": "正在準備備份…",
+  "zh-HK": "正在準備備份…",
+  en: "Preparing backup…",
+  ja: "バックアップを準備中…",
+  ko: "백업 준비 중…",
+}))
+  WorkTimeApp.data.locales[language]["backup.preparing"] = label;
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["常规", "工作时间"],
+  "zh-TW": ["一般", "工作時間"],
+  "zh-HK": ["一般", "工作時間"],
+  en: ["General", "Work hours"],
+  ja: ["一般", "勤務時間"],
+  ko: ["일반", "근무 시간"],
+})) {
+  WorkTimeApp.data.locales[language]["settings.general"] = labels[0];
+  WorkTimeApp.data.locales[language]["settings.work"] = labels[1];
+}
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "导入备份文件",
+  "zh-TW": "匯入備份檔案",
+  "zh-HK": "匯入備份檔案",
+  en: "Import backup file",
+  ja: "バックアップファイルをインポート",
+  ko: "백업 파일 가져오기",
+})) {
+  WorkTimeApp.data.locales[language]["backup.importFile"] = label;
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["年视图", "当月", "当日", "导入备份", "设置", "关闭设置"],
+  "zh-TW": ["年檢視", "當月", "當日", "匯入備份", "設定", "關閉設定"],
+  "zh-HK": ["年視圖", "當月", "當日", "匯入備份", "設定", "關閉設定"],
+  en: [
+    "Year view",
+    "This month",
+    "Today",
+    "Import backup",
+    "Settings",
+    "Close settings",
+  ],
+  ja: [
+    "年表示",
+    "今月",
+    "今日",
+    "バックアップの読み込み",
+    "設定",
+    "設定を閉じる",
+  ],
+  ko: ["연간 보기", "이번 달", "오늘", "백업 가져오기", "설정", "설정 닫기"],
+})) {
+  [
+    "yearView",
+    "thisMonth",
+    "today",
+    "importBackup",
+    "settings",
+    "closeSettings",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["calendarHint." + key] = labels[index];
+  });
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "动画效果",
+    "跟随系统",
+    "始终动画",
+    "减少动画",
+    "系统当前要求减少动画；选择“始终动画”可恢复本站动效。",
+    "系统当前允许展示动画。",
+    "动画设置未保存，将在本次使用中生效。",
+  ],
+  "zh-TW": [
+    "動畫效果",
+    "跟隨系統",
+    "一律播放",
+    "減少動畫",
+    "系統目前要求減少動畫；選擇「一律播放」可恢復本站動態效果。",
+    "系統目前允許顯示動畫。",
+    "動畫設定未儲存，僅於本次使用生效。",
+  ],
+  "zh-HK": [
+    "動畫效果",
+    "跟隨系統",
+    "一律播放",
+    "減少動畫",
+    "系統目前要求減少動畫；選擇「一律播放」可恢復本站動態效果。",
+    "系統目前允許顯示動畫。",
+    "動畫設定未儲存，僅於本次使用生效。",
+  ],
+  en: [
+    "Animation effects",
+    "Follow system",
+    "Always animate",
+    "Reduce motion",
+    "The system currently requests reduced motion. Choose “Always animate” to restore this site’s effects.",
+    "The system currently allows animations.",
+    "Animation preference could not be saved; it applies for this session.",
+  ],
+  ja: [
+    "アニメーション",
+    "システムに従う",
+    "常に表示",
+    "動きを減らす",
+    "システムは動きを減らす設定です。「常に表示」でこのサイトのアニメーションを有効にできます。",
+    "システムはアニメーションを許可しています。",
+    "設定を保存できませんでした。このセッションでのみ適用されます。",
+  ],
+  ko: [
+    "애니메이션 효과",
+    "시스템 설정 따르기",
+    "항상 표시",
+    "동작 줄이기",
+    "시스템이 동작 줄이기를 요청하고 있습니다. ‘항상 표시’를 선택하면 이 사이트의 효과를 복원합니다.",
+    "시스템이 애니메이션을 허용하고 있습니다.",
+    "설정을 저장하지 못했습니다. 이번 세션에만 적용됩니다.",
+  ],
+})) {
+  [
+    "label",
+    "system",
+    "full",
+    "reduce",
+    "systemReduced",
+    "systemFull",
+    "failed",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["motion." + key] = labels[index];
+  });
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "切换到热力图",
+    "切换到普通日历",
+    "休",
+    "班",
+    "休",
+    "班",
+    "热力图模式",
+    "普通日历模式",
+  ],
+  "zh-TW": [
+    "切換到熱力圖",
+    "切換到普通日曆",
+    "休",
+    "班",
+    "休",
+    "班",
+    "熱力圖模式",
+    "普通日曆模式",
+  ],
+  "zh-HK": [
+    "切換到熱力圖",
+    "切換到普通日曆",
+    "休",
+    "班",
+    "休",
+    "班",
+    "熱力圖模式",
+    "普通日曆模式",
+  ],
+  en: [
+    "Switch to heatmap",
+    "Switch to calendar",
+    "O",
+    "W",
+    "Off",
+    "Work",
+    "Heatmap mode",
+    "Calendar mode",
+  ],
+  ja: [
+    "ヒートマップに切り替え",
+    "カレンダーに切り替え",
+    "休",
+    "出",
+    "休",
+    "出",
+    "ヒートマップモード",
+    "カレンダーモード",
+  ],
+  ko: [
+    "히트맵으로 전환",
+    "달력으로 전환",
+    "휴",
+    "근",
+    "휴",
+    "근",
+    "히트맵 모드",
+    "달력 모드",
+  ],
+})) {
+  WorkTimeApp.data.locales[language]["yearView.toHeatmap"] = labels[0];
+  WorkTimeApp.data.locales[language]["yearView.toCalendar"] = labels[1];
+  WorkTimeApp.data.locales[language]["yearView.restBadge"] = labels[2];
+  WorkTimeApp.data.locales[language]["yearView.workBadge"] = labels[3];
+  WorkTimeApp.data.locales[language]["yearView.restLabel"] = labels[4];
+  WorkTimeApp.data.locales[language]["yearView.workLabel"] = labels[5];
+  WorkTimeApp.data.locales[language]["yearView.heatmapMode"] = labels[6];
+  WorkTimeApp.data.locales[language]["yearView.calendarMode"] = labels[7];
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["年度数据分析", "总加班时长", "完整记录天数"],
+  "zh-TW": ["年度數據分析", "總加班時數", "完整記錄天數"],
+  "zh-HK": ["年度數據分析", "總加班時數", "完整記錄日數"],
+  en: ["Annual analysis", "Total overtime", "Complete record days"],
+  ja: ["年間データ分析", "年間残業時間", "記録完了日数"],
+  ko: ["연간 데이터 분석", "총 초과 근무 시간", "기록 완료 일수"],
+})) {
+  WorkTimeApp.data.locales[language]["yearView.analysisTitle"] = labels[0];
+  WorkTimeApp.data.locales[language]["yearView.totalOvertime"] = labels[1];
+  WorkTimeApp.data.locales[language]["yearView.completeDays"] = labels[2];
+}
+for (const [language, label] of Object.entries({
+  "zh-CN": "闰",
+  "zh-TW": "閏",
+  "zh-HK": "閏",
+  en: "Leap ",
+  ja: "閏",
+  ko: "윤",
+})) {
+  WorkTimeApp.data.locales[language]["yearView.leapMonth"] = label;
+}
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "暂停",
+  "zh-TW": "暫停",
+  "zh-HK": "暫停",
+  en: "Paused",
+  ja: "一時停止",
+  ko: "일시 정지",
+}))
+  WorkTimeApp.data.locales[language]["games.pauseOverlay"] = label;
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "返回日历",
+  "zh-TW": "返回日曆",
+  "zh-HK": "返回日曆",
+  en: "Return to calendar",
+  ja: "カレンダーに戻る",
+  ko: "달력으로 돌아가기",
+}))
+  WorkTimeApp.data.locales[language]["workspace.returnCalendar"] = label;
+
+for (const [language, label] of Object.entries({
+  "zh-CN": "返回游戏",
+  "zh-TW": "返回遊戲",
+  "zh-HK": "返回遊戲",
+  en: "Return to game",
+  ja: "ゲームに戻る",
+  ko: "게임으로 돌아가기",
+}))
+  WorkTimeApp.data.locales[language]["games.levelStatus.returnGame"] = label;
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["取消", "新游戏"],
+  "zh-TW": ["取消", "新遊戲"],
+  "zh-HK": ["取消", "新遊戲"],
+  en: ["Cancel", "New game"],
+  ja: ["キャンセル", "新しいゲーム"],
+  ko: ["취소", "새 게임"],
+})) {
+  WorkTimeApp.data.locales[language]["games.restartCancel"] = labels[0];
+  WorkTimeApp.data.locales[language]["games.restartNew"] = labels[1];
+}
+
+// Batch selection, mutually exclusive fill modes, and independent clearing.
+for (const [key, values] of Object.entries({
+  method: [
+    "填写方式",
+    "填寫方式",
+    "填寫方式",
+    "Fill method",
+    "入力方法",
+    "입력 방식",
+  ],
+  direct: [
+    "直接填时间",
+    "直接填時間",
+    "直接填時間",
+    "Enter times",
+    "時刻を入力",
+    "시간 입력",
+  ],
+  overtime: [
+    "按加班时长",
+    "按加班時長",
+    "按加班時長",
+    "By overtime",
+    "残業時間から",
+    "초과 근무 기준",
+  ],
+  nextDay: [
+    "次日下班",
+    "次日下班",
+    "翌日下班",
+    "Ends next day",
+    "翌日退勤",
+    "다음 날 퇴근",
+  ],
+  dailyOvertime: [
+    "每天加班 / 小时",
+    "每天加班 / 小時",
+    "每日加班 / 小時",
+    "Daily overtime / hours",
+    "1日の残業 / 時間",
+    "하루 초과 근무 / 시간",
+  ],
+  selectMissing: [
+    "选本月未填",
+    "選本月未填",
+    "選本月未填",
+    "Missing this month",
+    "今月の未入力",
+    "이달 미입력",
+  ],
+  clearSelection: [
+    "清空选择",
+    "清空選擇",
+    "清空選擇",
+    "Clear selection",
+    "選択を解除",
+    "선택 해제",
+  ],
+  selected: [
+    "已选 {count} 天",
+    "已選 {count} 天",
+    "已選 {count} 天",
+    "{count} days selected",
+    "{count}日を選択",
+    "{count}일 선택됨",
+  ],
+  saveDays: [
+    "保存 {count} 天",
+    "儲存 {count} 天",
+    "儲存 {count} 天",
+    "Save {count} days",
+    "{count}日を保存",
+    "{count}일 저장",
+  ],
+  chooseDates: [
+    "请在日历中选择日期",
+    "請在日曆中選擇日期",
+    "請在日曆中選擇日期",
+    "Select dates in the calendar.",
+    "カレンダーで日付を選択してください。",
+    "달력에서 날짜를 선택하세요.",
+  ],
+  needStart: [
+    "请填写有效的上班时间",
+    "請填寫有效的上班時間",
+    "請填寫有效的上班時間",
+    "Enter a valid start time.",
+    "有効な出勤時刻を入力してください。",
+    "올바른 출근 시간을 입력하세요.",
+  ],
+  needEnd: [
+    "请填写有效的下班时间",
+    "請填寫有效的下班時間",
+    "請填寫有效的下班時間",
+    "Enter a valid end time.",
+    "有効な退勤時刻を入力してください。",
+    "올바른 퇴근 시간을 입력하세요.",
+  ],
+  needHours: [
+    "请填写有效的每天加班小时数（0–24，以 0.5 小时递增）",
+    "請填寫有效的每天加班小時數（0–24，以 0.5 小時遞增）",
+    "請填寫有效的每日加班小時數（0–24，以 0.5 小時遞增）",
+    "Enter daily overtime (0–24 hours, in 0.5-hour steps).",
+    "1日の残業を入力してください（0～24時間、0.5時間単位）。",
+    "하루 초과 근무 시간을 입력하세요(0–24시간, 0.5시간 단위).",
+  ],
+  mixedSchedules: [
+    "所选日期作息不同，请按作息分批选择，或改用直接填时间",
+    "所選日期作息不同，請按作息分批選擇，或改用直接填時間",
+    "所選日期作息不同，請按作息分批選擇，或改用直接填時間",
+    "Schedules differ. Select dates with the same schedule or enter times directly.",
+    "勤務設定が異なります。同じ設定の日を選ぶか、時刻を直接入力してください。",
+    "근무 일정이 다릅니다. 같은 일정의 날짜를 선택하거나 시간을 직접 입력하세요.",
+  ],
+  invalidRange: [
+    "下班早于上班，跨午夜请开启“次日下班”",
+    "下班早於上班，跨午夜請開啟「次日下班」",
+    "下班早於上班，跨午夜請開啟「翌日下班」",
+    "End precedes start. Enable next-day ending for overnight work.",
+    "退勤が出勤より早いため、日をまたぐ場合は翌日退勤を有効にしてください。",
+    "퇴근이 출근보다 빠릅니다. 자정을 넘기면 다음 날 퇴근을 켜세요.",
+  ],
+  calculated: [
+    "下班时间：{time}",
+    "下班時間：{time}",
+    "下班時間：{time}",
+    "End time: {time}",
+    "退勤時刻：{time}",
+    "퇴근 시간: {time}",
+  ],
+  summary: [
+    "待保存 {count} 天 · {time}\n新增 {added} 天 · 补全 {completed} 天 · 替换完整工时 {replaced} 天",
+    "待儲存 {count} 天 · {time}\n新增 {added} 天 · 補全 {completed} 天 · 取代完整工時 {replaced} 天",
+    "待儲存 {count} 天 · {time}\n新增 {added} 天 · 補全 {completed} 天 · 取代完整工時 {replaced} 天",
+    "Ready to save {count} days · {time}\nNew {added} · Completed {completed} · Replaced {replaced}",
+    "保存予定 {count}日 · {time}\n新規 {added}日 · 補完 {completed}日 · 完全な記録の置換 {replaced}日",
+    "저장할 {count}일 · {time}\n신규 {added}일 · 보완 {completed}일 · 완전한 기록 교체 {replaced}일",
+  ],
+  manualHelp: [
+    "预览中，保存后更新手动记录；OA 优先时仍按现有规则合并显示。",
+    "預覽中，儲存後更新手動記錄；OA 優先時仍按現有規則合併顯示。",
+    "預覽中，儲存後更新手動記錄；OA 優先時仍按現有規則合併顯示。",
+    "Preview only. Saving updates manual records; OA priority and merging still apply.",
+    "プレビューです。保存で手動記録を更新します。OA優先と統合規則は維持されます。",
+    "미리보기입니다. 저장 시 수동 기록을 갱신하며 OA 우선순위와 병합 규칙은 유지됩니다.",
+  ],
+  clearData: [
+    "清除已填数据…",
+    "清除已填資料…",
+    "清除已填資料…",
+    "Clear entered data…",
+    "入力済みデータを消去…",
+    "입력한 데이터 지우기…",
+  ],
+  wholeMonth: [
+    "本月全部日期",
+    "本月全部日期",
+    "本月全部日期",
+    "All dates this month",
+    "今月のすべての日付",
+    "이번 달 전체 날짜",
+  ],
+  clearHelp: [
+    "清除手动工时、草稿、备注、日期类型和手动来源优先设置；保留 OA、请假时长、计划加班及模板。",
+    "清除手動工時、草稿、備註、日期類型和手動來源優先設定；保留 OA、請假時長、計劃加班及範本。",
+    "清除手動工時、草稿、備註、日期類型和手動來源優先設定；保留 OA、請假時長、計劃加班及範本。",
+    "Removes manual times, drafts, notes, date types and manual source priority. Keeps OA, leave duration, planned overtime and templates.",
+    "手動時刻、下書き、メモ、日付種別、手動ソース優先設定を消去します。OA、休暇時間、予定残業、テンプレートは保持します。",
+    "수동 시간, 초안, 메모, 날짜 유형, 수동 출처 우선순위를 지웁니다. OA, 휴가 시간, 예정 초과 근무, 템플릿은 유지합니다.",
+  ],
+  clearSummary: [
+    "{month} · 将清除 {count} 天已填数据",
+    "{month} · 將清除 {count} 天已填資料",
+    "{month} · 將清除 {count} 天已填資料",
+    "{month} · Will clear {count} days",
+    "{month} · {count}日分を消去します",
+    "{month} · {count}일의 데이터를 지웁니다",
+  ],
+  confirmClear: [
+    "确认清除 {count} 天",
+    "確認清除 {count} 天",
+    "確認清除 {count} 天",
+    "Clear {count} days",
+    "{count}日分を消去",
+    "{count}일 지우기",
+  ],
+})) {
+  ["zh-CN", "zh-TW", "zh-HK", "en", "ja", "ko"].forEach((language, index) => {
+    WorkTimeApp.data.locales[language]["batch." + key] = values[index];
+  });
+}
+
+for (const [key, values] of Object.entries({
+  clearShort: ["清除", "清除", "清除", "Clear", "消去", "지우기"],
+  switchDirect: [
+    "切换为直接填时间",
+    "切換為直接填時間",
+    "切換為直接填時間",
+    "Switch to entering times",
+    "時刻の直接入力に切り替え",
+    "시간 직접 입력으로 전환",
+  ],
+  switchOvertime: [
+    "切换为按加班时长",
+    "切換為按加班時長",
+    "切換為按加班時長",
+    "Switch to overtime duration",
+    "残業時間からの入力に切り替え",
+    "초과 근무 시간 입력으로 전환",
+  ],
+})) {
+  ["zh-CN", "zh-TW", "zh-HK", "en", "ja", "ko"].forEach((language, index) => {
+    WorkTimeApp.data.locales[language]["batch." + key] = values[index];
+  });
+}
+
+for (const [key, values] of Object.entries({
+  saveShort: ["确认", "確認", "確認", "Confirm", "確定", "확인"],
+  clearSelectedShort: [
+    "删除所选",
+    "刪除所選",
+    "刪除所選",
+    "Delete",
+    "選択を削除",
+    "선택 삭제",
+  ],
+  clearAllShort: ["清除全部", "清除全部", "清除全部", "All", "全日", "전체"],
+  clearSelectedAction: [
+    "删除所选日期的已填数据",
+    "清除所選日期的已填資料",
+    "清除所選日期的已填資料",
+    "Clear data for selected dates",
+    "選択した日付の入力データを消去",
+    "선택한 날짜의 입력 데이터 지우기",
+  ],
+  clearAllAction: [
+    "清除本月全部日期的已填数据",
+    "清除本月全部日期的已填資料",
+    "清除本月全部日期的已填資料",
+    "Clear data for all dates this month",
+    "今月すべての日付の入力データを消去",
+    "이번 달 전체 날짜의 입력 데이터 지우기",
+  ],
+})) {
+  ["zh-CN", "zh-TW", "zh-HK", "en", "ja", "ko"].forEach((language, index) => {
+    WorkTimeApp.data.locales[language]["batch." + key] = values[index];
+  });
+}
+
+for (const [key, values] of Object.entries({
+  clearSelectedLabel: ["所选", "所選", "所選", "Selected", "選択分", "선택"],
+  clearAllLabel: ["全部", "全部", "全部", "All", "全日", "전체"],
+  confirmShort: ["确认", "確認", "確認", "Confirm", "確認", "확인"],
+  cancelShort: ["取消", "取消", "取消", "Cancel", "中止", "취소"],
+  countadded: ["新增", "新增", "新增", "New", "追加", "신규"],
+  countcompleted: ["补全", "補全", "補全", "Completed", "補完", "보완"],
+  countreplaced: ["替换", "取代", "取代", "Replaced", "置換", "교체"],
+  previewNote: [
+    "保存后生效，OA 优先规则不变。",
+    "儲存後生效，OA 優先規則不變。",
+    "儲存後生效，OA 優先規則不變。",
+    "Preview only · OA priority unchanged.",
+    "保存後に反映。OA優先は維持。",
+    "저장 후 반영 · OA 우선순위 유지.",
+  ],
+  inlineClearHelp: [
+    "再次点击确认，Esc 取消。保留 OA、请假和计划加班。",
+    "再次點擊確認，Esc 取消。保留 OA、請假和計劃加班。",
+    "再次點擊確認，Esc 取消。保留 OA、請假和計劃加班。",
+    "Click Confirm again; Esc cancels. OA, leave and planned overtime stay.",
+    "再度確認で実行、Escで中止。OA・休暇・予定残業は保持。",
+    "확인을 다시 누르면 실행, Esc로 취소. OA·휴가·예정 초과 근무 유지.",
+  ],
+  scopeSelected: [
+    "所选日期",
+    "所選日期",
+    "所選日期",
+    "Selected dates",
+    "選択した日付",
+    "선택한 날짜",
+  ],
+  nothingToClear: [
+    "此范围没有可清除的手动数据。",
+    "此範圍沒有可清除的手動資料。",
+    "此範圍沒有可清除的手動資料。",
+    "No manual data to clear in this scope.",
+    "この範囲に消去できる手動データはありません。",
+    "이 범위에 지울 수동 데이터가 없습니다.",
+  ],
+})) {
+  ["zh-CN", "zh-TW", "zh-HK", "en", "ja", "ko"].forEach((language, index) => {
+    WorkTimeApp.data.locales[language]["batch." + key] = values[index];
+  });
+}
+
+for (const [language, values] of Object.entries({
+  "zh-CN": [
+    "剪贴板授权",
+    "允许读取剪贴板，可在从 OA 返回后自动预览复制的考勤信息。",
+    "稍后",
+    "允许读取",
+    "年度报告",
+  ],
+  "zh-TW": [
+    "剪貼簿授權",
+    "允許讀取剪貼簿，可在從 OA 返回後自動預覽複製的考勤資訊。",
+    "稍後",
+    "允許讀取",
+    "年度報告",
+  ],
+  "zh-HK": [
+    "剪貼簿授權",
+    "允許讀取剪貼簿，可在從 OA 返回後自動預覽複製的考勤資訊。",
+    "稍後",
+    "允許讀取",
+    "年度報告",
+  ],
+  en: [
+    "Clipboard access",
+    "Allow clipboard access to preview copied attendance records when you return from OA.",
+    "Later",
+    "Allow access",
+    "Annual report",
+  ],
+  ja: [
+    "クリップボードのアクセス許可",
+    "許可すると、OA から戻ったときにコピーした勤怠情報をプレビューできます。",
+    "後で",
+    "許可する",
+    "年次レポート",
+  ],
+  ko: [
+    "클립보드 접근 권한",
+    "허용하면 OA에서 돌아올 때 복사한 근태 정보를 미리 볼 수 있습니다.",
+    "나중에",
+    "접근 허용",
+    "연간 보고서",
+  ],
+})) {
+  const keys = [
+    "clipboard.permissionTitle",
+    "clipboard.permissionHelp",
+    "clipboard.permissionSkip",
+    "clipboard.permissionAllow",
+    "yearView.report",
+  ];
+  keys.forEach((key, index) => {
+    WorkTimeApp.data.locales[language][key] = values[index];
+  });
+}
+
+["zh-CN", "zh-TW", "zh-HK", "en", "ja", "ko"].forEach((language, index) => {
+  WorkTimeApp.data.locales[language]["permissions.title"] = [
+    "启动授权",
+    "啟動授權",
+    "啟動授權",
+    "Startup permissions",
+    "起動時のアクセス許可",
+    "시작 권한",
+  ][index];
+});
+
+// Tool chooser copy is available before optional feature runtimes load.
+(() => {
+  const rows = [
+    ["title", "工具", "Tools", "工具", "ツール", "도구"],
+    [
+      "back",
+      "返回工具",
+      "Back to tools",
+      "返回工具",
+      "ツールに戻る",
+      "도구로 돌아가기",
+    ],
+    ["reader", "电子书", "E-books", "電子書", "電子書籍", "전자책"],
+    [
+      "typing",
+      "打字练习",
+      "Typing practice",
+      "打字練習",
+      "タイピング練習",
+      "타자 연습",
+    ],
+    [
+      "vocabulary",
+      "摸摸背单词",
+      "Vocabulary review",
+      "摸摸背單詞",
+      "単語復習",
+      "단어 복습",
+    ],
+    [
+      "readerDescription",
+      "阅读空间",
+      "Read books",
+      "閱讀空間",
+      "読書",
+      "독서 공간",
+    ],
+    [
+      "typingDescription",
+      "键位练习",
+      "Build typing skills",
+      "鍵位練習",
+      "キー練習",
+      "키 입력 연습",
+    ],
+    [
+      "vocabularyDescription",
+      "巩固记忆",
+      "Remember words",
+      "鞏固記憶",
+      "記憶の定着",
+      "단어 암기",
+    ],
+  ];
+  for (const [key, zh, en, tw, ja, ko] of rows)
+    for (const [language, text] of Object.entries({
+      "zh-CN": zh,
+      en,
+      "zh-TW": tw,
+      "zh-HK": tw,
+      ja,
+      ko,
+    }))
+      WorkTimeApp.data.locales[language]["tools." + key] = text;
+})();
+(() => {
+  const rows = {
+    "footer.audioPhase_indexingCache": [
+      "正在重建缓存索引",
+      "Rebuilding cache index",
+      "正在重建快取索引",
+      "正在重建快取索引",
+      "キャッシュ索引を再構築中",
+      "캐시 색인 재구축 중",
+    ],
+    "footer.audioProgressIndexing": [
+      "统计中，已确认 {completed} 条",
+      "Counting: {completed} confirmed",
+      "統計中，已確認 {completed} 條",
+      "統計中，已確認 {completed} 條",
+      "集計中：{completed} 件確認済み",
+      "집계 중: {completed}개 확인됨",
+    ],
+  };
+  const languages = ["zh-CN", "en", "zh-TW", "zh-HK", "ja", "ko"];
+  for (const [key, values] of Object.entries(rows))
+    languages.forEach((language, i) => {
+      WorkTimeApp.data.locales[language][key] = values[i];
+    });
+})();
+
+(() => {
+  const messages = {
+    "zh-CN": ["退出演绎", "将恢复演绎前的棋盘。"],
+    "zh-TW": ["退出演繹", "會恢復演繹前的棋盤。"],
+    "zh-HK": ["退出演繹", "會恢復演繹前的棋盤。"],
+    en: ["Stop demo", "Your previous board will be restored."],
+    ja: ["デモを終了", "デモ開始前の盤面に戻ります。"],
+    ko: ["시연 종료", "시연을 시작하기 전 보드로 돌아가요."],
+  };
+  for (const [locale, values] of Object.entries(messages)) {
+    ["aiStop", "aiStopHint"].forEach((key, index) => {
+      WorkTimeApp.data.locales[locale]["games.puzzle." + key] = values[index];
+    });
+  }
+})();

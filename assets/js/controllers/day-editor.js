@@ -1,0 +1,378 @@
+"use strict";
+/** day-editor controller. Instantiate once, then bind after all actions are connected. */
+WorkTimeApp.ui.createDayController = function (options) {
+  const events = WorkTimeApp.ui.createEventScope();
+  const { core: C, element: $, model, actions, application } = options;
+  let saveGeneration = 0;
+
+  async function saveDayEdit({ markTime = true } = {}) {
+    const date = model.selected,
+      generation = ++saveGeneration;
+    actions.previewDay();
+    try {
+      const day = actions.formDay();
+      if (
+        markTime &&
+        !C.calendarInfo(date, day).work &&
+        ($("dayStart").value || $("dayEnd").value)
+      )
+        day.plannedOvertime = true;
+      const changed =
+        JSON.stringify(day) !== JSON.stringify(model.state.days[date] || {});
+      let saved = true;
+      // A failed write must remain retryable even when the fields are unchanged.
+      if (changed || model.storageFailed) {
+        saved = (await application.saveDay(date, day)).persisted;
+        actions.renderStats();
+        actions.renderCalendar(true);
+      }
+      if (date !== model.selected || generation !== saveGeneration)
+        return saved;
+      actions.updateResetDayButton(day);
+      actions.updatePlannedOvertime(day, C.calendarInfo(date, day));
+      const error = saved
+        ? null
+        : { code: "UNSAVED", message: WorkTimeApp.i18n.t("copy.1270ebb67b") };
+      WorkTimeApp.ui.fieldErrors.show($("dayError"), error);
+      WorkTimeApp.ui.fieldErrors.show($("dayLeaveError"), error);
+      return saved;
+    } catch (err) {
+      if (date !== model.selected || generation !== saveGeneration)
+        return false;
+      const error = { code: "VALIDATION", message: err.message };
+      WorkTimeApp.ui.fieldErrors.show($("dayError"), error);
+      WorkTimeApp.ui.fieldErrors.show($("dayLeaveError"), error);
+      return false;
+    }
+  }
+  function normalizeClock(value) {
+    const text = value.trim(),
+      match =
+        /^(\d{1,2}):([0-5]\d)$/.exec(text) || /^(\d{2})([0-5]\d)$/.exec(text);
+    return match && Number(match[1]) < 24
+      ? C.pad(Number(match[1])) + ":" + match[2]
+      : null;
+  }
+  async function resetSelectedDay(cancelPlanned = false) {
+    const date = model.selected,
+      day = model.state.days[date];
+    if (!day) return;
+    saveGeneration++;
+    const saved = (
+      await (cancelPlanned
+        ? application.cancelPlanned(date)
+        : application.resetDay(date))
+    ).persisted;
+    actions.render();
+    actions.toast(
+      saved
+        ? day.oa
+          ? WorkTimeApp.i18n.t("copy.a4c5a3e99c")
+          : WorkTimeApp.i18n.t("copy.c67abeaa23")
+        : WorkTimeApp.i18n.t("copy.77b0044d4f"),
+      saved ? "countdown" : "error",
+    );
+  }
+  let bound = false;
+  function bind() {
+    if (bound) return;
+    bound = true;
+    events.handler($("plannedOvertimeToggle"), "onclick", async () => {
+      if (model.selected < model.today || $("plannedOvertimeToggle").disabled)
+        return;
+      const day = model.state.days[model.selected] || {};
+      if (C.calendarInfo(model.selected, day).work) return;
+      if (day.plannedOvertime) {
+        await resetSelectedDay(true);
+        return;
+      }
+      const saved = (await application.togglePlanned(model.selected)).persisted;
+      actions.render();
+      if (!saved) actions.toast(WorkTimeApp.i18n.t("copy.69bd4f5650"), "error");
+    });
+    events.handler($("dayForm"), "onsubmit", async (e) => {
+      e.preventDefault();
+      await saveDayEdit();
+    });
+    events.handler($("dayLeaveToggle"), "onclick", () => {
+      if ($("dayLeaveToggle").getAttribute("aria-expanded") === "true") {
+        actions.closeLeavePanel();
+        return;
+      }
+      WorkTimeApp.ui.fieldErrors.clear($("dayLeaveError"));
+      actions.openLeavePanel();
+      $("dayLeave").focus({ preventScroll: true });
+      $("dayLeave").select();
+    });
+    for (const id of ["dayLeaveFull", "dayLeaveDone"]) {
+      // Mouse/touch actions keep the input focused until the click submits.
+      events.listen($(id), "pointerdown", (event) => event.preventDefault());
+    }
+    events.listen($("dayLeave"), "blur", (event) => {
+      if (!$("dayLeavePanel").contains(event.relatedTarget))
+        actions.closeLeavePanel();
+    });
+    events.listen($("dayLeavePanel"), "focusout", (event) => {
+      if (!$("dayLeavePanel").contains(event.relatedTarget))
+        actions.closeLeavePanel();
+    });
+    events.listen($("dayLeave"), "keydown", (event) => {
+      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+        event.preventDefault();
+        const input = $("dayLeave"),
+          value = Number(input.value) || 0,
+          delta = event.key === "ArrowUp" ? 0.5 : -0.5;
+        input.value = String(
+          Math.min(
+            Number(input.max) || 24,
+            Math.max(0, Math.round((value + delta) * 100) / 100),
+          ),
+        );
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        $("dayLeaveDone").click();
+      }
+    });
+    events.handler($("dayLeaveFull"), "onclick", async () => {
+      $("dayLeave").value = C.hours(
+        C.scheduleForDate(model.state, model.selected).standardMinutes,
+      );
+      WorkTimeApp.ui.fieldErrors.clear($("dayLeaveError"));
+      if (await saveDayEdit({ markTime: false })) {
+        actions.closeLeavePanel(true);
+        actions.toast(
+          model.storageFailed
+            ? WorkTimeApp.i18n.t("copy.b23100a3cd")
+            : WorkTimeApp.i18n.t("copy.279076eeef"),
+        );
+      }
+    });
+    events.handler($("dayLeaveDone"), "onclick", async () => {
+      if (await saveDayEdit({ markTime: false })) actions.closeLeavePanel(true);
+      else $("dayLeave").focus();
+    });
+    events.listen(document, "click", (e) => {
+      if (!e.target.closest(".leave-control")) actions.closeLeavePanel();
+    });
+    events.listen(document, "keydown", (e) => {
+      if (
+        e.key === "Escape" &&
+        !$("dayLeavePanel").classList.contains("hidden")
+      ) {
+        e.preventDefault();
+        actions.closeLeavePanel(true);
+      }
+    });
+    events.handler($("dayNextToggle"), "onclick", () => {
+      $("dayNext").checked = !$("dayNext").checked;
+      $("dayNext").dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    events.listen(
+      document,
+      "keydown",
+      (event) => {
+        const input = event.target;
+        if (
+          event.key !== "Enter" ||
+          event.isComposing ||
+          event.repeat ||
+          event.ctrlKey ||
+          event.altKey ||
+          event.metaKey ||
+          event.shiftKey ||
+          !(input instanceof HTMLInputElement) ||
+          !input.matches("input.clock-input:not(.date-entry)") ||
+          input.disabled ||
+          input.readOnly ||
+          input.value.trim()
+        )
+          return;
+        const value = normalizeClock(input.placeholder);
+        if (value === null) return;
+        event.preventDefault();
+        input.value = value;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      },
+      true,
+    );
+    events.listen(
+      document,
+      "input",
+      (event) => {
+        const input = event.target;
+        if (
+          !input.matches("input.clock-input") ||
+          input.id === "dayStart" ||
+          input.id === "dayEnd" ||
+          input.id === "employmentDate"
+        )
+          return;
+        if (input.classList.contains("date-entry")) {
+          const digits = input.value.trim().replace(/[-/.]/g, "");
+          if (/^\d{8}$/.test(digits))
+            input.value =
+              digits.slice(0, 4) +
+              "-" +
+              digits.slice(4, 6) +
+              "-" +
+              digits.slice(6);
+          return;
+        }
+        const time = normalizeClock(input.value);
+        if (time !== null) input.value = time;
+        else if (input.classList.contains("breakend") && input.value === "2400")
+          input.value = "24:00";
+      },
+      true,
+    );
+    events.listen(document, "keydown", (event) => {
+      const input = event.target;
+      if (
+        !input.matches("input.clock-input") ||
+        input.id === "dayStart" ||
+        input.id === "dayEnd" ||
+        input.id === "employmentDate"
+      )
+        return;
+      if (event.key === "Enter" || event.key === "Escape") {
+        // Modal cancellation belongs to the native dialog. Inline clock inputs
+        // still use Escape to leave editing without submitting.
+        if (event.key === "Escape" && input.closest("dialog[open]")) return;
+        event.preventDefault();
+        input.blur();
+      }
+    });
+    for (const id of ["dayStart", "dayEnd"]) {
+      const input = $(id);
+      function selectSegment(segment) {
+        const colon = input.value.indexOf(":"),
+          start = segment === 1 && colon >= 0 ? colon + 1 : 0,
+          end = segment === 0 && colon >= 0 ? colon : input.value.length;
+        input.setSelectionRange(start, end);
+      }
+      events.listen(input, "click", () => {
+        if (input.selectionStart !== input.selectionEnd || !input.value) return;
+        const colon = input.value.indexOf(":");
+        selectSegment(colon >= 0 && input.selectionStart > colon ? 1 : 0);
+      });
+      events.listen(input, "input", async (event) => {
+        // A single hour digit may be the first half of an in-place edit.
+        // Padding it now rewrites the value and moves the caret to the end.
+        const typedDigit =
+          event.inputType === "insertText" &&
+          !event.isComposing &&
+          /^\d$/.test(event.data || "");
+        if (
+          typedDigit &&
+          /^([01]\d|2[0-3])$/.test(input.value) &&
+          input.selectionStart === 2
+        ) {
+          input.value += ":";
+          selectSegment(1);
+          return;
+        }
+        const time = /^\d{2}(?::|\d)/.test(input.value)
+          ? normalizeClock(input.value)
+          : null;
+        const hourCompleted =
+          typedDigit &&
+          input.selectionStart === 2 &&
+          input.selectionEnd === 2 &&
+          /^([01]\d|2[0-3]):[0-5]\d$/.test(input.value);
+        if (time !== null && input.value !== time) input.value = time;
+        if (hourCompleted) input.setSelectionRange(3, 5);
+        if (!input.value || time !== null) await saveDayEdit();
+      });
+      events.listen(input, "blur", async () => {
+        const parts = /^(\d{1,2}):(\d{1,2})$/.exec(input.value);
+        if (parts && Number(parts[1]) < 24 && Number(parts[2]) < 60)
+          input.value = C.pad(Number(parts[1])) + ":" + C.pad(Number(parts[2]));
+        const time = normalizeClock(input.value);
+        if (time !== null) {
+          if (input.value !== time) input.value = time;
+        } else if (input.value) {
+          const day = model.state.days[model.selected] || {},
+            record = C.effectiveRecord(day, true) || day.oa || {};
+          input.value = record[id === "dayStart" ? "start" : "end"] || "";
+        }
+        input.setSelectionRange(input.value.length, input.value.length);
+        actions.previewDay();
+        if (time !== null) await saveDayEdit();
+      });
+      events.listen(input, "keydown", (event) => {
+        if (event.ctrlKey || event.metaKey || event.altKey || event.isComposing)
+          return;
+        if (["ArrowLeft", "ArrowRight", "Tab", ":"].includes(event.key)) {
+          const colon = input.value.indexOf(":"),
+            segment = colon >= 0 && input.selectionStart > colon ? 1 : 0,
+            backwards =
+              event.key === "ArrowLeft" ||
+              (event.key === "Tab" && event.shiftKey),
+            next = segment + (backwards ? -1 : 1);
+          if (event.key === "Tab" && (next < 0 || next > 1)) return;
+          if (!input.value) return;
+          event.preventDefault();
+          if (event.key === ":" || next === 1) {
+            const hour = input.value.split(":")[0];
+            if (!/^\d{1,2}$/.test(hour) || Number(hour) >= 24) return;
+            input.value =
+              C.pad(Number(hour)) + ":" + (input.value.split(":")[1] || "");
+            selectSegment(1);
+          } else selectSegment(Math.max(0, Math.min(1, next)));
+          return;
+        }
+        if (event.key === "Escape") {
+          event.preventDefault();
+          input.blur();
+        }
+        if (event.key === "Enter") {
+          event.preventDefault();
+          input.blur();
+        }
+      });
+    }
+    events.listen($("dayNext"), "input", saveDayEdit);
+    events.listen($("dayLeave"), "input", () => {
+      WorkTimeApp.ui.fieldErrors.clear($("dayLeaveError"));
+    });
+    events.handler($("clearManual"), "onclick", () => resetSelectedDay());
+  }
+  function dispose() {
+    saveGeneration++;
+    events.dispose();
+    bound = false;
+  }
+  function hasDraft() {
+    if (model.batchMode) return false;
+    const day = model.state.days[model.selected] || {};
+    const record = C.effectiveRecord(day, true) || day.oa || {};
+    // The form may still show a saved manual edit while the card prefers OA.
+    const matchesClocks = (candidate) =>
+      candidate &&
+      $("dayStart").value === (candidate.start || "") &&
+      $("dayEnd").value === (candidate.end || "") &&
+      ($("dayNext").checked === !!candidate.nextDay ||
+        (day.oa?.start === candidate.start && !day.oa?.end && !candidate.end));
+    return (
+      !(
+        matchesClocks(record) ||
+        matchesClocks(day.draft || day.actual || day.estimate)
+      ) ||
+      $("dayLeave").validity.badInput ||
+      Number($("dayLeave").value || 0) !==
+        Number(C.hours(day.leaveMinutes || 0))
+    );
+  }
+  return {
+    bind,
+    dispose,
+    saveDayEdit,
+    hasDraft,
+    onSaveRecovered() {
+      WorkTimeApp.ui.fieldErrors.saved($("dayError"));
+      WorkTimeApp.ui.fieldErrors.saved($("dayLeaveError"));
+    },
+  };
+};

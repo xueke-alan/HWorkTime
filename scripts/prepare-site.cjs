@@ -1,0 +1,48 @@
+"use strict";
+const fs = require("node:fs");
+const path = require("node:path");
+const { bundleSite } = require("./bundle-site.cjs");
+const { versionSite } = require("./version-site.cjs");
+const root = path.resolve(__dirname, "..");
+const site = path.join(root, "_site");
+// Only this fixed generated directory may be replaced.
+fs.rmSync(site, { recursive: true, force: true });
+fs.mkdirSync(site);
+for (const entry of [
+  "index.html",
+  "manifest.webmanifest",
+  "service-worker.js",
+  "offline-shell.js",
+  "assets",
+  "licenses",
+  "tools",
+  "data",
+]) {
+  const source = path.join(root, entry);
+  if (entry === "data" && !fs.existsSync(source)) continue;
+  fs.cpSync(source, path.join(site, entry), { recursive: true });
+}
+bundleSite(site);
+fs.cpSync(path.join(root, "dist/settings"), path.join(site, "settings"), {
+  recursive: true,
+});
+const entry = path.join(site, "index.html");
+fs.writeFileSync(
+  entry,
+  fs
+    .readFileSync(entry, "utf8")
+    .replace(
+      "</body>",
+      '<script type="module" src="settings/settings.js"></script></body>',
+    ),
+);
+versionSite(site);
+fs.writeFileSync(
+  path.join(site, "offline-shell.js"),
+  require("./lib/offline-shell.cjs").offlineShell(site, {
+    published: true,
+    version: require("../package.json").version,
+  }),
+);
+fs.writeFileSync(path.join(site, ".nojekyll"), "");
+console.log("Prepared _site for GitHub Pages.");

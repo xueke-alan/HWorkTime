@@ -1,0 +1,76 @@
+{
+  "name": "hworktime",
+  "version": "4.0.0",
+  "private": true,
+  "description": "HWorkTime on GitHub Pages",
+  "scripts": {
+    "prepare": "node scripts/install-hooks.cjs",
+    "prepare:site": "vite build && node scripts/prepare-site.cjs",
+    "prepare:reader": "node scripts/prepare-reader.cjs",
+    "prepare:vocabulary": "node scripts/prepare-vocabulary.cjs",
+    "check:vocabulary": "node scripts/verify-vocabulary.cjs",
+    "check:reader": "node scripts/verify-reader.cjs",
+    "check:release": "pnpm run check && pnpm run lint && pnpm run check:format && pnpm run prepare:site && node scripts/verify-release.cjs",
+    "generate:locales": "node scripts/generate-locales.cjs && prettier --write \"assets/js/locales/**/*.js\" && pnpm run prepare:assets",
+    "test": "pnpm run check",
+    "check": "node scripts/check-site.cjs && pnpm run typecheck",
+    "lint": "eslint src assets/js scripts tools eslint.config.cjs --max-warnings 0",
+    "format:css": "node scripts/clean-css.cjs",
+    "format:source": "prettier --write \"assets/js/**/*.js\" \"scripts/**/*.cjs\" \"tools/**/*.js\" eslint.config.cjs \"src/**/*.{ts,vue}\" vite.config.mjs",
+    "check:format": "prettier --check \"assets/js/**/*.js\" \"scripts/**/*.cjs\" \"tools/**/*.js\" eslint.config.cjs \"src/**/*.{ts,vue}\" vite.config.mjs",
+    "prepare:assets": "node scripts/prepare-assets.cjs",
+    "typecheck": "tsc -p jsconfig.json && vue-tsc --noEmit",
+    "aeroplane:train": "node scripts/aeroplane/cli.cjs train",
+    "aeroplane:resume": "node scripts/aeroplane/cli.cjs resume",
+    "aeroplane:evaluate": "node scripts/aeroplane/cli.cjs evaluate",
+    "aeroplane:export": "node scripts/aeroplane/cli.cjs export",
+    "aeroplane:test": "node scripts/verify-aeroplane.cjs",
+    "uno:train": "node scripts/uno/cli.cjs train",
+    "uno:resume": "node scripts/uno/cli.cjs resume",
+    "uno:evaluate": "node scripts/uno/cli.cjs evaluate",
+    "uno:export": "node scripts/uno/cli.cjs export",
+    "prepare:speech": "node scripts/vocabulary/prepare-speech.cjs",
+    "package:speech": "node scripts/vocabulary/package-speech.cjs",
+    "check:speech": "node scripts/vocabulary/verify-speech.cjs"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "8.74.0",
+    "@vitejs/plugin-vue": "6",
+    "acorn": "8.18.0",
+    "clean-css": "5.3.3",
+    "epubjs": "0.3.93",
+    "esbuild": "0.28.2",
+    "eslint": "10.11.0",
+    "eslint-plugin-vue": "10.12.1",
+    "globals": "17.13.0",
+    "onnxruntime-web": "1.22.0",
+    "opencc-js": "1.0.5",
+    "pdfjs-dist": "6.5.438",
+    "phonemizer": "1.2.1",
+    "playwright": "1.62.1",
+    "postcss": "8.5.28",
+    "prettier": "3.9.9",
+    "terser": "5.51.2",
+    "ts-fsrs": "5.4.2",
+    "typescript": "5.9.3",
+    "vite": "7",
+    "vue-tsc": "3"
+  },
+  "dependencies": {
+    "@primeuix/themes": "3.1.1",
+    "pinia": "3",
+    "primevue": "4",
+    "qingicon-vue": "2.0.8",
+    "vue": "3",
+    "vue-i18n": "11"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "pnpm": {
+    "overrides": {
+      "@xmldom/xmldom": "0.9.12"
+    }
+  }
+}

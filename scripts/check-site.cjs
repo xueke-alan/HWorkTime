@@ -1,0 +1,62 @@
+"use strict";
+const fs = require("node:fs");
+const path = require("node:path");
+const acorn = require("acorn");
+const assert = require("node:assert/strict");
+const postcss = require("postcss");
+const { versionHtml } = require("./version-site.cjs");
+require("./prepare-assets.cjs").prepareAssets({ check: true });
+const root = path.resolve(__dirname, "..");
+acorn.parse(fs.readFileSync(path.join(root, "service-worker.js"), "utf8"), {
+  ecmaVersion: "latest",
+});
+function files(directory) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const file = path.join(directory, entry.name);
+    return entry.isDirectory() ? files(file) : [file];
+  });
+}
+for (const directory of ["assets", "scripts", "tools"])
+  for (const file of files(path.join(root, directory))) {
+    if (/\.(js|cjs)$/.test(file))
+      acorn.parse(fs.readFileSync(file, "utf8"), { ecmaVersion: "latest" });
+    else if (/\.css$/.test(file))
+      postcss.parse(fs.readFileSync(file, "utf8"), { from: file });
+  }
+const manifest = JSON.parse(
+  fs.readFileSync(path.join(root, "package.json"), "utf8"),
+);
+assert.ok(
+  fs
+    .readFileSync(path.join(root, "index.html"), "utf8")
+    .includes('<span id="siteVersion">v' + manifest.version + "</span>"),
+  "Site entry version must match package.json",
+);
+for (const entryPath of ["index.html", "tools/convert-backup.html"])
+  versionHtml(fs.readFileSync(path.join(root, entryPath), "utf8"), root, {
+    entryPath,
+  });
+const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+assert.ok(
+  html.includes('src="assets/js/boot.js"'),
+  "Site entry must use the staged classic-script loader",
+);
+const agendaRuntime = fs.readFileSync(
+  path.join(root, "assets/js/ui/agenda-runtime.min.js"),
+  "utf8",
+);
+const popoverIndex = agendaRuntime.indexOf("WorkTimeApp.ui.popover=");
+assert.ok(popoverIndex >= 0, "Runtime must contain the local popover adapter");
+for (const component of [
+  "createDatePicker",
+  "createAgendaSchedule",
+  "createAgenda",
+])
+  assert.ok(
+    agendaRuntime.indexOf("WorkTimeApp.ui." + component + "=") > popoverIndex,
+    "Popover adapter must load before " + component,
+  );
+console.log(
+  "JavaScript/CSS syntax, release versions and offline page dependencies verified.",
+);
+require("./check-i18n.cjs").checkI18n();

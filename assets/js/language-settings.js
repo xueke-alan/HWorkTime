@@ -1,0 +1,231 @@
+"use strict";
+/** Language changes are immediate; saving follows the existing archive owner. */
+(() => {
+  const i18n = WorkTimeApp.i18n;
+  const preferences = WorkTimeApp.services.preferences.page;
+  function mountPicker(host, config) {
+    const field = document.createElement("div");
+    field.className = "field language-settings";
+    const label = document.createElement("label");
+    label.id = config.id + "Label";
+    label.htmlFor = config.id + "Trigger";
+    const select = document.createElement("select");
+    select.id = config.selectId;
+    select.tabIndex = -1;
+    select.setAttribute("aria-hidden", "true");
+    const trigger = document.createElement("button");
+    trigger.id = config.id + "Trigger";
+    trigger.type = "button";
+    trigger.className = "ui-button language-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+    trigger.setAttribute("aria-controls", config.id + "Options");
+    trigger.setAttribute(
+      "aria-labelledby",
+      label.id + " " + config.id + "Value",
+    );
+    const valueLabel = document.createElement("span");
+    valueLabel.id = config.id + "Value";
+    valueLabel.className = "button-label";
+    trigger.append(valueLabel);
+    const list = document.createElement("div");
+    list.id = config.id + "Options";
+    list.className = "settings-select-options";
+    list.hidden = true;
+    list.setAttribute("role", "listbox");
+    list.setAttribute("aria-labelledby", label.id);
+    for (const { id: value, name } of config.options()) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = name;
+      select.append(option);
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "ui-button";
+      item.tabIndex = -1;
+      item.dataset.value = value;
+      item.setAttribute("role", "option");
+      const itemLabel = document.createElement("span");
+      itemLabel.className = "button-label";
+      item.append(itemLabel);
+      item.addEventListener("click", () => {
+        select.value = value;
+        close(true);
+        select.dispatchEvent(new Event("change"));
+      });
+      list.append(item);
+    }
+    const notice = document.createElement("p");
+    notice.className = "theme-save-notice";
+    notice.setAttribute("role", "status");
+    function synchronize() {
+      label.textContent = i18n.t(config.label);
+      config.options().forEach((option, index) => {
+        select.options[index].textContent = option.name;
+      });
+      select.value = config.read();
+      valueLabel.textContent = select.selectedOptions[0].textContent;
+      trigger.title = config.title ? config.title() : valueLabel.textContent;
+      [...list.children].forEach((item, index) => {
+        item.querySelector(".button-label").textContent =
+          select.options[index].textContent;
+        item.setAttribute(
+          "aria-selected",
+          String(item.dataset.value === select.value),
+        );
+      });
+      position();
+    }
+    function close(returnFocus = false) {
+      list.hidden = true;
+      trigger.setAttribute("aria-expanded", "false");
+      if (returnFocus) trigger.focus();
+    }
+    function position() {
+      if (list.hidden) return;
+      const rect = trigger.getBoundingClientRect();
+      const bounds = field
+        .closest(".page-settings-body")
+        .getBoundingClientRect();
+      if (rect.bottom > bounds.bottom || rect.top < bounds.top) {
+        close();
+        return;
+      }
+      const below = window.innerHeight - rect.bottom - 12;
+      const above = rect.top - 12;
+      list.style.width = rect.width + "px";
+      list.style.maxHeight = Math.max(0, Math.max(below, above)) + "px";
+      list.style.left = rect.left + "px";
+      const height = list.getBoundingClientRect().height;
+      list.style.top =
+        (below >= height ? rect.bottom + 8 : rect.top - height - 8) + "px";
+      WorkTimeApp.ui.popover.point(list, trigger);
+    }
+    function open() {
+      synchronize();
+      list.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+      position();
+      list.querySelector('[aria-selected="true"]').focus();
+    }
+    trigger.addEventListener("click", () => {
+      if (list.hidden) open();
+      else close();
+    });
+    field.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !list.hidden) {
+        event.preventDefault();
+        event.stopPropagation();
+        close(true);
+      } else if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+        event.preventDefault();
+        if (list.hidden) {
+          open();
+          return;
+        }
+        const items = [...list.children];
+        const index = items.indexOf(document.activeElement);
+        const next =
+          event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? items.length - 1
+              : (index + (event.key === "ArrowDown" ? 1 : -1) + items.length) %
+                items.length;
+        items[next].focus();
+      } else if (event.key === "Tab") close();
+    });
+    field.addEventListener("focusout", (event) => {
+      if (!field.contains(event.relatedTarget)) close();
+    });
+    document.addEventListener("pointerdown", (event) => {
+      if (!field.contains(event.target)) close();
+    });
+    const settingsPane = document.getElementById("settingsPane");
+    const leaveTab = () => close();
+    settingsPane.addEventListener("settings-tab-leave", leaveTab);
+    window.addEventListener("resize", position);
+    document.addEventListener("scroll", position, true);
+    let languageRevision = 0;
+    select.addEventListener("change", async () => {
+      const revision = ++languageRevision;
+      field.setAttribute("aria-busy", "true");
+      try {
+        const result = await config.save(select.value);
+        if (revision !== languageRevision) return;
+        synchronize();
+        notice.textContent = result.persisted ? "" : i18n.t(config.failed);
+      } finally {
+        if (revision === languageRevision) field.removeAttribute("aria-busy");
+      }
+    });
+    const unsubscribe = preferences.subscribe((state, result) => {
+      synchronize();
+      if (result.preferenceNames?.includes(config.preference))
+        notice.textContent =
+          result.persisted || result.pending ? "" : i18n.t(config.failed);
+    });
+    document.addEventListener("worktime:languagechange", synchronize);
+    if (config.id === "motion")
+      document.addEventListener("worktime:motionchange", synchronize);
+    window.addEventListener(
+      "pagehide",
+      () => {
+        settingsPane.removeEventListener("settings-tab-leave", leaveTab);
+        languageRevision++;
+        unsubscribe();
+        document.removeEventListener("worktime:languagechange", synchronize);
+        if (config.id === "motion")
+          document.removeEventListener("worktime:motionchange", synchronize);
+      },
+      { once: true },
+    );
+    field.append(label, select, trigger, list, notice);
+    host.append(field);
+    synchronize();
+  }
+  function mount() {
+    if (document.documentElement.dataset.appState === "failed") return;
+    const row = document.createElement("div");
+    row.className = "settings-select-row";
+    document.querySelector(".theme-settings-host").after(row);
+    mountPicker(row, {
+      id: "language",
+      selectId: "languageSelect",
+      label: "language.label",
+      preference: "language",
+      failed: "language.failed",
+      options: () => i18n.languages,
+      read: () => i18n.preference,
+      save: (value) => preferences.saveLanguage(value),
+    });
+    mountPicker(row, {
+      id: "motion",
+      selectId: "motionMode",
+      label: "motion.label",
+      preference: "motionMode",
+      failed: "motion.failed",
+      title: () =>
+        i18n.t(
+          WorkTimeApp.ui.animationCompat.system.matches
+            ? "motion.systemReduced"
+            : "motion.systemFull",
+        ),
+      options: () =>
+        ["system", "full", "reduce"].map((id) => ({
+          id,
+          name: i18n.t("motion." + id),
+        })),
+      read: () => preferences.state.motionMode || "full",
+      save: (value) => preferences.saveMotionMode(value),
+    });
+    const weatherHost = document.createElement("div");
+    weatherHost.id = "weather-settings";
+    weatherHost.className = "field language-settings";
+    row.append(weatherHost);
+    document.dispatchEvent(new Event("worktime:weather-settings"));
+  }
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", mount, { once: true });
+  else mount();
+})();

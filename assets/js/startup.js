@@ -1,0 +1,108 @@
+/* Reveal a complete first layout; subsequent user actions retain their animations. */
+(() => {
+  "use strict";
+  let disposed = false;
+  let frame = 0;
+  let numberTimer = null;
+  let finishWaiting = null;
+  const prefetchAbort = new AbortController();
+  let prefetchRetried = false;
+  function prefetch() {
+    if (disposed) return;
+    if (document.readyState !== "complete") {
+      window.addEventListener("load", prefetch, {
+        once: true,
+        signal: prefetchAbort.signal,
+      });
+      return;
+    }
+    void WorkTimeApp.services.vocabularyIdle
+      .whenIdle({ signal: prefetchAbort.signal })
+      .then(() =>
+        WorkTimeApp.services.assets.whenIdle({ signal: prefetchAbort.signal }),
+      )
+      .then(() => {
+        if (disposed) return;
+        return WorkTimeApp.services.assets
+          .script("assets/js/services/game-prefetch.js", {
+            fetchPriority: "low",
+          })
+          .then(() => {
+            if (!disposed) WorkTimeApp.services.gamePrefetch.start();
+          });
+      })
+      .catch(() => {
+        if (!disposed && !prefetchRetried) {
+          prefetchRetried = true;
+          window.addEventListener("online", prefetch, {
+            once: true,
+            signal: prefetchAbort.signal,
+          });
+        }
+      });
+  }
+  function schedule(callback) {
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      if (!disposed) callback();
+    });
+  }
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    prefetchAbort.abort();
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+    clearTimeout(numberTimer);
+    numberTimer = null;
+    clearTimeout(window.appRevealFallback);
+    document.removeEventListener("DOMContentLoaded", ready);
+    document.removeEventListener("worktime:failed", dispose);
+    removeEventListener("pagehide", dispose);
+    finishWaiting?.();
+  }
+  const reveal = () => {
+    WorkTimeApp.ui.alignment?.prepareFirstPaint();
+    schedule(() => {
+      document
+        .querySelectorAll(".workspace>.panel,main.wrap>footer")
+        .forEach((element, index) =>
+          WorkTimeApp.ui.motion?.play(element, "motion-startup", index * 45),
+        );
+      document.documentElement.classList.remove("app-loading");
+      WorkTimeApp.ui.secondaryControllers?.afterIntro();
+      prefetch();
+      numberTimer = setTimeout(() => {
+        numberTimer = null;
+        if (!disposed) WorkTimeApp.ui.numbers?.reveal();
+      }, 200);
+      WorkTimeApp.ui.notificationMotion?.reveal();
+      clearTimeout(window.appRevealFallback);
+    });
+  };
+  async function ready() {
+    await document.fonts.ready;
+    if (disposed) return;
+    if (document.documentElement.dataset.appState === "initializing") {
+      await new Promise((resolve) => {
+        const done = () => {
+          document.removeEventListener("worktime:ready", done);
+          document.removeEventListener("worktime:failed", done);
+          finishWaiting = null;
+          resolve();
+        };
+        finishWaiting = done;
+        document.addEventListener("worktime:ready", done);
+        document.addEventListener("worktime:failed", done);
+      });
+    }
+    if (disposed || document.documentElement.dataset.appState === "failed")
+      return;
+    schedule(reveal);
+  }
+  addEventListener("pagehide", dispose);
+  document.addEventListener("worktime:failed", dispose);
+  if (document.readyState === "loading")
+    document.addEventListener("DOMContentLoaded", ready, { once: true });
+  else ready();
+})();
