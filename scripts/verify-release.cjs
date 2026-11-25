@@ -48,10 +48,12 @@ async function verifyControlTheme(page) {
     area.style.setProperty("--ui-control-radius", "21px");
     area.style.setProperty("--ui-motion", "0ms");
     area.style.setProperty("--ui-stroke", "3px");
+    area.style.setProperty("--ui-icon-stroke", "2.5");
     area.style.setProperty("--ui-font-size", "17px");
     area.style.setProperty("--ui-border", "rgb(94, 31, 120)");
     const style = getComputedStyle(el);
     return [
+      getComputedStyle(el.querySelector('[data-role="stroke"]')).strokeWidth,
       style.borderRadius,
       style.borderTopWidth,
       style.fontSize,
@@ -59,7 +61,20 @@ async function verifyControlTheme(page) {
       getComputedStyle(document.getElementById("motionTrigger")).borderRadius,
     ];
   });
-  assert.deepEqual(result, ["21px", "3px", "17px", "rgb(94, 31, 120)", before]);
+  assert.deepEqual(result, [
+    "2.5px",
+    "21px",
+    "3px",
+    "17px",
+    "rgb(94, 31, 120)",
+    before,
+  ]);
+  await weather.waitFor();
+  await page.waitForFunction(() => {
+    const control = document.getElementById("weatherDays");
+    return control && !control.disabled && !control.closest("[inert]");
+  });
+  await weather.focus();
   await weather.press("ArrowDown");
   await page.getByRole("listbox").filter({ visible: true }).waitFor();
   await weather.press("Escape");
@@ -70,6 +85,7 @@ async function verifyControlTheme(page) {
       "--ui-control-radius",
       "--ui-motion",
       "--ui-stroke",
+      "--ui-icon-stroke",
       "--ui-font-size",
       "--ui-border",
     ])
