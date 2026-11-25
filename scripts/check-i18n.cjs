@@ -29,6 +29,7 @@ function checkI18n() {
     "content-ja",
     "media",
     "prime",
+    "oa",
     "additions",
     "sudoku",
     "jump",

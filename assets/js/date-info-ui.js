@@ -1065,6 +1065,7 @@
   function synchronizeDevelopment() {
     if (disposed) return;
     if (!isDevelopmentEnabled()) {
+      WorkTimeApp.ui.reader.leaveDevelopment();
       const typingOpen =
         document.getElementById("typingDialog")?.hidden === false;
       if (typingOpen) WorkTimeApp.ui.typing?.close();

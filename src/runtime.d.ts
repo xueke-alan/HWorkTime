@@ -18,6 +18,21 @@ declare global {
       createIcon(icon: string): Element;
     };
     ui: {
+      mountGameToolbar: typeof import("./games/menu").mountGameToolbar;
+      mountMusicTransport: typeof import("./media/mount").mountMusicTransport;
+      importRecords: typeof import("./imports/records").records;
+      archiveView: typeof import("./games/archive").archiveView;
+      loadReaderToolbar: () => Promise<
+        typeof import("./media/reader-entry").mountReaderToolbar
+      >;
+      createMediaSelectGroup: typeof import("./media/selects").createMediaSelectGroup;
+      createRestartPrompt: typeof import("./games/restart").createRestartPrompt;
+
+      mountMusicToolbar: typeof import("./media/mount").mountMusicToolbar;
+      confirmations: typeof import("./imports/confirmations").confirmations;
+      renderAnalysisMetrics: typeof import("./analysis/metrics").renderAnalysisMetrics;
+      afterAnalysisRender: typeof import("./analysis/metrics").afterAnalysisRender;
+      renderAnalysisSidebar: typeof import("./analysis/sidebar").renderAnalysisSidebar;
       mountVocabularyNavigation: typeof import("./vocabulary/mount").mountVocabularyNavigation;
       createSelect: typeof import("./workspace/select").createWorkspaceSelect;
       mountPlayback: typeof import("./music/playback").mountPlayback;

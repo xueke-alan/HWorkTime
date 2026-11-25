@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AnalysisSidebar from "../analysis/AnalysisSidebar.vue";
 import SettingsPane from "./SettingsPane.vue";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -23,48 +24,7 @@ import InputText from "primevue/inputtext";
         </header>
         <div id="yearAnalysisCards" class="year-analysis-cards"></div>
       </section>
-      <section
-        id="analysisSidebar"
-        class="analysis-sidebar"
-        hidden
-        aria-labelledby="analysisSidebarTitle"
-      >
-        <header class="analysis-sidebar-header">
-          <p id="analysisSidebarMonth" class="calendar-today-number"></p>
-          <h2
-            id="analysisSidebarTitle"
-            class="calendar-today-weekday"
-            data-i18n-text='{"0":"analysis.sidebarShortTitle"}'
-          >
-            作息
-          </h2>
-        </header>
-        <section class="analysis-sidebar-section">
-          <h3 data-i18n-text='{"0":"analysis.sidebarObservation"}'>本月观察</h3>
-          <p id="analysisObservation" class="analysis-observation"></p>
-          <p id="analysisObservationContext" class="analysis-sidebar-muted"></p>
-        </section>
-        <section class="analysis-sidebar-section">
-          <h3 data-i18n-text='{"0":"analysis.sidebarFocus"}'>关注日期</h3>
-          <div
-            id="analysisFocusDates"
-            class="analysis-focus-dates"
-            role="group"
-            data-i18n-aria-label="analysis.sidebarFocus"
-            aria-label="关注日期"
-          ></div>
-          <div
-            id="analysisFocusDetail"
-            class="analysis-focus-detail"
-            aria-live="polite"
-            aria-atomic="true"
-          ></div>
-        </section>
-        <section class="analysis-sidebar-section">
-          <h3 data-i18n-text='{"0":"analysis.sidebarScope"}'>数据范围</h3>
-          <div id="analysisSidebarScope" class="analysis-sidebar-scope"></div>
-        </section>
-      </section>
+      <AnalysisSidebar />
       <section
         id="batchBar"
         class="batch-editor editor-mode hidden"

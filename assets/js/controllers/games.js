@@ -155,15 +155,8 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
   surface.setAttribute("aria-hidden", "true");
   const toolbar = document.createElement("header");
   toolbar.className = "game-toolbar workspace-toolbar";
-  const title = document.createElement("h2");
-  title.id = "gameTitle";
-  const exitButton = document.createElement("button");
-  exitButton.type = "button";
-  exitButton.id = "gameExitButton";
-  exitButton.className = "ui-button icon-only workspace-toolbar-action";
-  exitButton.innerHTML =
-    '<svg class="ui-icon" aria-hidden="true"><use href="#ms-calendar-month"/></svg>';
-  toolbar.append(exitButton, title);
+  const toolbarView = WorkTimeApp.ui.mountGameToolbar(toolbar, () => exit());
+  const exitButton = toolbar.querySelector("#gameExitButton");
   const content = document.createElement("div");
   content.className = "game-content";
   shell.append(surface, toolbar, content);
@@ -219,11 +212,7 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
     content.replaceChildren();
   }
   function translateToolbar() {
-    title.textContent = t(
-      WorkTimeApp.games.get(currentId)?.nameKey || "games.menu",
-    );
-    exitButton.setAttribute("aria-label", t("workspace.returnCalendar"));
-    exitButton.removeAttribute("title");
+    toolbarView.show(WorkTimeApp.games.get(currentId)?.nameKey || "games.menu");
   }
   function notifySize() {
     if (!instance || state === "closed") return;
@@ -570,7 +559,6 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
           : null;
     if (selector) menu?.querySelector(selector)?.focus();
   }
-  events.listen(exitButton, "click", exit);
   function rememberIdlePointer(event) {
     if (event.pointerType !== "touch")
       idlePointer = { x: event.clientX, y: event.clientY };
@@ -693,6 +681,7 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
     dispose() {
       if (disposed) return;
       disposed = true;
+      toolbarView.dispose();
       disposeFooter();
       hideIdleCover();
       idleObserver.disconnect();

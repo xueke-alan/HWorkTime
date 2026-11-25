@@ -104,16 +104,157 @@ async function verifyAgendaEditor(page) {
   assert.equal(await title.inputValue(), "Pages agenda check");
 }
 
+async function verifyCalendarAndRestore(page) {
+  await page.locator("#monthTitle").focus();
+  await page.keyboard.press("Enter");
+  await page.locator("[data-year-date]").first().waitFor();
+  await page.waitForFunction(
+    () => !document.getElementById("panelContent").inert,
+  );
+  await page.locator("#monthTitle").press("Space");
+  await page.locator(".day[data-date]").first().waitFor();
+  const file = await page.evaluate(() => {
+    const state = WorkTimeApp.domain.state.defaultState();
+    const month = WorkTimeApp.domain.time.businessDate(new Date()).slice(0, 7);
+    for (const day of ["01", "02"]) {
+      state.days[month + "-" + day] = {
+        kind: "work",
+        actual: {
+          start: "08:30",
+          end: "18:30",
+          nextDay: false,
+          effectiveMinutes: null,
+        },
+      };
+    }
+    return WorkTimeApp.services.archive.encode(state);
+  });
+  const input = page.locator("#backupFile");
+  const upload = () =>
+    input.setInputFiles({
+      name: "analysis.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(file)),
+    });
+  await upload();
+  const dialog = page.locator("#restoreDialog");
+  await dialog.waitFor();
+  await dialog.locator('[data-close="restoreDialog"]').click();
+  await dialog.waitFor({ state: "hidden" });
+  await upload();
+  await dialog.locator("#confirmRestore").click();
+  await dialog.waitFor({ state: "hidden" });
+  await page.locator("#analysisToggle").click();
+  const dates = page.locator("#analysisFocusDates button");
+  await dates.nth(1).click();
+  assert.equal(await dates.nth(1).getAttribute("aria-pressed"), "true");
+  const metric = page.locator('#analysisMetrics [data-key="earliest"]');
+  await metric.getByRole("button").click();
+  assert.ok(await metric.locator(".analysis-date-hint").isVisible());
+  await page.locator("#prevMonth").click();
+  await page.waitForFunction(
+    () => document.querySelector("#analysisFocusDates").childElementCount === 0,
+  );
+  await page.locator("#nextMonth").click();
+  await dates.nth(1).waitFor();
+  await page.waitForFunction(
+    () => !document.getElementById("panelContent").inert,
+  );
+  await page.locator("#analysisToggle").click();
+  await page.locator("#analysisPage").waitFor({ state: "hidden" });
+  await page.waitForFunction(
+    () => !document.getElementById("panelContent").inert,
+  );
+  await page.locator("#importOpen").click();
+  await page.locator("#pasteText").fill("01/01\n周四\n08:00\n19:30");
+  await page.locator("#commitImport").click();
+  await page.locator("#importDialog").waitFor({ state: "hidden" });
+  await page.locator("#importOpen").click();
+  const history = page
+    .locator("#importHistoryList [data-delete-import]")
+    .first();
+  await history.click();
+  await page.locator("#deleteImportDialog [data-close]").click();
+  await history.click();
+  await page.locator("#confirmDeleteImport").click();
+  await page.locator(".import-history-empty").waitFor();
+  await page.locator("#importOpen").click();
+}
+async function verifyDevReader(browser, url) {
+  const context = await browser.newContext({ locale: "zh-CN" });
+  try {
+    const page = await context.newPage();
+    await page.addInitScript(
+      require("./runtime-test-helpers.cjs").installRuntimeFixture,
+    );
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    const requests = [];
+    page.on("request", (r) => {
+      if (
+        /reader-runtime|reader-entry-|vendor\/reader|css\/reader\.css/.test(
+          r.url(),
+        )
+      )
+        requests.push(r.url());
+    });
+    await page.goto(url);
+    await page.waitForFunction(
+      () =>
+        document.documentElement.dataset.appState === "ready" &&
+        WorkTimeApp.services.runtimeFolder.state.status === "available",
+    );
+    await page.locator("#date-tab-tools").click();
+    assert.ok(await page.locator("#readerOpen").isHidden());
+    assert.deepEqual(requests, []);
+    await page.evaluate(async () => {
+      const root = await window.showDirectoryPicker();
+      const ebooks = await root.getDirectoryHandle("ebooks", { create: true });
+      const file = await ebooks.getFileHandle("Reader fixture.txt", {
+        create: true,
+      });
+      const stream = await file.createWritable();
+      await stream.write("HWorkTime reader preview text.");
+      await stream.close();
+    });
+    await page.goto(new URL("#dev", url).href);
+    await page.locator("#readerOpen").click();
+    await page
+      .locator("#readerMiniExpand:visible, #readerDialog[data-state=open]")
+      .first()
+      .waitFor();
+    if (await page.locator("#readerMiniExpand").isVisible())
+      await page.locator("#readerMiniExpand").click();
+    await page.locator("#readerDialog[data-state=open]").waitFor();
+    await page.locator("#readerBooks .reader-book-open").first().click();
+    await page
+      .frameLocator("#readerViewport iframe")
+      .getByText("HWorkTime reader preview text.", { exact: true })
+      .first()
+      .waitFor();
+    await page.goto(url);
+    await page.locator("#readerDialog").waitFor({ state: "hidden" });
+    assert.ok(await page.locator("#readerOpen").isHidden());
+    assert.deepEqual(errors, []);
+  } finally {
+    await context.close();
+  }
+}
 async function verify(url) {
   const browser = await chromium.launch({
     channel: process.env.WORKTIME_BROWSER_CHANNEL || "msedge",
   });
   try {
+    await verifyDevReader(browser, url);
     const context = await browser.newContext({ locale: "zh-CN" });
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.goto(url);
+    await page.waitForFunction(
+      () => document.documentElement.dataset.appState === "ready",
+    );
+    await verifyCalendarAndRestore(page);
     for (const expected of [5, 7]) {
       await page.waitForFunction(
         () => document.documentElement.dataset.appState === "ready",
@@ -167,6 +308,19 @@ async function verify(url) {
     await page.waitForFunction(
       () => document.documentElement.dataset.appState === "ready",
     );
+    await page.locator("#date-tab-games").click();
+    await page.locator('#gamesPanel [data-game-archive="import"]').click();
+    const archive = page.locator("#gameArchiveDialog");
+    await archive.locator("#gameArchiveText").fill("invalid archive");
+    await archive.locator(".game-archive-actions button").nth(1).click();
+    await page.waitForFunction(
+      () => !!document.querySelector(".game-archive-error")?.textContent.trim(),
+    );
+    assert.ok(
+      await archive.locator(".game-archive-footer button").last().isDisabled(),
+    );
+    await archive.locator(".game-archive-footer button").first().click();
+    await archive.waitFor({ state: "hidden" });
     await require("./game-test-helpers.cjs").launchGame(page, "game-2048");
     await page.locator("#gameExitButton").click();
     await page.locator("#gameShell").waitFor({ state: "hidden" });
@@ -183,6 +337,19 @@ async function verify(url) {
     );
     await page.locator("#gameExitButton").click();
     await page.locator("#gameShell").waitFor({ state: "hidden" });
+    await require("./game-test-helpers.cjs").launchGame(page, "game-jump");
+    await page.locator('[data-jump-action="restart"]').click();
+    const restart = page
+      .locator(".game-restart-content")
+      .getByRole("button")
+      .first();
+    await restart.press("Escape");
+    await page.locator(".game-restart-panel").waitFor({ state: "hidden" });
+    await page.locator("#gameExitButton").click();
+    await page.locator("#gameShell").waitFor({ state: "hidden" });
+    await page.locator("#musicOpen").click();
+    await page.locator("#musicMinimize").click();
+    await page.locator("#musicDialog").waitFor({ state: "hidden" });
     await page.goto(new URL("#dev", url).href);
     await page.locator("#date-tab-tools").click();
     await page.locator("#typingOpen").click();
@@ -265,7 +432,7 @@ async function verify(url) {
     await mobile.close();
     assert.deepEqual(errors, []);
     console.log(
-      "Pages entry, calendar, settings, four agenda statuses, range, discard, reload, game launch, typing navigation, backup conversion and mobile English settings passed.",
+      "Verified Pages startup, calendar and analysis, OA import and removal, backup restore, agenda, games, music, typing, mobile settings and dev-only book reading.",
     );
   } finally {
     await browser.close();

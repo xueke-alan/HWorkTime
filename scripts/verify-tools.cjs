@@ -128,18 +128,23 @@ const site = path.resolve(
     await page.locator("#date-tab-tools").click();
     await page.locator("#readerOpen").focus();
     await page.keyboard.press("Enter");
-    await page.locator(".reader-placeholder").waitFor();
+    await page
+      .locator("#readerDialog[data-state=open], #readerMiniExpand:visible")
+      .first()
+      .waitFor();
     await setHash("");
     assert.equal(await page.locator("#readerPanel").isVisible(), false);
     await assertDevelopment(false);
     await setHash("#dev");
     await page.locator("#readerOpen").click();
-    assert.equal(await page.locator("#readerOpen").getAttribute("role"), null);
-    await page.locator(".tools-back").click();
-    assert.equal(
-      await page.evaluate(() => document.activeElement.id),
-      "readerOpen",
-    );
+    await page
+      .locator("#readerDialog[data-state=open], #readerMiniExpand:visible")
+      .first()
+      .waitFor();
+    if (await page.locator("#readerExit").isVisible())
+      await page.locator("#readerExit").click();
+    else await page.locator(".tools-back").click();
+    await page.locator("#readerOpen").waitFor();
     await page.evaluate(() => {
       const assets = WorkTimeApp.services.assets;
       const original = assets.script;

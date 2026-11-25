@@ -217,9 +217,10 @@ WorkTimeApp.ui.music = (() => {
     });
     return element;
   }
+  const selectControls = WorkTimeApp.ui.createMediaSelectGroup("music");
   function select(parent, key, options, change) {
-    const label = node("label", "music-select-label", parent);
-    copy(node("span", "", label), key);
+    const label = node("div", "music-select-label", parent);
+    const caption = copy(node("label", "", label), key);
     const element = node("select", "", label);
     accessible(element, key);
     for (const [value, text, n] of options) {
@@ -228,64 +229,42 @@ WorkTimeApp.ui.music = (() => {
       copy(option, text, n);
     }
     element.onchange = () => change(element.value);
+    selectControls.add(label, element, caption);
     return element;
   }
   const header = node("header", "music-header workspace-toolbar", dialog);
-  const exitButton = button(header, "returnMain", () => expansion.close(), "‹");
-  exitButton.id = "musicExitButton";
-  exitButton.classList.add(
-    "ui-button",
-    "icon-only",
-    "workspace-toolbar-action",
-  );
-  exitButton.replaceChildren(WorkTimeApp.games.createIcon("calendar-month"));
-  const title = node("h2", "", header);
-  title.id = "musicTitle";
-  copy(title, "title");
-  const searchBox = node("div", "music-search-box", header);
-  const searchIcon = node("span", "music-glyph", searchBox);
-  searchIcon.innerHTML = icon("search");
-  searchIcon.setAttribute("aria-hidden", "true");
-  const query = node("input", "music-search", searchBox);
-  query.type = "search";
-  accessible(query, "search");
-  query.placeholder = t("search");
-  const management = node("details", "music-menu music-management", header);
-  const managementToggle = node("summary", "music-menu-toggle", management);
-  managementToggle.innerHTML = icon("folder");
-  accessible(managementToggle, "manage");
-  managementToggle.classList.add("workspace-toolbar-action");
-  const minimizeButton = button(
+  const toolbarView = WorkTimeApp.ui.mountMusicToolbar(
     header,
-    "minimize",
-    () => minimize(),
-    "minimize",
+    async (action) => {
+      switch (action) {
+        case "exit":
+          expansion.close();
+          break;
+        case "minimize":
+          minimize();
+          break;
+        case "choose":
+          chooseFolder();
+          break;
+        case "importFolder":
+          importer.open(true);
+          break;
+        case "access":
+        case "rescan":
+          if (!(await controller.rescan())) await chooseFolder();
+          management.open = false;
+          break;
+        case "cancel":
+          controller.cancelScan();
+          management.open = false;
+          break;
+      }
+    },
+    t,
   );
-  minimizeButton.id = "musicMinimize";
-  minimizeButton.classList.add(
-    "ui-button",
-    "icon-only",
-    "workspace-toolbar-action",
-  );
-  minimizeButton.replaceChildren(
-    WorkTimeApp.games.createIcon("horizontal-rule"),
-  );
-  const toolbar = node("div", "music-menu-panel music-toolbar", management);
-  button(toolbar, "choose", () => void chooseFolder());
-  button(toolbar, "importFolder", () => importer.open(true));
-  const reconnect = button(toolbar, "access", async () => {
-    if (!(await controller.rescan())) await chooseFolder();
-    management.open = false;
-  });
-  reconnect.id = "musicReconnect";
-  const rescan = button(toolbar, "rescan", async () => {
-    if (!(await controller.rescan())) await chooseFolder();
-    management.open = false;
-  });
-  const cancel = button(toolbar, "cancel", () => {
-    controller.cancelScan();
-    management.open = false;
-  });
+  const query = header.querySelector(".music-search"),
+    management = header.querySelector(".music-management"),
+    toolbar = management.querySelector(".music-toolbar");
   const body = node("div", "music-body", dialog);
   const sidebar = node("aside", "music-sidebar", body);
   const libraryBrand = node("div", "music-sidebar-brand", sidebar);
@@ -363,7 +342,7 @@ WorkTimeApp.ui.music = (() => {
     "storageIssue",
   );
   const statusActions = node("div", "music-status-actions", library);
-  statusActions.append(reconnect, cancel);
+  toolbarView.setStatusHost(statusActions);
   const filters = node("div", "music-filters", library);
   const filterRow = node("div", "music-filter-row", filters);
   const listHeading = copy(node("h4", "", filterRow), "songs");
@@ -466,38 +445,20 @@ WorkTimeApp.ui.music = (() => {
   currentFavorite.id = "musicCurrentFavorite";
   const centerControls = node("div", "music-player-center", footer);
   const transport = node("div", "music-transport", centerControls);
-  const shuffle = button(
+  const transportView = WorkTimeApp.ui.mountMusicTransport(
     transport,
-    "shuffle",
-    () =>
-      controller.mode(
-        controller.snapshot().mode === "shuffle" ? "list" : "shuffle",
-      ),
-    "shuffle",
-  );
-  shuffle.id = "musicShuffle";
-  const previous = button(
-    transport,
-    "previous",
-    () => controller.previous(),
-    "⏮",
-  );
-  const play = button(transport, "play", () => controller.toggle(), "▶");
-  play.id = "musicPlay";
-  play.classList.add("music-play");
-  const next = button(transport, "next", () => controller.next(), "⏭");
-  const repeat = button(
-    transport,
-    "list",
-    () => {
-      const value = controller.snapshot().mode;
-      controller.mode(
-        value === "list" ? "one" : value === "one" ? "order" : "list",
-      );
+    (action, event) => {
+      pulseMusic(event.currentTarget.querySelector(".music-glyph"));
+      const mode = controller.snapshot().mode;
+      if (action === "shuffle")
+        controller.mode(mode === "shuffle" ? "list" : "shuffle");
+      else if (action === "repeat")
+        controller.mode(
+          mode === "list" ? "one" : mode === "one" ? "order" : "list",
+        );
+      else controller[action]();
     },
-    "repeat",
   );
-  repeat.id = "musicRepeat";
   const progressRow = node("div", "music-progress-row", centerControls);
   const elapsed = node("output", "music-time", progressRow);
   const progress = node("input", "music-progress media-range", progressRow);
@@ -1131,6 +1092,10 @@ WorkTimeApp.ui.music = (() => {
   let lastTrackPath;
   const visibleMusicStates = new WeakMap();
   function render() {
+    renderPlayer();
+    selectControls.sync();
+  }
+  function renderPlayer() {
     if (disposed) return;
     const state = controller.snapshot();
     const trackChanged =
@@ -1170,7 +1135,8 @@ WorkTimeApp.ui.music = (() => {
     columns.hidden = empty;
     list.hidden = empty;
     query.disabled = empty;
-    shuffle.disabled = repeat.disabled = lyricToggle.disabled = empty;
+    lyricToggle.disabled = empty;
+    transportView.update(state.mode, state.paused, empty, state.needsAccess);
     collectionTitle.textContent = favoriteOnly
       ? t("collection")
       : (state.directory === "files" ? t("files") : state.directory) ||
@@ -1209,11 +1175,7 @@ WorkTimeApp.ui.music = (() => {
     }
     notice.hidden = !statusText;
     storageNotice.hidden = !state.storageIssue && !presentationIssue;
-    cancel.hidden = !state.busy && !state.readingTags;
-    reconnect.hidden = !state.needsAccess;
-    rescan.disabled = state.busy;
-
-    title.textContent = t("title");
+    toolbarView.update(state.busy, state.readingTags, state.needsAccess);
     song.textContent = state.current?.title || t("idle");
     compactSong.textContent = state.current?.title || t("idle");
     compactArtist.textContent =
@@ -1243,10 +1205,6 @@ WorkTimeApp.ui.music = (() => {
     favorite.setAttribute("aria-pressed", String(Boolean(isFavorite)));
     dynamicLabel(favorite, isFavorite ? "unfavorite" : "favorite");
     favoritesButton.setAttribute("aria-pressed", String(favoriteOnly));
-    setGlyph(play, state.paused ? "play" : "pause");
-    dynamicLabel(play, state.paused ? "play" : "pause");
-    for (const element of [play, previous, next])
-      element.disabled = !state.tracks.length || state.needsAccess;
     volume.value = String(state.volume);
     updateRange(volume);
     mute.setAttribute("aria-pressed", String(state.muted));
@@ -1255,16 +1213,6 @@ WorkTimeApp.ui.music = (() => {
     mode.value = state.mode;
     speed.value = String(state.rate);
     timer.value = state.sleep;
-    shuffle.setAttribute("aria-pressed", String(state.mode === "shuffle"));
-    repeat.setAttribute(
-      "aria-pressed",
-      String(state.mode === "list" || state.mode === "one"),
-    );
-    repeat.classList.toggle("is-repeat-one", state.mode === "one");
-    dynamicLabel(
-      repeat,
-      state.mode === "one" ? "one" : state.mode === "list" ? "list" : "order",
-    );
     settingsToggle.classList.toggle("has-timer", state.sleep !== "off");
     if (trackChanged) {
       for (const element of [
@@ -1279,8 +1227,7 @@ WorkTimeApp.ui.music = (() => {
       hero,
       notice,
       storageNotice,
-      cancel,
-      reconnect,
+      ...statusActions.children,
     ]) {
       const visible = !element.hidden;
       if (visible && visibleMusicStates.get(element) === false)
@@ -1302,7 +1249,6 @@ WorkTimeApp.ui.music = (() => {
       if (element.isConnected) element.textContent = t(key, n);
     for (const { element, key } of labels)
       if (element.isConnected) dynamicLabel(element, key);
-    query.placeholder = t("search");
     listSignature = "";
     lastLyrics = null;
     render();
@@ -1313,7 +1259,9 @@ WorkTimeApp.ui.music = (() => {
     if (event.key === "Escape") {
       event.preventDefault();
       if (management.open || settings.open) {
-        const toggle = management.open ? managementToggle : settingsToggle;
+        const toggle = management.open
+          ? management.querySelector("summary")
+          : settingsToggle;
         management.open = settings.open = false;
         toggle.focus();
         return;
@@ -1359,6 +1307,9 @@ WorkTimeApp.ui.music = (() => {
     controller.dispose();
     window.removeEventListener("pointerup", endDrag);
     window.removeEventListener("pagehide", dispose);
+    selectControls.dispose();
+    toolbarView.dispose();
+    transportView.dispose();
     dialog.remove();
     mini.remove();
     document.removeEventListener("worktime:failed", dispose);

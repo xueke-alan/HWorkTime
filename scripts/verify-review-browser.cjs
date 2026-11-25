@@ -168,7 +168,7 @@ async function main() {
       await old;
       const retained =
         document.getElementById("restoreSummary").textContent === summary;
-      document.getElementById("restoreDialog").close();
+      WorkTimeApp.ui.confirmations.close(WorkTimeApp.ui.confirmations.restore);
       return retained;
     });
     assert.equal(
@@ -177,16 +177,13 @@ async function main() {
       "a late old file must not replace the latest restore preview",
     );
     await page.locator("#readerOpen").click();
-    assert.equal(await page.locator(".reader-placeholder").isVisible(), true);
-    assert.equal(await page.locator("#readerDialog").count(), 0);
-    assert.equal(
-      await page.evaluate(() =>
-        performance
-          .getEntriesByType("resource")
-          .some((entry) => /reader-runtime|vendor\/reader/.test(entry.name)),
-      ),
-      false,
-    );
+    await page
+      .locator("#readerDialog[data-state=open], #readerMiniExpand:visible")
+      .first()
+      .waitFor();
+    if (await page.locator("#readerExit").isVisible())
+      await page.locator("#readerExit").click();
+    else await page.locator(".tools-back").click();
     assert.equal(
       await page.evaluate(() => typeof window.Solar),
       "undefined",

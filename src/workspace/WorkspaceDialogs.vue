@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import GameArchiveDialog from "../games/GameArchiveDialog.vue";
+import ImportConfirmations from "../imports/ImportConfirmations.vue";
 import Button from "primevue/button";
 import Textarea from "primevue/textarea";
 import InputText from "primevue/inputtext";
@@ -406,92 +408,7 @@ import InputText from "primevue/inputtext";
       >
     </div>
   </dialog>
-  <dialog id="deleteImportDialog">
-    <div class="dialog-head">
-      <h2 data-i18n-text='{"0":"copy.31fcbd78ba"}'>删除导入记录</h2>
-      <Button
-        class="ui-button"
-        data-close="deleteImportDialog"
-        aria-label="关闭"
-        data-i18n-aria-label="copy.6c14bd7f6f"
-        ><span class="button-label">×</span></Button
-      >
-    </div>
-    <div class="dialog-body">
-      <p id="deleteImportSummary"></p>
-      <p
-        class="help dialog-section-spacing"
-        data-i18n-text='{"0":"copy.cdb66f2811"}'
-      >
-        该批次的导入打卡会被撤回；重叠日期保留其他导入批次的数据。手动填写、请假和时间模板保留。
-      </p>
-    </div>
-    <div class="dialog-foot">
-      <Button class="ui-button" data-close="deleteImportDialog"
-        ><span class="button-label" data-i18n-text='{"0":"copy.4d0b4688c7"}'
-          >取消</span
-        ></Button
-      ><Button id="confirmDeleteImport" class="ui-button danger"
-        ><span class="button-label" data-i18n-text='{"0":"copy.3c06abe116"}'
-          >确认删除</span
-        ></Button
-      >
-    </div>
-  </dialog>
-
-  <dialog id="restoreDialog">
-    <div class="dialog-head">
-      <h2 data-i18n-text='{"0":"copy.35a251c943"}'>恢复备份</h2>
-      <Button
-        class="ui-button"
-        data-close="restoreDialog"
-        aria-label="关闭"
-        data-i18n-aria-label="copy.6c14bd7f6f"
-        ><span class="button-label">×</span></Button
-      >
-    </div>
-    <div class="dialog-body">
-      <p id="restoreSummary"></p>
-      <p id="restoreError" class="warnings" role="alert"></p>
-      <Button class="ui-button" id="retryRestoreTheme" type="button" hidden
-        ><span class="button-label" data-i18n-text='{"0":"copy.00ecd909a7"}'
-          >重试保存主题</span
-        ></Button
-      >
-      <p
-        class="help dialog-section-spacing"
-        data-i18n-text='{"0":"copy.c7cd96dadb"}'
-      >
-        恢复将替换此浏览器中的全部记录、时间模板与工作时间设置。恢复前自动保留操作快照，也可先下载当前备份。双击文件与网站不共享存档，移动文件或换浏览器前请导出备份。
-      </p>
-      <p
-        id="backupScopeNote"
-        class="help"
-        hidden
-        data-i18n-text='{"0":"copy.e2cced4b6b"}'
-      >
-        当前页面备份仅包含临时默认数据和本页修改，不包含无法读取的原存档。请使用“导出原始数据”保留原存档。
-      </p>
-      <div class="row restore-backup-actions">
-        <Button class="ui-button" id="backupBeforeRestore"
-          ><span class="button-label" data-i18n-text='{"0":"copy.02ffd2393f"}'
-            >下载当前备份</span
-          ></Button
-        >
-      </div>
-    </div>
-    <div class="dialog-foot">
-      <Button class="ui-button" data-close="restoreDialog"
-        ><span class="button-label" data-i18n-text='{"0":"copy.4d0b4688c7"}'
-          >取消</span
-        ></Button
-      ><Button id="confirmRestore" class="ui-button primary"
-        ><span class="button-label" data-i18n-text='{"0":"copy.a7acce0c26"}'
-          >确认替换并恢复</span
-        ></Button
-      >
-    </div>
-  </dialog>
+  <GameArchiveDialog /><ImportConfirmations />
   <dialog id="oaLinkDialog">
     <div class="dialog-head">
       <h2 data-i18n-text='{"0":"copy.150aff1e54"}'>OA系统链接</h2>

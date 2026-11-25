@@ -1162,12 +1162,6 @@ WorkTimeApp.ui.createNavigationController = function (options) {
         if (!$("settingsPane").hidden) actions.refreshSettings();
       }
     });
-    events.handler($("monthTitle"), "onkeydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        $("monthTitle").click();
-      }
-    });
     events.handler($("monthTitle"), "onclick", () => {
       if (resettingBatch || model.batchMode || model.analysisMode) return;
       return transitionPage({

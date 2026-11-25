@@ -52,18 +52,8 @@ async function runtimeServer(root) {
 }
 /** Exercise the dormant reader bundle without changing the product placeholder. */
 async function enableReaderRuntime(page) {
-  const fs = require("node:fs"),
-    path = require("node:path");
-  const loader = fs
-    .readFileSync(path.join(__dirname, "../assets/js/music.js"), "utf8")
-    .replaceAll("music", "reader");
-  // This also works with bundled releases and service-worker reloads.
-  await page.addInitScript({
-    content:
-      'location.hash = "dev";\n' +
-      'document.addEventListener("worktime:ready", () => {\n' +
-      loader +
-      '\ndocument.querySelector(".reader-placeholder")?.remove();\n}, {once:true});',
+  await page.addInitScript(() => {
+    location.hash = "dev";
   });
 }
 module.exports = { installRuntimeFixture, runtimeServer, enableReaderRuntime };

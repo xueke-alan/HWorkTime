@@ -157,14 +157,19 @@ body .editor.is-analysis-mode #dayEditor { display: none !important; }
   line-height: 16px;
   color: var(--muted);
 }
-.analysis-metric details {
+.analysis-date-disclosure {
   flex: 0 0 auto;
   min-width: 0;
   margin-inline-start: auto;
   font-size: 11px;
   line-height: 16px;
 }
-.analysis-metric summary {
+.analysis-date-disclosure button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -173,17 +178,17 @@ body .editor.is-analysis-mode #dayEditor { display: none !important; }
   cursor: pointer;
   color: var(--accent);
 }
-.analysis-metric summary::before {
+.analysis-date-disclosure button::before {
   content: "▸ ";
 }
-.analysis-metric details[open] summary::before {
+.analysis-date-disclosure button[aria-expanded="true"]::before {
   content: "▾ ";
 }
-.analysis-metric summary:focus-visible {
+.analysis-date-disclosure button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-.analysis-metric details[open] p {
+.analysis-date-disclosure p:not([hidden]) {
   position: absolute;
   z-index: 3;
   inset-inline: 0;

@@ -1,32 +1,76 @@
 "use strict";
-/** Paused feature: show a placeholder in the existing auxiliary panel. */
 WorkTimeApp.ui.reader = (() => {
-  function refresh() {
-    const panel = document.getElementById("readerPanel");
-    if (!panel) return;
-    let placeholder = panel.querySelector(".reader-placeholder");
-    if (!placeholder) {
-      placeholder = document.createElement("div");
-      placeholder.className = "reader-placeholder";
-      placeholder.append(document.createElement("h2"));
-      panel.replaceChildren(placeholder);
+  const enabled = () => location.hash === "#dev";
+  let workspace,
+    pending,
+    revision = 0;
+  async function open(options) {
+    if (!enabled()) return;
+    const current = ++revision;
+    const entry = document.getElementById("readerOpen");
+    entry?.setAttribute("aria-busy", "true");
+    try {
+      if (!workspace) {
+        pending ??= (async () => {
+          await WorkTimeApp.services.assets.script(
+            "assets/js/ui/secondary-runtime.min.js",
+          );
+          if (!enabled()) return;
+          const [mountToolbar] = await Promise.all([
+            WorkTimeApp.ui.loadReaderToolbar(),
+            WorkTimeApp.services.assets.style("assets/css/reader.css"),
+            WorkTimeApp.services.assets.script(
+              "assets/js/ui/reader-runtime.min.js",
+            ),
+          ]);
+          if (enabled() && !workspace)
+            workspace = WorkTimeApp.ui.createReaderWorkspace(mountToolbar);
+        })().finally(() => {
+          pending = null;
+        });
+        await pending;
+      }
+      if (
+        current === revision &&
+        enabled() &&
+        WorkTimeApp.ui.dateInfo.isActive("tools")
+      )
+        await workspace?.open(options);
+    } catch (error) {
+      if (current === revision && enabled()) {
+        const message = WorkTimeApp.ui.readerText("loadFailed");
+        entry?.setAttribute("title", message);
+        const status = entry?.querySelector('[role="status"]');
+        if (status) status.textContent = message;
+        console.error(error);
+      }
+    } finally {
+      if (current === revision) entry?.removeAttribute("aria-busy");
     }
-    placeholder.querySelector("h2").textContent =
-      WorkTimeApp.ui.readerText("placeholderTitle");
-  }
-  function open() {
-    WorkTimeApp.ui.dateInfo.showReaderPanel();
   }
   return {
-    refresh,
+    open,
+    refresh() {
+      if (enabled()) workspace?.refresh();
+    },
     close() {
-      WorkTimeApp.ui.dateInfo.hideReaderPanel();
+      ++revision;
+      document.getElementById("readerOpen")?.removeAttribute("aria-busy");
+      return workspace?.close();
+    },
+    leaveDevelopment() {
+      ++revision;
+      document.getElementById("readerOpen")?.removeAttribute("aria-busy");
+      workspace?.leaveDevelopment();
     },
     get isMini() {
-      return true;
+      return workspace?.isMini ?? false;
     },
-    open,
-    expand: open,
-    minimize() {},
+    expand() {
+      if (enabled()) return workspace?.expand();
+    },
+    minimize() {
+      if (enabled()) return workspace?.minimize();
+    },
   };
 })();

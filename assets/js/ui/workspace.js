@@ -302,6 +302,7 @@ WorkTimeApp.ui.createWorkspace = function ({
       )
         leaveBatch();
       if (disposed || sidebarPanels.open(id, options)) return;
+      if (WorkTimeApp.ui.confirmations.open(id)) return;
       const dialog = $(id);
       // Let native dialog focusing run while visible. No frame is painted between
       // showModal and preparation; alignment completes before the opening fade.

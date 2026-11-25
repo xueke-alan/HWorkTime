@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import ImportHistory from "../imports/ImportHistory.vue";
+import ImportRows from "../imports/ImportRows.vue";
 import Button from "primevue/button";
 import Textarea from "primevue/textarea";
 </script>
@@ -248,11 +250,11 @@ import Textarea from "primevue/textarea";
             ></span>
           </div>
           <div class="sidebar-history-scroll">
-            <div id="importHistoryList"></div>
+            <ImportHistory />
             <div id="importDetails" class="hidden">
               <div id="importWarnings" class="warnings" role="alert"></div>
               <div id="importTable" class="hidden">
-                <div id="importRows" class="import-parsed-list"></div>
+                <ImportRows />
               </div>
             </div>
           </div>

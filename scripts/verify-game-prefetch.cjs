@@ -101,7 +101,7 @@ async function verify() {
   assert(warmed.includes("snake.js"));
   assert(warmed.includes("assets/js/ui/music-runtime.min.js"));
   assert(warmed.includes("assets/js/ui/typing-runtime.min.js"));
-  assert(warmed.includes("assets/js/ui/reader-runtime.min.js"));
+  assert(!warmed.includes("assets/js/ui/reader-runtime.min.js"));
   assert.equal(
     new Set(warmed).size,
     warmed.length,

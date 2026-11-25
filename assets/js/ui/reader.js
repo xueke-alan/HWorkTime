@@ -1,6 +1,7 @@
 "use strict";
 /** Local library and reading desk, sharing the calendar workspace transition. */
-WorkTimeApp.ui.reader = (() => {
+WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
+  const enabled = () => location.hash === "#dev";
   const t = (key, n) => {
     if (key === "choose")
       return WorkTimeApp.ui.runtimeFolderText("importFiles");
@@ -121,9 +122,10 @@ WorkTimeApp.ui.reader = (() => {
     if (registerBindings) bindings.push(() => (e.ariaLabel = t(key)));
     return e;
   }
+  const selectControls = WorkTimeApp.ui.createMediaSelectGroup("reader");
   function select(parent, key, options, action) {
-    const wrap = node("label", "reader-field", parent);
-    label(node("span", "", wrap), key);
+    const wrap = node("div", "reader-field", parent);
+    const caption = label(node("label", "", wrap), key);
     const e = node("select", "", wrap);
     e.ariaLabel = t(key);
     if (registerBindings) bindings.push(() => (e.ariaLabel = t(key)));
@@ -134,6 +136,7 @@ WorkTimeApp.ui.reader = (() => {
       else label(option, name);
     }
     e.onchange = () => void action(e.value);
+    selectControls.add(wrap, e, caption);
     return e;
   }
   function download(name, value, type) {
@@ -154,21 +157,13 @@ WorkTimeApp.ui.reader = (() => {
   const surface = node("div", "game-surface", shell);
   surface.ariaHidden = "true";
   const header = node("header", "reader-header workspace-toolbar", shell);
-  const exitButton = button(header, "exit", close, "readerExit");
-  exitButton.classList.add("reader-icon-button");
-  exitButton.replaceChildren(WorkTimeApp.games.createIcon("chevron-left"));
-  const sidebarToggle = button(
-    header,
-    "sidebar",
-    () => setSidebar(!sidebarVisible()),
-    "readerSidebarToggle",
-  );
-  sidebarToggle.classList.add("reader-icon-button");
-  const title = label(node("h2", "reader-title", header), "title");
-  title.id = "readerTitle";
-  const bookTitle = node("span", "reader-book-title", header);
-  const shelfButton = button(header, "shelf", returnToShelf, "readerShelf");
-  shelfButton.classList.add("reader-icon-button");
+  const toolbarView = mountToolbar(header, (action) => {
+    controller.activity();
+    if (action === "exit") close();
+    if (action === "shelf") returnToShelf();
+    if (action === "sidebar") setSidebar(!sidebarVisible());
+  });
+  const sidebarToggle = header.querySelector("#readerSidebarToggle");
   const bookActions = node("details", "reader-book-actions", header);
   const bookActionsSummary = label(
     node("summary", "reader-more", bookActions),
@@ -662,7 +657,8 @@ WorkTimeApp.ui.reader = (() => {
   }
   function syncActivity() {
     controller.setActive(
-      !mounting &&
+      enabled() &&
+        !mounting &&
         !document.hidden &&
         ((shell.dataset.state === "open" && presentation === "full") ||
           miniVisible()),
@@ -678,7 +674,7 @@ WorkTimeApp.ui.reader = (() => {
       entry.removeAttribute("aria-haspopup");
       entry.setAttribute("aria-controls", "readerPanel");
       entry.setAttribute("aria-selected", String(!miniHost.hidden));
-      entry.tabIndex = miniHost.hidden ? -1 : 0;
+      entry.tabIndex = 0;
       if (!document.querySelector(".agenda-mode"))
         entry.removeAttribute("aria-expanded");
     } else {
@@ -741,12 +737,17 @@ WorkTimeApp.ui.reader = (() => {
     syncActivity();
   }
   async function activateMini(revision, focus = true) {
-    if (revision !== presentationRevision || presentation !== "mini") return;
+    if (
+      !enabled() ||
+      revision !== presentationRevision ||
+      presentation !== "mini"
+    )
+      return;
     mounting = !!controller.snapshot().current;
     WorkTimeApp.ui.dateInfo.showReaderPanel();
     render();
     await controller.remount(miniViewport, { mini: true });
-    if (revision !== presentationRevision) return;
+    if (!enabled() || revision !== presentationRevision) return;
     mounting = false;
     render();
     const bounds = miniHost.getBoundingClientRect();
@@ -769,7 +770,7 @@ WorkTimeApp.ui.reader = (() => {
     pendingMini = revision;
     rememberPresentation("mini");
     const closed = await close();
-    if (revision !== presentationRevision) return;
+    if (!enabled() || revision !== presentationRevision) return;
     if (!closed) {
       pendingMini = null;
       rememberPresentation("full");
@@ -782,13 +783,14 @@ WorkTimeApp.ui.reader = (() => {
     }
   }
   async function expand() {
+    if (!enabled()) return;
     const revision = ++presentationRevision;
     pendingMini = null;
     ++closeRevision;
     await presentationReady;
     await WorkTimeApp.services.assets.style("assets/css/reader.css");
     await controller.ready;
-    if (revision !== presentationRevision) return;
+    if (!enabled() || revision !== presentationRevision) return;
     desktopSidebar = controller.snapshot().settings.sidebarOpen !== false;
     mounting = !!controller.snapshot().current;
     expansion.open();
@@ -802,7 +804,7 @@ WorkTimeApp.ui.reader = (() => {
     WorkTimeApp.ui.dateInfo.hideReaderPanel();
     render();
     await controller.remount(viewport, { mini: false });
-    if (revision !== presentationRevision) return;
+    if (!enabled() || revision !== presentationRevision) return;
     mounting = false;
     render();
   }
@@ -1496,6 +1498,10 @@ WorkTimeApp.ui.reader = (() => {
     download("reading-notes.md", content, "text/markdown;charset=utf-8");
   }
   function render() {
+    renderReader();
+    selectControls.sync();
+  }
+  function renderReader() {
     const snap = controller.snapshot(),
       reading = !!snap.current || snap.loading;
     renderEntry();
@@ -1503,25 +1509,23 @@ WorkTimeApp.ui.reader = (() => {
     minimizeButton.disabled = snap.loading || mounting;
     library.hidden = reading;
     desk.hidden = !reading;
-    shelfButton.hidden = !reading;
     bookActions.hidden = !snap.current;
     const visible = sidebarVisible();
     shell.dataset.sidebar = String(visible);
     librarySidebar.hidden = !visible;
     panel.hidden = !visible;
-    sidebarToggle.hidden = !reading && !narrow();
-    sidebarToggle.setAttribute("aria-expanded", String(visible));
-    sidebarToggle.setAttribute(
-      "aria-controls",
+    toolbarView.update(
+      reading,
+      narrow(),
+      visible,
       reading ? panel.id : librarySidebar.id,
+      snap.current?.title || "",
     );
     drawerBackdrop.hidden = !narrow() || !visible;
     libraryMain.inert = !reading && narrow() && visible;
     readingMain.inert = reading && narrow() && visible;
     for (const b of toolbar.querySelectorAll("button"))
       b.setAttribute("aria-pressed", String(b.id === "reader-" + panelName));
-    title.textContent = t("title");
-    bookTitle.textContent = snap.current?.title || "";
     status.textContent =
       localStatus ||
       (snap.message &&
@@ -1734,9 +1738,12 @@ WorkTimeApp.ui.reader = (() => {
       return presentation === "mini";
     },
     async open({ mini: compact = false, restore = false } = {}) {
+      const request = presentationRevision;
+      if (!enabled()) return;
       await presentationReady;
       await WorkTimeApp.services.assets.style("assets/css/reader.css");
       await controller.ready;
+      if (!enabled() || request !== presentationRevision) return;
       if (restore && !WorkTimeApp.ui.dateInfo.isActive("reader")) return;
       if (compact) rememberPresentation("mini");
       this.refresh();
@@ -1770,6 +1777,14 @@ WorkTimeApp.ui.reader = (() => {
         }
       } else await expand();
     },
+    leaveDevelopment() {
+      ++presentationRevision;
+      pendingMini = null;
+      mounting = false;
+      controller.setActive(false);
+      controller.cancelSearch();
+      if (expansion.isOpen) void close();
+    },
     close,
     minimize,
     expand,
@@ -1788,4 +1803,4 @@ WorkTimeApp.ui.reader = (() => {
       render();
     },
   };
-})();
+};

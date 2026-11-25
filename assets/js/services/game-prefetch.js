@@ -34,7 +34,7 @@ WorkTimeApp.services.gamePrefetch = (() => {
     ]);
     for (const game of WorkTimeApp.games.resources())
       add(game.id, [...game.rules, game.style, game.source]);
-    for (const app of ["music", "typing", "reader"])
+    for (const app of ["music", "typing"])
       add("app-" + app, [
         "assets/css/" + app + ".css",
         "assets/js/ui/" + app + "-runtime.min.js",

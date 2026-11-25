@@ -14,6 +14,7 @@ WorkTimeApp.ui.secondary.imports = function (options) {
     hydrateImports,
     clipboard,
   } = options;
+  const view = WorkTimeApp.ui.importRecords;
   let preview = null;
   let disposed = false;
   let importParseTimer = null;
@@ -61,7 +62,8 @@ WorkTimeApp.ui.secondary.imports = function (options) {
     inputRevision++;
     $("importClipboardNotice").hidden = true;
     $("pasteText").value = "";
-    $("importRows").innerHTML = "";
+    view.rows = [];
+    view.choices = {};
     invalidatePreview();
   }
   function setImportParseStatus(status) {
@@ -144,32 +146,29 @@ WorkTimeApp.ui.secondary.imports = function (options) {
       $("importSummary").title =
         warnings.map(WorkTimeApp.i18n.message).join("\n") ||
         $("importSummary").textContent;
-      $("importRows").innerHTML = rows
-        .map(
-          (x, i) =>
-            "<article>" +
-            recordCells(x.record) +
-            (x.result.conflict
-              ? '<div class="conflict">' +
-                (x.result.repeated
-                  ? WorkTimeApp.i18n.t("copy.36486f62eb")
-                  : WorkTimeApp.i18n.t("copy.c8e8abf448") +
-                    esc(x.old.start + "–" + x.old.end) +
-                    WorkTimeApp.i18n.t("copy.c6750ea6a2") +
-                    esc(x.record.start + "–" + x.record.end)) +
-                '</div><select data-conflict="' +
-                i +
-                '" aria-label="' +
-                x.record.date +
-                WorkTimeApp.i18n.t("copy.c2583b0c68")
-              : "") +
-            (model.state.days[x.record.date] &&
-            model.state.days[x.record.date].actual
-              ? WorkTimeApp.i18n.t("copy.3a6c29659c")
-              : "") +
-            "</article>",
-        )
-        .join("");
+      view.choices = {};
+      view.rows = rows.map(({ record, result, old }) => ({
+        date: record.date,
+        time:
+          (record.start || record.end
+            ? ((record.start || "") + " - " + (record.end || "")).trim()
+            : "-") +
+          (record.nextDay ? WorkTimeApp.i18n.t("copy.c751037c58") : ""),
+        anomaly: anomalyReason(record),
+        conflict: result.conflict
+          ? result.repeated
+            ? WorkTimeApp.i18n.t("copy.36486f62eb")
+            : WorkTimeApp.i18n.t("copy.c8e8abf448") +
+              old.start +
+              "–" +
+              old.end +
+              WorkTimeApp.i18n.t("copy.c6750ea6a2") +
+              record.start +
+              "–" +
+              record.end
+          : "",
+        manual: !!model.state.days[record.date]?.actual,
+      }));
       $("importTable").classList.toggle("hidden", !rows.length);
       $("importHistoryList").classList.add("hidden");
       $("importResultsTitle").textContent =
@@ -232,6 +231,8 @@ WorkTimeApp.ui.secondary.imports = function (options) {
     renderImportHistory();
     return saved;
   }
+  const dialogs = WorkTimeApp.ui.confirmations,
+    removal = dialogs.removal;
   let importToDelete = null;
   function importHistoryByTime() {
     return model.state.imports
@@ -256,42 +257,26 @@ WorkTimeApp.ui.secondary.imports = function (options) {
         "import.historyTotals",
         { imports: logs.length, dates: dates.size },
       );
-    $("importHistoryList").innerHTML = logs.length
-      ? logs
-          .map((log) => {
-            const dates = importIndex.describe(log).rawDates;
-            const range = dates.length
-              ? dates[0].replaceAll("-", "/") +
-                " - " +
-                dates[dates.length - 1].replaceAll("-", "/")
-              : WorkTimeApp.i18n.t("copy.0cee9f5104");
-            return (
-              '<article class="import-history-item" data-history-id="' +
-              esc(log.id) +
-              '"><div class="row between"><h3>' +
-              esc(
-                new Date(log.at).toLocaleString(WorkTimeApp.i18n.locale, {
-                  year: "numeric",
-                  month: "2-digit",
-                  day: "2-digit",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: false,
-                }),
-              ) +
-              '</h3><div class="row"><button type="button" class="ui-button" data-view-import="' +
-              esc(log.id) +
-              WorkTimeApp.i18n.t("copy.fb7fd1001d") +
-              esc(log.id) +
-              WorkTimeApp.i18n.t("copy.74a12ef5dc") +
-              esc(range) +
-              " · " +
-              log.count +
-              WorkTimeApp.i18n.t("copy.81a9b617ab")
-            );
-          })
-          .join("")
-      : WorkTimeApp.i18n.t("copy.d6971aab23");
+    view.history = logs.map((log) => {
+      const dates = importIndex.describe(log).rawDates;
+      return {
+        id: log.id,
+        count: log.count,
+        range: dates.length
+          ? dates[0].replaceAll("-", "/") +
+            " - " +
+            dates.at(-1).replaceAll("-", "/")
+          : WorkTimeApp.i18n.t("copy.0cee9f5104"),
+        when: new Date(log.at).toLocaleString(WorkTimeApp.i18n.locale, {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }),
+      };
+    });
   }
   let detailId = null;
   async function showImportDetail(id, valid = () => true) {
@@ -423,16 +408,9 @@ WorkTimeApp.ui.secondary.imports = function (options) {
     disposed = false;
     events.listen(document, "worktime:languagechange", () => {
       if (preview) {
-        const choices = [
-          ...$("importRows").querySelectorAll("[data-conflict]"),
-        ].map((select) => [select.dataset.conflict, select.value]);
+        const choices = { ...view.choices };
         parseImport();
-        for (const [index, value] of choices) {
-          const select = $("importRows").querySelector(
-            '[data-conflict="' + index + '"]',
-          );
-          if (select) select.value = value;
-        }
+        view.choices = choices;
       } else renderImportHistory();
       if ($("sourceDialog").open && detailId) showImportDetail(detailId);
     });
@@ -459,33 +437,38 @@ WorkTimeApp.ui.secondary.imports = function (options) {
       importToDelete = log.id;
       const previewState = actions.clone(model.state),
         impact = C.deleteImport(previewState, log.id);
-      $("deleteImportSummary").textContent = WorkTimeApp.i18n.t(
-        "import.deleteSummary",
-        {
-          date: new Date(log.at).toLocaleString(WorkTimeApp.i18n.locale),
-          sources: log.sources.map((s) => s.name).join(", "),
-          affected: impact.affected,
-          restored: impact.restored,
-          cleared: impact.cleared,
-        },
-      );
+      removal.summary = WorkTimeApp.i18n.t("import.deleteSummary", {
+        date: new Date(log.at).toLocaleString(WorkTimeApp.i18n.locale),
+        sources: log.sources.map((s) => s.name).join(", "),
+        affected: impact.affected,
+        restored: impact.restored,
+        cleared: impact.cleared,
+      });
       actions.open("deleteImportDialog");
     });
-    events.handler($("confirmDeleteImport"), "onclick", async () => {
-      if (!importToDelete) return;
-      const commit = await application.removeImport(importToDelete);
-      const result = commit.impact;
+    removal.onClose = () => {
       importToDelete = null;
-      $("deleteImportDialog").close();
-      if (!result.removed) {
-        actions.toast(WorkTimeApp.i18n.t("copy.38e1e768da"));
-        return;
+    };
+    removal.confirm = async () => {
+      if (!importToDelete || removal.busy) return;
+      removal.busy = true;
+      try {
+        const commit = await application.removeImport(importToDelete);
+        const result = commit.impact;
+        importToDelete = null;
+        dialogs.close(removal);
+        if (!result.removed) {
+          actions.toast(WorkTimeApp.i18n.t("copy.38e1e768da"));
+          return;
+        }
+        const saved = commit.persisted;
+        actions.render();
+        renderImportHistory();
+        actions.saveFeedback(saved, WorkTimeApp.i18n.t("copy.5986f6bd33"));
+      } finally {
+        removal.busy = false;
       }
-      const saved = commit.persisted;
-      actions.render();
-      renderImportHistory();
-      actions.saveFeedback(saved, WorkTimeApp.i18n.t("copy.5986f6bd33"));
-    });
+    };
     events.listen($("sourceDialog"), "click", detailClick);
     events.handler($("oaLinkForm"), "onsubmit", async (event) => {
       event.preventDefault();
@@ -545,9 +528,7 @@ WorkTimeApp.ui.secondary.imports = function (options) {
       const processed = preview.rows.length,
         acceptedRecords = WorkTimeApp.services.imports.acceptedRecords(
           preview,
-          (row, i) =>
-            $("importRows").querySelector('[data-conflict="' + i + '"]')
-              ?.value || "new",
+          (row, i) => view.choices[i] || "new",
         );
       const saved = await commitOARecords(
         acceptedRecords,
@@ -576,6 +557,8 @@ WorkTimeApp.ui.secondary.imports = function (options) {
     }
   }
   function dispose() {
+    dialogs.close(removal);
+    removal.onClose = removal.confirm = undefined;
     events.dispose();
     bound = false;
     $("sourceDialog").removeEventListener("click", detailClick);

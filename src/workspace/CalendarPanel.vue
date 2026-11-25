@@ -1,4 +1,11 @@
 <script setup lang="ts">
+import {
+  QiChevronLeft,
+  QiChevronRight,
+  QiCrosshair,
+  QiRotateCcw,
+} from "qingicon-vue";
+import AnalysisMetrics from "../analysis/AnalysisMetrics.vue";
 import Button from "primevue/button";
 import { version } from "../../package.json";
 </script>
@@ -13,27 +20,48 @@ import { version } from "../../package.json";
             class="ui-button iconbtn icon-only"
             aria-label="上个月"
             data-i18n-aria-label="copy.69bb1687b5"
-            ><svg class="ui-icon" aria-hidden="true">
-              <use href="#ms-chevron-left" /></svg
-          ></Button>
-          <div
+            ><QiChevronLeft class="ui-icon" aria-hidden="true"
+          /></Button>
+          <Button
+            type="button"
             id="monthTitle"
             data-action-hint="calendarHint.yearView"
             class="month-title"
-            role="button"
             tabindex="0"
             aria-label="切换到年视图"
             aria-pressed="false"
             data-i18n-aria-label="copy.d298e51191"
-          ></div>
+            ><span
+              id="monthTitleYear"
+              class="month-title-year"
+              data-number-motion
+            ></span
+            ><svg
+              class="month-title-divider"
+              viewBox="0 0 12 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path
+                d="M9 4 3 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3.2"
+                stroke-linecap="round"
+              /></svg
+            ><span
+              id="monthTitleMonth"
+              class="month-title-month"
+              data-number-motion
+            ></span
+          ></Button>
           <Button
             id="nextMonth"
             data-action-hint
             class="ui-button iconbtn icon-only"
             aria-label="下个月"
             data-i18n-aria-label="copy.8c9b38e26d"
-            ><svg class="ui-icon" aria-hidden="true">
-              <use href="#ms-chevron-right" /></svg></Button
+            ><QiChevronRight class="ui-icon" aria-hidden="true" /></Button
           ><Button
             id="todayButton"
             data-action-hint
@@ -41,8 +69,7 @@ import { version } from "../../package.json";
             type="button"
             aria-label="当月"
             data-i18n-aria-label="calendarHint.thisMonth"
-            ><svg class="ui-icon" aria-hidden="true">
-              <use href="#ms-adjust" /></svg></Button
+            ><QiCrosshair class="ui-icon" aria-hidden="true" /></Button
           ><Button
             id="analysisToggle"
             data-action-hint
@@ -79,8 +106,7 @@ import { version } from "../../package.json";
             title="导入备份文件"
             data-i18n-aria-label="backup.importFile"
             data-i18n-title="backup.importFile"
-            ><svg class="ui-icon" aria-hidden="true">
-              <use href="#ms-restore" /></svg></Button
+            ><QiRotateCcw class="ui-icon" aria-hidden="true" /></Button
           ><Button
             id="pageSettingsOpen"
             data-action-hint="calendarHint.settings"
@@ -114,7 +140,7 @@ import { version } from "../../package.json";
               </h2>
             </div>
           </div>
-          <div id="analysisMetrics" class="analysis-metrics"></div>
+          <AnalysisMetrics />
           <div id="analysisDetails">
             <div class="analysis-chart-heading">
               <div class="analysis-section-title">

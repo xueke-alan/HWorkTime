@@ -48,3 +48,11 @@ export function renderGameMenu(
     },
   };
 }
+
+import SessionToolbar from "./SessionToolbar.vue";
+export function mountGameToolbar(host: HTMLElement, exit: () => void) {
+  const app = createApp(SessionToolbar, { exit });
+  installUI(app);
+  const view = app.mount(host) as InstanceType<typeof SessionToolbar>;
+  return { show: view.show, dispose: () => app.unmount() };
+}

@@ -9,6 +9,7 @@ import {
   type Ref,
   type ObjectDirective,
 } from "vue";
+import { QiRotateCcw } from "qingicon-vue";
 import Button from "primevue/button";
 import { catalog } from "../catalog";
 import { bindScroll } from "./menu-scroll";
@@ -93,6 +94,55 @@ function keydown(e: KeyboardEvent) {
 <template>
   <header ref="header" class="game-menu-header">
     <h2>{{ catalog.t("games.menu") }}</h2>
+    <template v-if="options.archiveUI"
+      ><p class="game-menu-archive-status" role="status"></p>
+      <div
+        class="game-menu-archive-actions"
+        role="group"
+        :aria-label="
+          catalog.t('gameArchive.save') +
+          ' / ' +
+          catalog.t('gameArchive.import')
+        "
+      >
+        <Button
+          type="button"
+          class="icon-only"
+          data-game-archive="save"
+          :title="catalog.t('gameArchive.saveHint')"
+          :aria-label="catalog.t('gameArchive.saveHint')"
+          ><span class="backup-icon-slot" aria-hidden="true"
+            ><svg class="ui-icon backup-idle-icon">
+              <use href="#ms-backup" /></svg
+            ><svg class="backup-hold-icon" viewBox="0 0 32 32">
+              <circle class="hold-track" cx="16" cy="16" r="14" />
+              <circle
+                class="hold-progress"
+                cx="16"
+                cy="16"
+                r="14"
+                pathLength="100"
+              />
+              <use
+                class="download-glyph"
+                href="#ms-download"
+                x="6"
+                y="6"
+                width="20"
+                height="20"
+                fill="currentColor"
+                stroke="none"
+              /></svg></span
+        ></Button>
+        <Button
+          type="button"
+          class="icon-only"
+          data-game-archive="import"
+          :title="catalog.t('gameArchive.import')"
+          :aria-label="catalog.t('gameArchive.import')"
+          ><QiRotateCcw class="ui-icon" aria-hidden="true"
+        /></Button></div
+    ></template>
   </header>
   <div class="game-library">
     <template v-if="active">

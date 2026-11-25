@@ -72,31 +72,20 @@ WorkTimeApp.ui.createAnalysis = function ({
         : '<span class="analysis-metric-value" data-key="value">' +
           esc(extended ? value.slice(nextDay.length) : value) +
           "</span>";
-    return (
-      '<div class="analysis-metric" data-key="' +
-      label +
-      '"><span title="' +
-      esc(t(label)) +
-      '">' +
-      esc(t("compact." + label)) +
-      '</span><strong><span class="analysis-metric-next">' +
-      (extended ? esc(t("nextDay")) : "") +
-      "</span>" +
-      valueMarkup +
-      '</strong><div class="analysis-metric-footer"><small>' +
-      esc(context) +
-      "</small>" +
-      (dates.length > 1
-        ? '<details><summary aria-label="' +
-          esc(t("allDates", { count: dates.length })) +
-          '">+' +
-          esc(number(dates.length)) +
-          '</summary><p class="analysis-date-hint">' +
-          dates.map((item) => esc(date(item))).join(" · ") +
-          "</p></details>"
-        : "") +
-      "</div></div>"
-    );
+    return {
+      key: label,
+      label: t("compact." + label),
+      title: t(label),
+      context,
+      numeric:
+        '<span class="analysis-metric-next">' +
+        (extended ? esc(t("nextDay")) : "") +
+        "</span>" +
+        valueMarkup,
+      dates: dates.map(date),
+      dateCount: number(dates.length),
+      dateHint: t("allDates", { count: dates.length }),
+    };
   }
   function positionTooltip() {
     const tooltip = $("analysisHover"),
@@ -203,23 +192,14 @@ WorkTimeApp.ui.createAnalysis = function ({
       ]);
     if (signature === sidebarSignature) return;
     sidebarSignature = signature;
-    $("analysisFocusDetail").setAttribute(
-      "aria-live",
-      previewDate && previewDate !== pinnedDate ? "off" : "polite",
-    );
-    const row = (label, value) =>
-      '<div class="analysis-sidebar-row"><span>' +
-      esc(t(label)) +
-      "</span><strong>" +
-      esc(value) +
-      "</strong></div>";
-    $("analysisSidebarMonth").textContent = WorkTimeApp.i18n.date(
-      currentData.first,
-      { year: "numeric", month: "long", day: undefined },
-    );
+    const month = WorkTimeApp.i18n.date(currentData.first, {
+      year: "numeric",
+      month: "long",
+      day: undefined,
+    });
     const span = (value) =>
       value < 60 ? minuteLabel(value) : WorkTimeApp.i18n.duration(value);
-    $("analysisObservation").textContent =
+    const observation =
       metrics.count > 1
         ? t("sidebarSpread", {
             start: span(metrics.latestStart.minutes - metrics.earliest.minutes),
@@ -232,34 +212,14 @@ WorkTimeApp.ui.createAnalysis = function ({
       buckets[Math.min(2, Math.floor((Number(day.date.slice(8)) - 1) / 10))]++;
     const concentrated =
       late.length >= 2 && Math.max(...buckets) / late.length >= 0.6;
-    $("analysisObservationContext").textContent = metrics.count
+    const context = metrics.count
       ? concentrated
         ? t("sidebarLateCluster", {
             period: t("sidebarPeriod" + buckets.indexOf(Math.max(...buckets))),
           })
         : t("sidebarLateCount", { count: number(late.length) })
       : t("sidebarRecordsHint");
-    const choices = suggestedDays()
-      .map(
-        (day) =>
-          '<button class="ui-button" type="button" data-analysis-focus="' +
-          esc(day.date) +
-          '" aria-pressed="' +
-          String(day.date === pinnedDate) +
-          '">' +
-          esc(date(day.date)) +
-          "</button>",
-      )
-      .join("");
-    if ($("analysisFocusDates").dataset.markup !== choices) {
-      const focused = window.document.activeElement?.dataset?.analysisFocus;
-      $("analysisFocusDates").innerHTML = choices;
-      $("analysisFocusDates").dataset.markup = choices;
-      if (focused)
-        $("analysisFocusDates")
-          .querySelector('[data-analysis-focus="' + focused + '"]')
-          ?.focus({ preventScroll: true });
-    }
+    let detail = null;
     if (focus) {
       const future = focus.date > currentData.asOf;
       const difference =
@@ -277,70 +237,69 @@ WorkTimeApp.ui.createAnalysis = function ({
       const source = t(
         future ? "sidebarPlanned" : focus.manual ? "manualRecord" : "observed",
       );
-      const focusTime = (minutes) =>
-        minutes >= 1440
-          ? "<small>" +
-            esc(t("nextDay")) +
-            "</small>" +
-            esc(clock(minutes % 1440))
-          : esc(clock(minutes));
-      const markup =
-        '<div class="analysis-focus-heading"><strong>' +
-        esc(date(focus.date) + " · " + WorkTimeApp.i18n.weekday(focus.date)) +
-        "</strong><span>" +
-        esc(t(focus.work ? "sidebarWorkday" : "restOvertime")) +
-        "</span></div>" +
-        '<div class="analysis-focus-times"><strong>' +
-        focusTime(focus.start) +
-        '</strong><span aria-hidden="true">→</span><strong>' +
-        focusTime(focus.end) +
-        "</strong></div>" +
-        row("sidebarEffective", WorkTimeApp.i18n.duration(focus.minutes)) +
-        row("sidebarDepartureDelta", delta) +
-        '<p class="analysis-sidebar-muted analysis-focus-source">' +
-        esc(
+      detail = {
+        title: date(focus.date) + " · " + WorkTimeApp.i18n.weekday(focus.date),
+        kind: t(focus.work ? "sidebarWorkday" : "restOvertime"),
+        times: [focus.start, focus.end].map((minutes) => ({
+          next: minutes >= 1440,
+          clock: clock(minutes >= 1440 ? minutes % 1440 : minutes),
+        })),
+        rows: [
+          {
+            label: t("sidebarEffective"),
+            value: WorkTimeApp.i18n.duration(focus.minutes),
+          },
+          { label: t("sidebarDepartureDelta"), value: delta },
+        ],
+        source:
           source +
-            " · " +
-            t(future ? "sidebarExcluded" : "sidebarBreaksDeducted"),
-        ) +
-        "</p>";
-      if ($("analysisFocusDetail").dataset.markup !== markup) {
-        $("analysisFocusDetail").innerHTML = markup;
-        $("analysisFocusDetail").dataset.markup = markup;
-      }
-    } else {
-      $("analysisFocusDetail").textContent = t("sidebarNoFocus");
-      delete $("analysisFocusDetail").dataset.markup;
+          " · " +
+          t(future ? "sidebarExcluded" : "sidebarBreaksDeducted"),
+      };
     }
-    $("analysisSidebarScope").innerHTML =
-      row("sidebarValidDays", t("days", { count: number(days.length) })) +
-      '<div class="analysis-sidebar-row"><span>' +
-      esc(t("sidebarWorkday") + " / " + t("sidebarRestDays")) +
-      "</span><strong>" +
-      esc(
-        number(metrics.count) +
-          " / " +
-          number(days.filter((day) => !day.work).length),
-      ) +
-      "</strong></div>" +
-      row(
-        "manualRecord",
-        t(currentData.includeManual ? "sidebarIncluded" : "sidebarNotIncluded"),
-      ) +
-      '<p class="analysis-sidebar-muted">' +
-      esc(
-        t("sidebarComparisonRange", {
-          current:
-            date(currentData.comparison.currentStart) +
-            "–" +
-            date(currentData.comparison.currentEnd),
-          previous:
-            date(currentData.comparison.previousStart) +
-            "–" +
-            date(currentData.comparison.previousEnd),
-        }),
-      ) +
-      "</p>";
+    WorkTimeApp.ui.renderAnalysisSidebar({
+      month,
+      observation,
+      context,
+      live: previewDate && previewDate !== pinnedDate ? "off" : "polite",
+      choices: suggestedDays().map((day) => ({
+        date: day.date,
+        label: date(day.date),
+      })),
+      pinned: pinnedDate,
+      focus: detail,
+      scope: [
+        {
+          label: t("sidebarValidDays"),
+          value: t("days", { count: number(days.length) }),
+        },
+        {
+          label: t("sidebarWorkday") + " / " + t("sidebarRestDays"),
+          value:
+            number(metrics.count) +
+            " / " +
+            number(days.filter((day) => !day.work).length),
+        },
+        {
+          label: t("manualRecord"),
+          value: t(
+            currentData.includeManual
+              ? "sidebarIncluded"
+              : "sidebarNotIncluded",
+          ),
+        },
+      ],
+      comparison: t("sidebarComparisonRange", {
+        current:
+          date(currentData.comparison.currentStart) +
+          "–" +
+          date(currentData.comparison.currentEnd),
+        previous:
+          date(currentData.comparison.previousStart) +
+          "–" +
+          date(currentData.comparison.previousEnd),
+      }),
+    });
   }
   events.listen($("analysisFocusDates"), "click", (event) => {
     const button = event.target.closest("[data-analysis-focus]");
@@ -549,24 +508,12 @@ WorkTimeApp.ui.createAnalysis = function ({
             maximumFractionDigits: 0,
           })
         : "—";
-    const group = (key, contents, description = "") =>
-      '<section class="analysis-metric-group analysis-metric-group-' +
-      key +
-      '" data-key="group-' +
-      key +
-      '"' +
-      (description
-        ? ' title="' +
-          esc(description) +
-          '" aria-description="' +
-          esc(description) +
-          '"'
-        : "") +
-      "><h3>" +
-      esc(t("group" + key)) +
-      "</h3>" +
-      contents +
-      "</section>";
+    const group = (key, items, description = "") => ({
+      key,
+      items,
+      title: t("group" + key),
+      description,
+    });
     const change = (value, unit, positive, negative) => {
       if (value === null) return "—";
       const rounded =
@@ -598,74 +545,70 @@ WorkTimeApp.ui.createAnalysis = function ({
       });
     const restDays = data.days.filter((day) => !day.work);
     const maximum = metrics.maximumOvertime;
-    const metricsMarkup =
-      group(
-        "Arrival",
-        extremeMetric("earliest", earliest) +
-          extremeMetric("latestStart", metrics.latestStart) +
-          metric("averageStart", clock(metrics.averageStart), ""),
-      ) +
-      group(
-        "Departure",
-        extremeMetric("earliestEnd", metrics.earliestEnd) +
-          extremeMetric("latest", latest) +
-          metric("averageEnd", clock(metrics.averageEnd), ""),
-      ) +
+    const groups = [
+      group("Arrival", [
+        extremeMetric("earliest", earliest),
+        extremeMetric("latestStart", metrics.latestStart),
+        metric("averageStart", clock(metrics.averageStart), ""),
+      ]),
+      group("Departure", [
+        extremeMetric("earliestEnd", metrics.earliestEnd),
+        extremeMetric("latest", latest),
+        metric("averageEnd", clock(metrics.averageEnd), ""),
+      ]),
       group(
         "Late",
-        metrics.lateCounts
-          .map(({ threshold, count }) =>
-            metric(
-              "late" + threshold,
-              metrics.count ? number(count) : "—",
-              percent(count),
-            ),
-          )
-          .join(""),
-      ) +
-      group(
-        "Overtime",
+        metrics.lateCounts.map(({ threshold, count }) =>
+          metric(
+            "late" + threshold,
+            metrics.count ? number(count) : "—",
+            percent(count),
+          ),
+        ),
+      ),
+      group("Overtime", [
         metric(
           "overtimeDays",
           metrics.count
             ? number(metrics.overtimeDays) + " / " + number(metrics.count)
             : "—",
           percent(metrics.overtimeDays),
-        ) +
-          metric(
-            "longest",
-            metrics.count ? number(metrics.longest.count) : "—",
-            range,
-          ) +
-          metric(
-            "totalOvertime",
-            duration(metrics.count ? metrics.overtimeMinutes : null),
-            "",
-          ) +
-          metric("averageOvertime", duration(metrics.averageOvertime), "") +
-          metric(
-            "maximumOvertime",
-            duration(maximum?.minutes),
-            maximum?.minutes > 0 ? date(maximum.dates[0]) : "",
-            maximum?.minutes > 0 ? maximum.dates : [],
-          ) +
-          metric(
-            "restOvertimeTotal",
-            duration(
-              restDays.length
-                ? restDays.reduce((sum, day) => sum + day.overtime, 0)
-                : null,
-            ),
-            "",
+        ),
+        metric(
+          "longest",
+          metrics.count ? number(metrics.longest.count) : "—",
+          range,
+        ),
+        metric(
+          "totalOvertime",
+          duration(metrics.count ? metrics.overtimeMinutes : null),
+          "",
+        ),
+        metric("averageOvertime", duration(metrics.averageOvertime), ""),
+        metric(
+          "maximumOvertime",
+          duration(maximum?.minutes),
+          maximum?.minutes > 0 ? date(maximum.dates[0]) : "",
+          maximum?.minutes > 0 ? maximum.dates : [],
+        ),
+        metric(
+          "restOvertimeTotal",
+          duration(
+            restDays.length
+              ? restDays.reduce((sum, day) => sum + day.overtime, 0)
+              : null,
           ),
-      ) +
+          "",
+        ),
+      ]),
       group(
         "Comparison",
-        metric(
-          "endChange",
-          change(comparison.averageEndChange, "minutes", "later", "earlier"),
-          "",
-        ) +
+        [
+          metric(
+            "endChange",
+            change(comparison.averageEndChange, "minutes", "later", "earlier"),
+            "",
+          ),
           metric(
             "ratioChange",
             change(
@@ -675,7 +618,7 @@ WorkTimeApp.ui.createAnalysis = function ({
               "fewerPoints",
             ),
             "",
-          ) +
+          ),
           metric(
             "totalChange",
             change(
@@ -686,6 +629,7 @@ WorkTimeApp.ui.createAnalysis = function ({
             ),
             "",
           ),
+        ],
         period(
           comparison.currentStart,
           comparison.currentEnd,
@@ -697,8 +641,9 @@ WorkTimeApp.ui.createAnalysis = function ({
             comparison.previousEnd,
             comparison.previousCount,
           ),
-      );
-    syncMarkup($("analysisMetrics"), metricsMarkup, 0);
+      ),
+    ];
+    WorkTimeApp.ui.renderAnalysisMetrics(groups, syncMarkup);
     $("analysisDetails").hidden = false;
     currentData = data;
     if (!sameMonth || !data.chartDays.some((day) => day.date === linkedDate))
@@ -723,7 +668,9 @@ WorkTimeApp.ui.createAnalysis = function ({
       );
       (retained || $("analysisChart")).focus({ preventScroll: true });
     }
-    runMotion();
+    WorkTimeApp.ui.afterAnalysisRender(() => {
+      if (currentData === data && wasVisible) runMotion();
+    });
   }
   const unlistenMotion = WorkTimeApp.ui.animationCompat.listen(
     motionPreference,

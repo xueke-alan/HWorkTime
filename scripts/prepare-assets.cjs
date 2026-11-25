@@ -472,6 +472,7 @@ function prepareAssets({ check = false } = {}) {
     ...locales.slice(1).map((id) => "content-" + id),
     "media",
     "prime",
+    "oa",
     "additions",
     "snake",
     "sudoku",

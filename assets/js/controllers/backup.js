@@ -14,6 +14,8 @@ WorkTimeApp.ui.createBackupController = function (options) {
     persistence,
     backupSource,
   } = options;
+  const dialogs = WorkTimeApp.ui.confirmations,
+    dialog = dialogs.restore;
   let restoreData = null;
   let restoreGames = null;
   let pendingTheme = null;
@@ -33,8 +35,7 @@ WorkTimeApp.ui.createBackupController = function (options) {
   function beginBackup(showNotice = true) {
     if (backupBusy || disposed) return false;
     backupBusy = true;
-    $("backupBeforeRestore").disabled = true;
-    $("backupBeforeRestore").setAttribute("aria-busy", "true");
+    dialog.backupBusy = true;
     if (showNotice)
       actions.toast(WorkTimeApp.i18n.t("backup.preparing"), "countdown");
     return true;
@@ -42,8 +43,7 @@ WorkTimeApp.ui.createBackupController = function (options) {
   function endBackup(lifetime) {
     if (lifetime !== generation) return;
     backupBusy = false;
-    $("backupBeforeRestore").disabled = false;
-    $("backupBeforeRestore").removeAttribute("aria-busy");
+    dialog.backupBusy = false;
     if (autoBackupAgain && !autoBackupRunning) void checkAutoBackup();
   }
   const readBackupText = (text) =>
@@ -68,11 +68,7 @@ WorkTimeApp.ui.createBackupController = function (options) {
     $("restoreStorage").hidden = !model.loadCorrupt;
     $("initializeStorage").hidden = issue !== "corrupt";
     $("convertStorage").hidden = issue !== "unsupported";
-    $("backupBeforeRestore").querySelector(".button-label").textContent =
-      model.loadCorrupt
-        ? WorkTimeApp.i18n.t("copy.4b5a44d0fd")
-        : WorkTimeApp.i18n.t("copy.02ffd2393f");
-    $("backupScopeNote").hidden = !model.loadCorrupt;
+    dialog.corrupt = model.loadCorrupt;
   }
   async function exportOriginal() {
     const text = getOriginalStorageText();
@@ -115,7 +111,7 @@ WorkTimeApp.ui.createBackupController = function (options) {
   function finishThemeRestore() {
     WorkTimeApp.services.preferences.page.synchronize();
     pendingTheme = null;
-    $("restoreDialog").close();
+    dialogs.close(dialog);
     actions.toast(WorkTimeApp.i18n.t("copy.8e990e61b4"), "countdown");
   }
   async function backup(kind = "manual", slot) {
@@ -249,10 +245,10 @@ WorkTimeApp.ui.createBackupController = function (options) {
     restoreData = data;
     restoreGames = games;
     pendingTheme = null;
-    $("restoreError").textContent = "";
-    $("confirmRestore").disabled = false;
-    $("retryRestoreTheme").hidden = true;
-    $("restoreSummary").textContent =
+    dialog.error = "";
+    dialog.busy = false;
+    dialog.showRetry = false;
+    dialog.summary =
       WorkTimeApp.i18n.t("copy.16593aa84d") +
       source +
       WorkTimeApp.i18n.t("copy.d00504a2b1") +
@@ -278,7 +274,7 @@ WorkTimeApp.ui.createBackupController = function (options) {
       WorkTimeApp.i18n.t(games ? "backup.includesGames" : "backup.workOnly", {
         count: Object.keys(games?.games || {}).length,
       });
-    $("restoreSummary").textContent +=
+    dialog.summary +=
       " " +
       WorkTimeApp.i18n.t("agenda.restore", {
         count: (data.agenda || []).length,
@@ -289,14 +285,14 @@ WorkTimeApp.ui.createBackupController = function (options) {
       });
     const typing = WorkTimeApp.services.typingStorage;
     const vocabulary = WorkTimeApp.services.vocabularyStorage;
-    $("restoreSummary").textContent +=
+    dialog.summary +=
       " " +
       WorkTimeApp.i18n.t(
         vocabulary?.find(data)
           ? "vocabulary.backupIncluded"
           : "vocabulary.backupPreserved",
       );
-    $("restoreSummary").textContent +=
+    dialog.summary +=
       " " +
       WorkTimeApp.i18n.t(
         typing?.find(data) ? "typing.backupIncluded" : "typing.backupPreserved",
@@ -447,16 +443,16 @@ WorkTimeApp.ui.createBackupController = function (options) {
         );
       }
     });
-    events.listen($("restoreDialog"), "close", () => {
+    dialog.onClose = () => {
       restoreRequest++;
       restoreData = null;
       restoreGames = null;
       pendingTheme = null;
-    });
-    events.handler($("retryRestoreTheme"), "onclick", () => {
+    };
+    dialog.retry = () => {
       if (pendingTheme !== null) finishThemeRestore();
-    });
-    events.handler($("backupBeforeRestore"), "onclick", () => backup());
+    };
+    dialog.backup = () => backup();
     events.handler($("restore"), "onclick", chooseBackupFile);
     events.handler($("backupFile"), "onchange", async (e) => {
       const file = e.target.files[0];
@@ -464,13 +460,13 @@ WorkTimeApp.ui.createBackupController = function (options) {
       await restoreFile(file, generation, ++restoreRequest);
       e.target.value = "";
     });
-    events.handler($("confirmRestore"), "onclick", async () => {
-      if (!restoreData || $("confirmRestore").disabled) return;
+    dialog.confirm = async () => {
+      if (!restoreData || dialog.busy) return;
       const lifetime = generation,
         request = restoreRequest;
       const candidate = restoreData;
       const games = restoreGames;
-      $("confirmRestore").disabled = true;
+      dialog.busy = true;
       let result;
       try {
         result = games
@@ -484,10 +480,10 @@ WorkTimeApp.ui.createBackupController = function (options) {
       if (disposed || lifetime !== generation || request !== restoreRequest)
         return;
       if (!result.persisted) {
-        $("restoreError").textContent =
+        dialog.error =
           WorkTimeApp.i18n.t("copy.3bf46b1e59") +
           WorkTimeApp.i18n.message(result.error.message);
-        $("confirmRestore").disabled = false;
+        dialog.busy = false;
         return;
       }
       pendingTheme = candidate.preferences.pageTheme;
@@ -495,7 +491,7 @@ WorkTimeApp.ui.createBackupController = function (options) {
       restoreGames = null;
       actions.render();
       finishThemeRestore();
-    });
+    };
   }
   function dispose() {
     generation++;
@@ -506,9 +502,10 @@ WorkTimeApp.ui.createBackupController = function (options) {
     backupBusy = false;
     cache?.dispose();
     subscriptions.splice(0).forEach((unsubscribe) => unsubscribe());
-    $("backupBeforeRestore").disabled = false;
-    $("backupBeforeRestore").removeAttribute("aria-busy");
+    dialog.backupBusy = false;
     $("restore").disabled = false;
+    dialogs.close(dialog);
+    dialog.onClose = dialog.confirm = dialog.retry = dialog.backup = undefined;
     events.dispose();
     bound = false;
     disposed = true;
