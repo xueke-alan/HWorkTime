@@ -236,35 +236,17 @@ function prepareAssets({ check = false } = {}) {
       secondary.code +
       "\n",
   );
-  // Generate the exact entry-point copy from the complete catalogs, avoiding drift.
-  const entryCopy = {};
-  for (const [feature, keys] of [
-    ["music", ["title", "loadFailed"]],
-    ["reader", ["title", "placeholderTitle", "loadFailed"]],
-  ]) {
-    entryCopy[feature] = {};
-    for (const language of ["zh-CN", "zh-TW", "zh-HK", "en", "ja", "ko"]) {
-      const scope = { WorkTimeApp: { ui: {}, i18n: { language } } };
-      vm.runInNewContext(
-        fs.readFileSync(
-          path.join(root, `assets/js/${feature}-i18n.js`),
-          "utf8",
-        ),
-        scope,
-      );
-      entryCopy[feature][language] = Object.fromEntries(
-        keys.map((key) => [key, scope.WorkTimeApp.ui[feature + "Text"](key)]),
-      );
-    }
-  }
+  const mediaText = ["music", "reader"]
+    .map((name) =>
+      fs.readFileSync(
+        path.join(root, "assets/js/" + name + "-i18n.js"),
+        "utf8",
+      ),
+    )
+    .join("\n");
   write(
     "assets/js/ui/media-text-runtime.min.js",
-    "// Generated entry copy; edit music-i18n.js and reader-i18n.js.\n" +
-      minify(
-        `(()=>{const copy=${JSON.stringify(entryCopy)};for(const feature of ["music","reader"])WorkTimeApp.ui[feature+"Text"]=key=>copy[feature][WorkTimeApp.i18n.language]?.[key]||key})()`,
-        { compress: false, mangle: true, format: { comments: false } },
-      ).code +
-      "\n",
+    minify(mediaText, { compress: false, mangle: true }).code + "\n",
   );
   // Preserve expressions and exported properties; only local names/format shrink.
   const agenda = minify(
@@ -384,7 +366,6 @@ function prepareAssets({ check = false } = {}) {
       [
         "games/registry",
         "games/catalog",
-        "games/menu",
         "services/game-archive",
         "controllers/game-archive",
         "controllers/games",
@@ -408,7 +389,6 @@ function prepareAssets({ check = false } = {}) {
         "background",
         "ui-alignment",
         "notification-motion",
-        "language-settings",
         "startup",
       ],
     ],
@@ -490,6 +470,8 @@ function prepareAssets({ check = false } = {}) {
   for (const name of [
     ...locales,
     ...locales.slice(1).map((id) => "content-" + id),
+    "media",
+    "prime",
     "additions",
     "snake",
     "sudoku",

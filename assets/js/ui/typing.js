@@ -38,31 +38,16 @@ WorkTimeApp.ui.typing = (() => {
   shell.setAttribute("role", "dialog");
   shell.setAttribute("aria-modal", "true");
   shell.setAttribute("aria-labelledby", "typingTitle");
-  const surface = node("div", "game-surface", shell);
-  surface.setAttribute("aria-hidden", "true");
-  const toolbar = node("header", "typing-toolbar workspace-toolbar", shell);
-  const heading = node("div", "typing-heading", toolbar);
-  const title = node("h2", "", heading);
-  title.id = "typingTitle";
-  const close = button(
-    "back",
-    () => {
-      pause();
-      expansion.close();
-    },
-    toolbar,
-  );
-  close.id = "typingExitButton";
-  close.className = "ui-button icon-only workspace-toolbar-action";
-  close.replaceChildren(WorkTimeApp.games.createIcon("calendar-month"));
-  toolbar.prepend(close);
-  const body = node("div", "typing-main", shell);
-  const sectionBar = node("div", "typing-section-bar", body);
-  const nav = node("nav", "typing-navigation", sectionBar);
-  const content = node("div", "typing-content", body);
-  const status = node("div", "typing-notice", body);
-  status.hidden = true;
-  status.setAttribute("role", "status");
+  const view = WorkTimeApp.ui.mountTyping(shell, navigate, () => {
+    pause();
+    expansion.close();
+  });
+  const surface = shell.querySelector(".game-surface");
+  const toolbar = shell.querySelector(".typing-toolbar");
+  const body = shell.querySelector(".typing-main");
+  const sectionBar = body.querySelector(".typing-section-bar");
+  const content = body.querySelector(".typing-content");
+  const status = body.querySelector(".typing-notice");
   workspace.append(shell);
   const expansion = WorkTimeApp.ui.createWorkspaceExpansion({
     shell,
@@ -251,15 +236,7 @@ WorkTimeApp.ui.typing = (() => {
   }
   function render() {
     if (disposed) return;
-    title.textContent = t("title");
-    close.title = WorkTimeApp.i18n.t("workspace.returnCalendar");
-    close.setAttribute("aria-label", close.title);
-    nav.setAttribute("aria-label", t("title"));
-    nav.replaceChildren();
-    for (const key of ["courses", "practice", "challenges", "statistics"]) {
-      const item = button(key, () => navigate(key), nav);
-      item.setAttribute("aria-current", key === page ? "page" : "false");
-    }
+    view.setPage(page);
     body.insertBefore(sectionBar, status);
     content.replaceChildren();
     content.dataset.view = replayState
@@ -1638,6 +1615,7 @@ WorkTimeApp.ui.typing = (() => {
       events.dispose();
       unsubscribe();
       expansion.dispose();
+      view.dispose();
       shell.remove();
       void audio?.close();
     },

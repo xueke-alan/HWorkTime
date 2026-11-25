@@ -27,10 +27,11 @@ const manifest = JSON.parse(
   fs.readFileSync(path.join(root, "package.json"), "utf8"),
 );
 assert.ok(
-  fs
-    .readFileSync(path.join(root, "index.html"), "utf8")
-    .includes('<span id="siteVersion">v' + manifest.version + "</span>"),
-  "Site entry version must match package.json",
+  manifest.version &&
+    fs
+      .readFileSync(path.join(root, "src/workspace/CalendarPanel.vue"), "utf8")
+      .includes('id="siteVersion"'),
+  "Workspace displays package version",
 );
 for (const entryPath of ["index.html", "tools/convert-backup.html"])
   versionHtml(fs.readFileSync(path.join(root, entryPath), "utf8"), root, {

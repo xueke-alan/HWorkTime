@@ -1,32 +1,5 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-interface Preferences {
-  weatherDays?: number;
-}
-interface SaveResult {
-  persisted: boolean;
-  pending?: boolean;
-  preferenceNames?: string[];
-}
-declare global {
-  const WorkTimeApp: {
-    services: {
-      preferences: {
-        page: {
-          state: Preferences;
-          saveWeatherDays(days: number): Promise<SaveResult>;
-          subscribe(
-            callback: (state: Preferences, result: SaveResult) => void,
-          ): () => void;
-        };
-      };
-    };
-    i18n: {
-      language: string;
-      t(key: string, values?: Record<string, string>): string;
-    };
-  };
-}
 export const useWeatherPreferences = defineStore("weather-settings", () => {
   const page = WorkTimeApp.services.preferences.page;
   const days = ref(page.state.weatherDays ?? 5);

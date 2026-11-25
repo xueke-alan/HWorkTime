@@ -10,6 +10,13 @@
     { once: true },
   );
   async function start() {
+    const entry = document.querySelector(
+      'meta[name="workspace-module"]',
+    ).content;
+    const { mountWorkspace } = await import(
+      new URL(entry, document.baseURI).href
+    );
+    mountWorkspace();
     for (const stage of ["core", "date", "view", "startup"]) {
       await new Promise((resolve) => setTimeout(resolve, 0));
       if (closed) return;

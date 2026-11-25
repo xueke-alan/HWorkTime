@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
-import { useI18n } from "vue-i18n";
+import { catalog } from "../catalog";
 import Textarea from "primevue/textarea";
 import Select from "primevue/select";
 import Button from "primevue/button";
@@ -11,7 +11,7 @@ const props = defineProps<
 >();
 const scheduleHost = ref<HTMLElement>();
 onMounted(() => scheduleHost.value!.append(props.schedule));
-const { t } = useI18n();
+const t = (key: string) => catalog.t("agenda." + key);
 const labels: Record<Status, string> = {
   pending: "statusPending",
   completed: "statusCompleted",

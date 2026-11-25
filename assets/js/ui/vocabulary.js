@@ -57,6 +57,11 @@ WorkTimeApp.ui.vocabulary = (() => {
   content.id = "vocabularyContent";
   const drawerViewport = node("div", undefined, "vocabulary-drawer-viewport");
   const drawerBody = node("div", undefined, "vocabulary-drawer-body");
+  const navigation = node("nav", undefined, "vocabulary-navigation");
+  drawerBody.append(navigation);
+  const navView = WorkTimeApp.ui.mountVocabularyNavigation(navigation, (id) => {
+    if (!busy && !failed) id === "learning" ? enterReview() : changePage(id);
+  });
   drawerViewport.append(drawerBody);
   const header = node(
     "header",
@@ -1706,7 +1711,7 @@ WorkTimeApp.ui.vocabulary = (() => {
     renderCount++;
     studyActions = null;
     const scroll = (panel.querySelector(".vocabulary-list") || panel).scrollTop;
-    const existingNav = drawerBody.querySelector(".vocabulary-navigation");
+    const existingNav = navigation;
 
     for (const child of [...drawerBody.children]) {
       if (child !== existingNav) child.remove();
@@ -1753,69 +1758,12 @@ WorkTimeApp.ui.vocabulary = (() => {
       retry.disabled = busy;
       panel.append(retry);
     }
-    const nav = node("nav", undefined, "vocabulary-navigation");
-    nav.setAttribute("aria-label", t("title"));
-    const icons = {
-      learning: "ms-menu-book",
-      books: "ms-book-5",
-      analysis: "ms-insert-chart",
-      preferences: "ms-settings",
-    };
-    for (const id of ["learning", "books", "analysis", "preferences"]) {
-      const tab = button(
-        "",
-        () => {
-          if (!busy && !failed)
-            id === "learning" ? enterReview() : changePage(id);
-        },
-        "vocabulary-nav-item",
-      );
-      tab.disabled = false;
-      tab.dataset.page = id;
-      tab.setAttribute("aria-current", activePage === id ? "page" : "false");
-      tab.innerHTML =
-        '<svg fill="currentColor" aria-hidden="true"><use href="#' +
-        icons[id] +
-        '"/></svg>';
-      tab.append(node("span", t(pageLabels[id])));
-      if (id === "learning") {
-        const planned = new Set(
-          E.queue(data, entries).items.map((entry) => entry.id),
-        );
-        const remaining = planned.size;
-        const badge = node(
-          "span",
-          String(remaining),
-          "vocabulary-review-badge",
-        );
-        badge.setAttribute("aria-label", t("remaining") + ": " + remaining);
-        tab.append(badge);
-      }
-      nav.append(tab);
-    }
-    if (studyActions) drawerBody.insertBefore(studyActions, existingNav);
-    if (existingNav) {
-      for (const tab of nav.children) {
-        const previous = existingNav.querySelector(
-          `[data-page="${tab.dataset.page}"]`,
-        );
-        previous.setAttribute("aria-current", tab.getAttribute("aria-current"));
-        previous.disabled = false;
-        const label = previous.querySelector("span");
-        if (label.textContent !== tab.querySelector("span").textContent)
-          label.textContent = tab.querySelector("span").textContent;
-        const badge = previous.querySelector(".vocabulary-review-badge"),
-          nextBadge = tab.querySelector(".vocabulary-review-badge");
-        if (badge && nextBadge) {
-          if (badge.textContent !== nextBadge.textContent)
-            badge.textContent = nextBadge.textContent;
-          badge.setAttribute(
-            "aria-label",
-            nextBadge.getAttribute("aria-label"),
-          );
-        }
-      }
-    } else drawerBody.append(nav);
+    navigation.setAttribute("aria-label", t("title"));
+    const planned = new Set(
+      E.queue(data, entries).items.map((entry) => entry.id),
+    );
+    navView.update(activePage, planned.size);
+    if (studyActions) drawerBody.insertBefore(studyActions, navigation);
     (panel.querySelector(".vocabulary-list") || panel).scrollTop = scroll;
   }
   function flushInput() {
@@ -2117,6 +2065,7 @@ WorkTimeApp.ui.vocabulary = (() => {
       unsubscribeCache();
       unsubscribeModels();
       speech.dispose();
+      navView.dispose();
       content.remove();
       mini.remove();
     },

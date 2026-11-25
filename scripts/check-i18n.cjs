@@ -27,6 +27,8 @@ function checkI18n() {
     "content-zh-HK",
     "content-ko",
     "content-ja",
+    "media",
+    "prime",
     "additions",
     "sudoku",
     "jump",
@@ -127,7 +129,15 @@ function checkI18n() {
     }
     visit(ast);
   }
-  for (const file of ["index.html", "tools/convert-backup.html"]) {
+  const templates = fs
+    .readdirSync(path.join(root, "src"), { recursive: true })
+    .filter((file) => file.endsWith(".vue"))
+    .map((file) => path.join("src", file));
+  for (const file of [
+    "index.html",
+    "tools/convert-backup.html",
+    ...templates,
+  ]) {
     for (const match of read(file).matchAll(
       /data-i18n-(?:title|aria-label|placeholder)="([^"]+)"/g,
     ))

@@ -49,9 +49,6 @@ WorkTimeApp.ui.createSidebarPanels = function ({
   const animationCompat = WorkTimeApp.ui.animationCompat;
   let settingsIconAnimation = null;
   let activeTab = tabs[0];
-  const themeSettings = WorkTimeApp.ui.theme.mount(
-    settings.querySelector(".theme-settings-host"),
-  );
   function updateSettingsButton(animate = false) {
     const open = !settings.hidden;
     settingsButton.classList.toggle("primary", open);
@@ -363,7 +360,6 @@ WorkTimeApp.ui.createSidebarPanels = function ({
     document.removeEventListener("worktime:languagechange", refreshLanguage);
     if (disposed) return;
     disposed = true;
-    themeSettings.dispose();
     settingsButton.removeEventListener("click", toggleSettings);
     settingsCancel.removeEventListener("click", closeSettingsPanel);
     tablist.removeEventListener("click", tabClick);

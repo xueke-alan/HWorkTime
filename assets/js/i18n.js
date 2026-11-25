@@ -95,7 +95,9 @@ WorkTimeApp.i18n = (() => {
     language === "en"
       ? WorkTimeApp.data.contentEnglish || {}
       : WorkTimeApp.data.contentLocales?.[language] || {};
+  let translate;
   function t(key, values = {}) {
+    if (translate) return translate(key, values);
     const text = catalogs[language]?.[key] ?? catalogs["zh-CN"][key] ?? key;
     return text.replace(/\{(\w+)\}/g, (match, name) =>
       Object.hasOwn(values, name) ? String(values[name]) : match,
@@ -221,6 +223,9 @@ WorkTimeApp.i18n = (() => {
     languages,
     matchLanguage,
     t,
+    setTranslator(handler) {
+      translate = handler;
+    },
     canonical,
     message,
     date,

@@ -23,11 +23,14 @@ for (const entry of [
   fs.cpSync(source, path.join(site, entry), { recursive: true });
 }
 bundleSite(site);
-fs.cpSync(path.join(root, "dist/settings"), path.join(site, "settings"), {
+fs.cpSync(path.join(root, "dist/workspace"), path.join(site, "workspace"), {
   recursive: true,
 });
 const manifest = JSON.parse(
-  fs.readFileSync(path.join(root, "dist/settings/.vite/manifest.json"), "utf8"),
+  fs.readFileSync(
+    path.join(root, "dist/workspace/.vite/manifest.json"),
+    "utf8",
+  ),
 );
 const agendaModule = manifest["src/agenda/mount.ts"].file;
 const entry = path.join(site, "index.html");
@@ -37,11 +40,17 @@ fs.writeFileSync(
     .readFileSync(entry, "utf8")
     .replace(
       "</head>",
-      `<meta name="agenda-editor-module" content="settings/${agendaModule}"></head>`,
-    )
+      `<meta name="workspace-module" content="workspace/${manifest["src/workspace-entry.ts"].file}"><meta name="agenda-editor-module" content="workspace/${agendaModule}"></head>`,
+    ),
+);
+const converter = path.join(site, "tools/convert-backup.html");
+fs.writeFileSync(
+  converter,
+  fs
+    .readFileSync(converter, "utf8")
     .replace(
       "</body>",
-      '<script type="module" src="settings/settings.js"></script></body>',
+      `<script type="module" src="../workspace/${manifest["src/converter/mount.ts"].file}"></script></body>`,
     ),
 );
 versionSite(site);

@@ -136,10 +136,136 @@ async function verify(url) {
         await page.reload();
       }
     }
+    await page.evaluate(() => {
+      let listener;
+      const state = {
+        tracks: [{}],
+        current: { title: "Footer playback check" },
+        paused: false,
+      };
+      const dispose = WorkTimeApp.ui.footerPlayback.connect({
+        snapshot: () => state,
+        subscribe(fn) {
+          listener = fn;
+          return () => {};
+        },
+        toggle() {
+          state.paused = !state.paused;
+          listener();
+        },
+        previous() {},
+        next() {},
+      });
+      window.addEventListener("pagehide", dispose, { once: true });
+    });
+    const playback = page.locator(".calendar-footer .site-music-controls");
+    await playback.waitFor();
+    await playback.locator('[data-music-action="toggle"]').click();
+    await playback.locator('[data-glyph="play"]').waitFor();
     await verifyAgendaEditor(page);
+    await page.reload();
+    await page.waitForFunction(
+      () => document.documentElement.dataset.appState === "ready",
+    );
+    await require("./game-test-helpers.cjs").launchGame(page, "game-2048");
+    await page.locator("#gameExitButton").click();
+    await page.locator("#gameShell").waitFor({ state: "hidden" });
+    await require("./game-test-helpers.cjs").launchGame(
+      page,
+      "game-minesweeper",
+    );
+    await page.locator("#mineDifficultyTrigger").click();
+    const difficulty = page.getByRole("option").nth(1);
+    await difficulty.click();
+    assert.equal(
+      await page.locator("#mineDifficulty").evaluate((el) => el.selectedIndex),
+      1,
+    );
+    await page.locator("#gameExitButton").click();
+    await page.locator("#gameShell").waitFor({ state: "hidden" });
+    await page.goto(new URL("#dev", url).href);
+    await page.locator("#date-tab-tools").click();
+    await page.locator("#typingOpen").click();
+    await page.locator('#typingDialog[data-state="open"]').waitFor();
+    const practice = page.locator(".typing-navigation button").nth(1);
+    await practice.click();
+    assert.equal(await practice.getAttribute("aria-current"), "page");
+    await page.locator("#typingExitButton").click();
+    await page.locator("#typingDialog").waitFor({ state: "hidden" });
+    await page.goto(url);
+    await page.waitForFunction(
+      () => document.documentElement.dataset.appState === "ready",
+    );
+    await page.locator("#date-tab-tools").click();
+    await page.locator("#vocabularyOpen").click();
+    const books = page.locator('.vocabulary-navigation [data-page="books"]');
+    await books.click();
+    await page.waitForFunction(
+      () =>
+        document.querySelector(".vocabulary-content")?.dataset.page === "books",
+    );
+    assert.equal(await books.getAttribute("aria-current"), "page");
+    await page.goto(new URL("tools/convert-backup.html", url).href);
+    const input = page.locator("#backupInput");
+    await input.fill("{");
+    await page.locator("#convert").click();
+    await page.waitForFunction(
+      () => document.querySelector("#status").textContent.trim().length > 0,
+    );
+    assert.ok(await page.locator("#download").isDisabled());
+    const fixture = await page.evaluate(() => {
+      const state = WorkTimeApp.domain.state.defaultState();
+      state.preferences.weatherDays = 7;
+      state.memo = "Pages conversion check";
+      return WorkTimeApp.services.archive.encode(state);
+    });
+    await page.locator("input[type=file]").setInputFiles({
+      name: "archive.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify(fixture)),
+    });
+    await page.waitForFunction(
+      () => document.querySelector("#backupInput").value.length > 1,
+    );
+    await page.locator("#convert").click();
+    await page.waitForFunction(
+      () => document.querySelector("#backupOutput").value.length > 0,
+    );
+    assert.deepEqual(
+      JSON.parse(await page.locator("#backupOutput").inputValue()).modules,
+      fixture.modules,
+    );
+    const download = page.waitForEvent("download");
+    await page.locator("#download").click();
+    assert.ok((await download).suggestedFilename().endsWith(".json"));
+    const mobile = await browser.newContext({
+      locale: "en",
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+      hasTouch: true,
+    });
+    const phone = await mobile.newPage();
+    phone.on("pageerror", (error) => errors.push(error.message));
+    await phone.goto(url);
+    await phone.waitForFunction(
+      () => document.documentElement.dataset.appState === "ready",
+    );
+    assert.equal(await phone.locator("html").getAttribute("lang"), "en");
+    await phone.locator("#pageSettingsOpen").tap();
+    await phone.locator("#weatherDays").tap();
+    await phone.getByRole("option", { name: /7/ }).tap();
+    await phone.waitForFunction(
+      () => WorkTimeApp.services.preferences.page.state.weatherDays === 7,
+    );
+    assert.ok(
+      await phone.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    );
+    await mobile.close();
     assert.deepEqual(errors, []);
     console.log(
-      "Pages entry, calendar, settings, four agenda statuses, range, discard and reload passed.",
+      "Pages entry, calendar, settings, four agenda statuses, range, discard, reload, game launch, typing navigation, backup conversion and mobile English settings passed.",
     );
   } finally {
     await browser.close();

@@ -25,144 +25,14 @@ WorkTimeApp.ui.footerPlayback = (() => {
       };
     },
     mount(host) {
-      const group = document.createElement("span");
-      group.className = "site-music-controls";
-      group.hidden = true;
-      group.setAttribute("role", "group");
-      const name = document.createElement("span"),
-        track = document.createElement("span"),
-        original = document.createElement("span"),
-        copy = document.createElement("span");
-      name.className = "site-music-name";
-      track.className = "site-music-name-track";
-      copy.setAttribute("aria-hidden", "true");
-      track.append(original, copy);
-      name.append(track);
-      group.append(name);
-      const glyphs = {
-        previous: "skip-previous-light",
-        play: "play-arrow-light",
-        pause: "pause-light",
-        next: "skip-next-light",
-      };
-      const buttons = ["previous", "toggle", "next"].map((action) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "site-music-button";
-        button.dataset.musicAction = action;
-        button.onclick = () => controller?.[action]();
-        group.append(button);
-        return button;
-      });
-      const divider = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "svg",
+      const view = WorkTimeApp.ui.mountPlayback(host, (action) =>
+        controller?.[action](),
       );
-      divider.setAttribute("class", "site-audio-divider");
-      divider.setAttribute("viewBox", "0 0 16 16");
-      divider.setAttribute("aria-hidden", "true");
-      divider.innerHTML = '<path d="M8 4v8"/>';
-      group.append(divider);
-      host.prepend(group);
-      let title = "",
-        signature = "",
-        frame = null,
-        animation = null;
-      function measure() {
-        frame = null;
-        if (group.hidden || !name.clientWidth) {
-          animation?.cancel();
-          animation = null;
-          signature = "";
-          return;
-        }
-        const scrolling =
-          original.getBoundingClientRect().width > name.clientWidth + 1 &&
-          document.documentElement.dataset.reducedMotion !== "true";
-        const distance = original.getBoundingClientRect().width + 24;
-        const next = `${title}|${name.clientWidth}|${distance}|${scrolling}`;
-        if (signature === next) return;
-        signature = next;
-        animation?.cancel();
-        animation = null;
-        name.classList.remove("is-scrolling");
-        if (scrolling && typeof track.animate === "function") {
-          const duration = distance / 24 + 1;
-          name.classList.add("is-scrolling");
-          try {
-            animation = track.animate(
-              [
-                { transform: "translateX(0)", offset: 0 },
-                { transform: "translateX(0)", offset: 1 / duration },
-                { transform: `translateX(${-distance}px)`, offset: 1 },
-              ],
-              {
-                duration: duration * 1000,
-                iterations: Infinity,
-                easing: "linear",
-              },
-            );
-          } catch {
-            name.classList.remove("is-scrolling");
-          }
-        }
-      }
-      function scheduleMeasure() {
-        if (frame === null) frame = requestAnimationFrame(measure);
-      }
-      const observer = new ResizeObserver(scheduleMeasure);
-      observer.observe(name);
-      document.addEventListener("worktime:motionchange", scheduleMeasure);
-      const view = {
-        refresh(state, visible) {
-          const wasHidden = group.hidden;
-          group.hidden = !visible || !state?.current;
-          if (group.hidden) {
-            animation?.cancel();
-            animation = null;
-            signature = "";
-            return;
-          }
-          group.setAttribute("aria-label", WorkTimeApp.ui.musicText("title"));
-          const nextTitle = state.current.title || state.current.name || "";
-          if (title !== nextTitle) {
-            title = nextTitle;
-            original.textContent = copy.textContent = title;
-            name.title = title;
-            scheduleMeasure();
-          }
-          if (wasHidden) {
-            signature = "";
-            scheduleMeasure();
-          }
-          buttons.forEach((button, index) => {
-            const key = ["previous", state.paused ? "play" : "pause", "next"][
-              index
-            ];
-            if (button.dataset.glyph !== key) {
-              button.dataset.glyph = key;
-              button.innerHTML =
-                '<svg class="ui-icon" aria-hidden="true"><use href="#ms-' +
-                glyphs[key] +
-                '"/></svg>';
-            }
-            button.title = WorkTimeApp.ui.musicText(key);
-            button.setAttribute("aria-label", button.title);
-            button.disabled = !state.tracks.length || state.needsAccess;
-          });
-        },
-      };
       views.add(view);
-      document.addEventListener("worktime:languagechange", refresh);
       refresh();
       return () => {
         views.delete(view);
-        observer.disconnect();
-        animation?.cancel();
-        if (frame !== null) cancelAnimationFrame(frame);
-        document.removeEventListener("worktime:motionchange", scheduleMeasure);
-        document.removeEventListener("worktime:languagechange", refresh);
-        group.remove();
+        view.dispose();
       };
     },
   };

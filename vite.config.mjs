@@ -4,17 +4,17 @@ export default defineConfig({
   base: "./",
   plugins: [vue()],
   build: {
-    outDir: "dist/settings",
+    outDir: "dist/workspace",
     manifest: true,
     rollupOptions: {
       preserveEntrySignatures: "strict",
       input: {
-        settings: "src/settings-entry.ts",
+        converter: "src/converter/mount.ts",
+        workspace: "src/workspace-entry.ts",
         agenda: "src/agenda/mount.ts",
       },
       output: {
-        entryFileNames: (chunk) =>
-          chunk.name === "agenda" ? "agenda-[hash].js" : "[name].js",
+        entryFileNames: "[name]-[hash].js",
       },
     },
   },
