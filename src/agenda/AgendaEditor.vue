@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
 import { catalog } from "../catalog";
-import Textarea from "primevue/textarea";
-import Select from "primevue/select";
-import Button from "primevue/button";
+import {
+  UiTextarea as Textarea,
+  UiSelect as Select,
+  UiButton as Button,
+} from "@hworktime/ui";
 import { QiChevronDown } from "qingicon-vue";
 import type { EditorOptions, Status } from "./mount";
 const props = defineProps<
@@ -19,7 +21,10 @@ const labels: Record<Status, string> = {
   cancelled: "statusCancelled",
 };
 const options = computed(() =>
-  Object.entries(labels).map(([value, key]) => ({ value, label: t(key) })),
+  (Object.keys(labels) as Status[]).map((value) => ({
+    value,
+    label: t(labels[value]),
+  })),
 );
 function change<K extends keyof EditorOptions["draft"]>(
   key: K,
@@ -62,18 +67,6 @@ const saveLabel = computed(() =>
           option-value="value"
           option-label="label"
           :disabled="view.locked"
-          fluid
-          :dt="{
-            root: {
-              background: 'transparent',
-              borderColor: 'transparent',
-              color: 'var(--ink)',
-            },
-            option: {
-              selectedBackground: 'var(--accent-light)',
-              selectedColor: 'var(--ink)',
-            },
-          }"
           @update:model-value="change('status', $event)"
         >
           <template #dropdownicon

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import Dialog from "primevue/dialog";
-import Button from "primevue/button";
+import { UiDialog as Dialog, UiButton as Button } from "@hworktime/ui";
 import { catalog } from "../catalog";
 import { restore, removal, confirmations } from "./confirmations";
 const { t } = catalog;
@@ -8,9 +7,9 @@ const { t } = catalog;
 <template>
   <Dialog
     id="restoreDialog"
-    modal
     :visible="restore.visible"
     :header="t('copy.35a251c943')"
+    :close-label="t('copy.6c14bd7f6f')"
     :closable="!restore.busy"
     :close-on-escape="!restore.busy"
     :style="{ width: 'min(34rem, calc(100vw - 2rem))' }"
@@ -59,9 +58,9 @@ const { t } = catalog;
   </Dialog>
   <Dialog
     id="deleteImportDialog"
-    modal
     :visible="removal.visible"
     :header="t('copy.31fcbd78ba')"
+    :close-label="t('copy.6c14bd7f6f')"
     :closable="!removal.busy"
     :close-on-escape="!removal.busy"
     :style="{ width: 'min(34rem, calc(100vw - 2rem))' }"

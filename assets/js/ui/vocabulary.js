@@ -191,7 +191,7 @@ WorkTimeApp.ui.vocabulary = (() => {
   document.addEventListener("visibilitychange", stopHiddenAnimation);
   window.addEventListener("resize", stopModeAnimation);
   function node(tag, text, className) {
-    const el = document.createElement(tag);
+    const el = WorkTimeApp.ui.native.createElement(tag);
     if (text !== undefined) el.textContent = text;
     if (className) el.className = className;
     return el;

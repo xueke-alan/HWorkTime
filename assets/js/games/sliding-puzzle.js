@@ -43,7 +43,7 @@ WorkTimeApp.games.register({
     data.sessions = { [data.size]: data.sessions[data.size] };
     const state = () => data.sessions[data.size];
     function node(tag, className, parent) {
-      const el = document.createElement(tag);
+      const el = WorkTimeApp.ui.native.createElement(tag);
       el.className = className;
       parent?.append(el);
       return el;

@@ -41,7 +41,7 @@ WorkTimeApp.games.register({
       error = "invalid";
     }
     const el = (tag, cls, text, parent = root) => {
-      const n = document.createElement(tag);
+      const n = WorkTimeApp.ui.native.createElement(tag);
       n.className = cls;
       if (text !== undefined) n.textContent = text;
       parent.append(n);

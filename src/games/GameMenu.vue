@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { UiStatus } from "@hworktime/ui";
 import {
   computed,
   ref,
@@ -10,7 +11,7 @@ import {
   type ObjectDirective,
 } from "vue";
 import { QiRotateCcw } from "qingicon-vue";
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import { catalog } from "../catalog";
 import { bindScroll } from "./menu-scroll";
 import type { MenuEntry, GameMenuOptions } from "./menu";
@@ -95,7 +96,7 @@ function keydown(e: KeyboardEvent) {
   <header ref="header" class="game-menu-header">
     <h2>{{ catalog.t("games.menu") }}</h2>
     <template v-if="options.archiveUI"
-      ><p class="game-menu-archive-status" role="status"></p>
+      ><UiStatus as="p" class="game-menu-archive-status"></UiStatus>
       <div
         class="game-menu-archive-actions"
         role="group"

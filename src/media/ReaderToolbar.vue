@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import { QiChevronLeft, QiLibrary, QiSidebarLeftOpen } from "qingicon-vue";
 import { catalog } from "../catalog";
 defineProps<{ activate: (id: string) => void }>();

@@ -78,6 +78,35 @@ WorkTimeApp.i18n = (() => {
       ]),
     );
   }
+  const activeModules = new Set();
+  const parts = new Map();
+  let requestedLanguage = language;
+  async function moduleMessages(id, group) {
+    if (id === "zh-CN") return;
+    const key = group + "/" + id;
+    if (!parts.has(key))
+      parts.set(
+        key,
+        WorkTimeApp.services.assets
+          .script("assets/js/locales/runtime/" + key + ".js")
+          .then(() => {
+            document.dispatchEvent(
+              new CustomEvent("worktime:localemodule", { detail: id }),
+            );
+          })
+          .catch((error) => {
+            parts.delete(key);
+            throw error;
+          }),
+      );
+    await parts.get(key);
+  }
+  async function loadModule(group) {
+    activeModules.add(group);
+    await Promise.all(
+      [...new Set([language, requestedLanguage])].map(loadLanguage),
+    );
+  }
   async function loadLanguage(id) {
     if (!catalogs[id]) {
       await WorkTimeApp.services.assets.script(
@@ -86,6 +115,9 @@ WorkTimeApp.i18n = (() => {
       if (!catalogs[id])
         throw Error("Language catalog did not register: " + id);
     }
+    await Promise.all(
+      Array.from(activeModules, (group) => moduleMessages(id, group)),
+    );
     refreshSources();
   }
   refreshSources();
@@ -192,7 +224,8 @@ WorkTimeApp.i18n = (() => {
   function setLanguage(value) {
     const next = normalize(value),
       token = ++languageGeneration;
-    if (!catalogs[next])
+    requestedLanguage = next;
+    if (!catalogs[next] || (activeModules.size && next !== language))
       return loadLanguage(next).then(() => {
         if (token === languageGeneration) applyLanguage(next);
       });
@@ -237,6 +270,7 @@ WorkTimeApp.i18n = (() => {
     normalize,
     setLanguage,
     loadLanguage,
+    loadModule,
     get ready() {
       return ready;
     },

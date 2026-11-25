@@ -1,12 +1,23 @@
 <script setup lang="ts">
+import {
+  UiDialogSurface,
+  UiCheckbox,
+  UiNativeSelect,
+  UiFileInput,
+} from "@hworktime/ui";
 import GameArchiveDialog from "../games/GameArchiveDialog.vue";
 import ImportConfirmations from "../imports/ImportConfirmations.vue";
-import Button from "primevue/button";
-import Textarea from "primevue/textarea";
-import InputText from "primevue/inputtext";
+import {
+  UiButton as Button,
+  UiTextarea as Textarea,
+  UiInputText as InputText,
+} from "@hworktime/ui";
 </script>
 <template>
-  <dialog id="templateImportDialog" aria-labelledby="templateImportTitle">
+  <UiDialogSurface
+    id="templateImportDialog"
+    aria-labelledby="templateImportTitle"
+  >
     <div class="dialog-head">
       <h2 id="templateImportTitle" data-i18n-text='{"0":"copy.67d8959c5f"}'>
         导入打卡模板
@@ -79,8 +90,11 @@ import InputText from "primevue/inputtext";
         ></Button
       >
     </div>
-  </dialog>
-  <dialog id="templateShareDialog" aria-labelledby="templateShareTitle">
+  </UiDialogSurface>
+  <UiDialogSurface
+    id="templateShareDialog"
+    aria-labelledby="templateShareTitle"
+  >
     <div class="dialog-head">
       <h2 id="templateShareTitle" data-i18n-text='{"0":"copy.46f1184935"}'>
         分享打卡模板
@@ -122,8 +136,8 @@ import InputText from "primevue/inputtext";
         ></Button
       >
     </div>
-  </dialog>
-  <dialog id="timeTemplateDialog">
+  </UiDialogSurface>
+  <UiDialogSurface id="timeTemplateDialog">
     <div class="dialog-head">
       <h2 id="timeTemplateTitle" data-i18n-text='{"0":"copy.b464e3690d"}'>
         新增时间模板
@@ -184,7 +198,7 @@ import InputText from "primevue/inputtext";
             />
           </div>
           <div class="nextday-control">
-            <input
+            <UiCheckbox
               id="timeTemplateNext"
               class="hidden"
               type="checkbox"
@@ -219,9 +233,12 @@ import InputText from "primevue/inputtext";
         >
       </div>
     </form>
-  </dialog>
+  </UiDialogSurface>
 
-  <dialog id="scheduleRangeDialog" aria-labelledby="scheduleRangeTitle">
+  <UiDialogSurface
+    id="scheduleRangeDialog"
+    aria-labelledby="scheduleRangeTitle"
+  >
     <div class="dialog-head">
       <h2 id="scheduleRangeTitle" data-i18n-text='{"0":"copy.073381b8eb"}'>
         应用作息
@@ -252,7 +269,7 @@ import InputText from "primevue/inputtext";
               >应用范围</label
             >
             <div id="scheduleRangePicker" class="schedule-range-picker">
-              <select
+              <UiNativeSelect
                 id="scheduleRangeChoice"
                 class="schedule-range-native"
                 tabindex="-1"
@@ -277,7 +294,7 @@ import InputText from "primevue/inputtext";
                 <option value="custom" data-i18n-text='{"0":"copy.32981249bd"}'>
                   自定义日期范围
                 </option>
-              </select>
+              </UiNativeSelect>
               <Button
                 class="ui-button"
                 id="scheduleRangeTrigger"
@@ -344,7 +361,7 @@ import InputText from "primevue/inputtext";
             id="scheduleNoEndLabel"
             hidden
             data-i18n-text='{"0":"copy.f5cf573859"}'
-            ><input
+            ><UiCheckbox
               id="scheduleNoEnd"
               type="checkbox"
             />持续生效，不设结束日期</label
@@ -382,8 +399,11 @@ import InputText from "primevue/inputtext";
         >
       </div>
     </form>
-  </dialog>
-  <dialog id="scheduleDraftDialog" aria-labelledby="scheduleDraftTitle">
+  </UiDialogSurface>
+  <UiDialogSurface
+    id="scheduleDraftDialog"
+    aria-labelledby="scheduleDraftTitle"
+  >
     <div class="dialog-head">
       <h2 id="scheduleDraftTitle" data-i18n-text='{"0":"copy.c8c0111f42"}'>
         作息尚未应用
@@ -407,9 +427,9 @@ import InputText from "primevue/inputtext";
         ></Button
       >
     </div>
-  </dialog>
+  </UiDialogSurface>
   <GameArchiveDialog /><ImportConfirmations />
-  <dialog id="oaLinkDialog">
+  <UiDialogSurface id="oaLinkDialog">
     <div class="dialog-head">
       <h2 data-i18n-text='{"0":"copy.150aff1e54"}'>OA系统链接</h2>
       <Button
@@ -447,8 +467,8 @@ import InputText from "primevue/inputtext";
         >
       </div>
     </form>
-  </dialog>
-  <dialog id="initializeDialog">
+  </UiDialogSurface>
+  <UiDialogSurface id="initializeDialog">
     <div class="dialog-head">
       <h2 data-i18n-text='{"0":"copy.4e07c587e5"}'>初始化存档</h2>
       <Button
@@ -484,8 +504,8 @@ import InputText from "primevue/inputtext";
         ></Button
       >
     </div>
-  </dialog>
-  <input
+  </UiDialogSurface>
+  <UiFileInput
     id="backupFile"
     type="file"
     accept=".json,.txt,application/json,text/plain"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { UiStatus } from "@hworktime/ui";
 import { ref, computed, onUnmounted } from "vue";
-import RadioButton from "primevue/radiobutton";
+import { UiRadioButton as RadioButton } from "@hworktime/ui";
 import { catalog } from "../catalog";
 const preferences = WorkTimeApp.services.preferences.page;
 const current = ref(preferences.state.pageTheme || "green"),
@@ -39,8 +40,8 @@ onUnmounted(
         ><span class="theme-name">{{ theme.name }}</span>
       </label>
     </div>
-    <p class="theme-save-notice" role="status">
+    <UiStatus as="p" class="theme-save-notice">
       {{ failed ? catalog.t("copy.121c73541e") : "" }}
-    </p>
+    </UiStatus>
   </fieldset>
 </template>

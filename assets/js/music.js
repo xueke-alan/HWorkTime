@@ -23,6 +23,7 @@ WorkTimeApp.ui.music = (() => {
               { fetchPriority: "high" },
             );
             await Promise.all([
+              WorkTimeApp.i18n.loadModule("music"),
               WorkTimeApp.services.assets.style("assets/css/music.css"),
               WorkTimeApp.services.assets.script(
                 "assets/js/ui/music-runtime.min.js",

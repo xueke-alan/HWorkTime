@@ -14,14 +14,14 @@ WorkTimeApp.ui.createRuntimeImport = function ({
   const message = document.createElement("p");
   message.setAttribute("role", "status");
   message.setAttribute("aria-live", "polite");
-  const setup = document.createElement("button");
+  const setup = WorkTimeApp.ui.native.createElement("button");
   setup.className = "ui-button";
   setup.type = "button";
-  const cancel = document.createElement("button");
+  const cancel = WorkTimeApp.ui.native.createElement("button");
   cancel.className = "ui-button";
   cancel.type = "button";
   cancel.hidden = true;
-  const progressBar = document.createElement("progress");
+  const progressBar = WorkTimeApp.ui.native.createElement("progress");
   progressBar.className = "runtime-import-progress";
   progressBar.max = 1;
   progressBar.value = 0;
@@ -121,7 +121,7 @@ WorkTimeApp.ui.createRuntimeImport = function ({
     }
   }
   const inputs = [false, true].map((folder) => {
-    const input = document.createElement("input");
+    const input = WorkTimeApp.ui.native.createElement("input");
     input.type = "file";
     input.multiple = true;
     input.hidden = true;

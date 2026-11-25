@@ -1,11 +1,12 @@
 <script setup lang="ts">
+import { UiPanel, UiDialogSurface, UiStatus } from "@hworktime/ui";
 import ImportHistory from "../imports/ImportHistory.vue";
 import ImportRows from "../imports/ImportRows.vue";
-import Button from "primevue/button";
-import Textarea from "primevue/textarea";
+import { UiButton as Button, UiTextarea as Textarea } from "@hworktime/ui";
 </script>
 <template>
-  <aside
+  <UiPanel
+    as="aside"
     class="panel summary-sidebar"
     aria-label="工时概览"
     data-i18n-aria-label="copy.6bcc55abab"
@@ -92,7 +93,8 @@ import Textarea from "primevue/textarea";
       tabindex="0"
       data-i18n-aria-label="copy.370463779d"
     ></section>
-    <section
+    <UiPanel
+      as="section"
       class="target-panel"
       aria-label="月度加班要求"
       data-i18n-aria-label="copy.ac05786a10"
@@ -137,9 +139,9 @@ import Textarea from "primevue/textarea";
           >
         </div>
       </div>
-    </section>
+    </UiPanel>
     <div class="sidebar-oa-workspace" hidden>
-      <dialog
+      <UiDialogSurface
         id="importDialog"
         aria-label="导入 OA 记录"
         class="sidebar-oa-pane"
@@ -156,13 +158,13 @@ import Textarea from "primevue/textarea";
               data-i18n-aria-label="copy.4c7c6082dd"
               data-i18n-placeholder="copy.4c7c6082dd"
             ></Textarea
-            ><span
+            ><UiStatus
+              as="span"
               id="importClipboardNotice"
               class="import-clipboard-notice"
-              role="status"
               hidden
               data-i18n-text='{"0":"import.clipboardAutofilled"}'
-              >已自动填入剪切板记录</span
+              >已自动填入剪切板记录</UiStatus
             ><Button
               id="pasteOAClipboard"
               class="ui-button icon-only import-paste-button"
@@ -259,9 +261,13 @@ import Textarea from "primevue/textarea";
             </div>
           </div>
         </section>
-      </dialog>
+      </UiDialogSurface>
 
-      <dialog id="sourceDialog" class="sidebar-oa-pane" aria-modal="false">
+      <UiDialogSurface
+        id="sourceDialog"
+        class="sidebar-oa-pane"
+        aria-modal="false"
+      >
         <div class="dialog-head">
           <h2 data-i18n-text='{"0":"copy.d82c9100ca"}'>记录来源</h2>
           <Button
@@ -280,7 +286,7 @@ import Textarea from "primevue/textarea";
             ></Button
           >
         </div>
-      </dialog>
+      </UiDialogSurface>
     </div>
-  </aside>
+  </UiPanel>
 </template>

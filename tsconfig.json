@@ -1,1 +1,1 @@
-{"compilerOptions":{"target":"ES2022","module":"ESNext","moduleResolution":"Bundler","strict":true,"skipLibCheck":true,"noEmit":true,"lib":["ES2022","DOM"]},"include":["src/**/*.ts","src/**/*.vue"]}
+{"compilerOptions":{"target":"ES2022","module":"ESNext","moduleResolution":"Bundler","strict":true,"skipLibCheck":true,"noEmit":true,"lib":["ES2022","DOM"]},"include":["src/**/*.ts","packages/ui/src/**/*.ts","src/**/*.vue","packages/ui/src/**/*.vue"]}

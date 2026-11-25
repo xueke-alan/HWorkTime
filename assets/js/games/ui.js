@@ -108,7 +108,7 @@ WorkTimeApp.games.createCompletionHistory = function ({
     },
     exit: () => exit(),
   })) {
-    const button = document.createElement("button");
+    const button = WorkTimeApp.ui.native.createElement("button");
     button.type = "button";
     button.className = "game-button";
     button.dataset.replayAction = name;
@@ -144,7 +144,7 @@ WorkTimeApp.games.createCompletionHistory = function ({
               steps: steps(value.path),
               date: dateText,
             });
-        const button = document.createElement("button");
+        const button = WorkTimeApp.ui.native.createElement("button");
         button.type = "button";
         button.className = "game-button";
         button.dataset.replayRecord = value.id;
@@ -347,7 +347,7 @@ WorkTimeApp.games.paintCounter = function (element, value) {
 };
 WorkTimeApp.games.createLevelPage = function (root, id, signal) {
   function node(parent, tag, className) {
-    const element = document.createElement(tag);
+    const element = WorkTimeApp.ui.native.createElement(tag);
     element.className = className;
     parent.append(element);
     return element;
@@ -552,7 +552,7 @@ WorkTimeApp.games.createHelp = function ({
   onChange,
 }) {
   const t = (key) => WorkTimeApp.i18n.t("games." + key);
-  const button = document.createElement("button");
+  const button = WorkTimeApp.ui.native.createElement("button");
   button.type = "button";
   button.className = "game-button game-icon-button";
   button.dataset.gameHelp = "";
@@ -566,7 +566,7 @@ WorkTimeApp.games.createHelp = function ({
   panel.setAttribute("aria-modal", "true");
   const heading = document.createElement("h3");
   const description = document.createElement("p");
-  const close = document.createElement("button");
+  const close = WorkTimeApp.ui.native.createElement("button");
   close.type = "button";
   close.className = "game-button";
   close.dataset.gameHelpClose = "";

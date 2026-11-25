@@ -206,7 +206,7 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
     for (const card of template.content.querySelectorAll(
       "div.day[data-date]",
     )) {
-      const select = document.createElement("button");
+      const select = WorkTimeApp.ui.native.createElement("button");
       select.type = "button";
       select.className = "day-select";
       for (const name of ["aria-label", "aria-pressed", "aria-disabled"]) {

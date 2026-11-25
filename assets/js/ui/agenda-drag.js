@@ -537,7 +537,7 @@ WorkTimeApp.ui.createAgendaDrag = function ({
         continue;
       }
       if (!label) {
-        label = document.createElement("button");
+        label = WorkTimeApp.ui.native.createElement("button");
         label.type = "button";
         label.className = "agenda-more agenda-preview-more";
         label.inert = true;

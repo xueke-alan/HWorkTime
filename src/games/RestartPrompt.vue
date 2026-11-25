@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, nextTick, onBeforeUnmount } from "vue";
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import { QiRotateCcw } from "qingicon-vue";
 import { catalog } from "../catalog";
 import type { RestartOptions } from "./restart";

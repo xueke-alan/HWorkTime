@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { UiPanel, UiCheckbox, UiStatus } from "@hworktime/ui";
 import AnalysisSidebar from "../analysis/AnalysisSidebar.vue";
 import SettingsPane from "./SettingsPane.vue";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
+import { UiButton as Button, UiInputText as InputText } from "@hworktime/ui";
 </script>
 <template>
-  <aside class="panel editor">
+  <UiPanel as="aside" class="panel editor">
     <div class="editor-content">
       <section
         id="yearAnalysisSidebar"
@@ -100,7 +100,11 @@ import InputText from "primevue/inputtext";
                 </div>
               </div>
               <div class="nextday-control" id="batchNextField">
-                <input type="checkbox" id="batchNext" class="hidden" /><Button
+                <UiCheckbox
+                  type="checkbox"
+                  id="batchNext"
+                  class="hidden"
+                /><Button
                   id="batchNextToggle"
                   class="ui-button nextday-toggle"
                   type="button"
@@ -276,19 +280,19 @@ import InputText from "primevue/inputtext";
               >
             </div>
             <section class="calc-preview editor-preview batch-preview-card">
-              <strong
+              <UiStatus
+                as="strong"
                 id="batchSelectionCount"
                 class="batch-selection-count"
-                role="status"
                 aria-live="polite"
-                >已选 0 天</strong
+                >已选 0 天</UiStatus
               >
-              <div
+              <UiStatus
+                as="div"
                 id="batchPreviewStatus"
                 class="batch-preview-status"
-                role="status"
                 aria-live="polite"
-              ></div>
+              ></UiStatus>
             </section>
           </div>
         </form>
@@ -338,7 +342,7 @@ import InputText from "primevue/inputtext";
               </div>
             </div>
             <div class="nextday-control">
-              <input type="checkbox" id="dayNext" class="hidden" /><Button
+              <UiCheckbox type="checkbox" id="dayNext" class="hidden" /><Button
                 id="dayNextToggle"
                 class="ui-button nextday-toggle"
                 type="button"
@@ -564,13 +568,13 @@ import InputText from "primevue/inputtext";
         role="tabpanel"
         aria-labelledby="date-tab-notifications"
       >
-        <div
+        <UiStatus
+          as="div"
           id="feedbackList"
           class="feedback-list"
-          role="status"
           aria-live="polite"
           aria-atomic="false"
-        ></div>
+        ></UiStatus>
         <div id="storageNotice" class="hidden" role="alert">
           <span id="storageNoticeText"></span>
           <div class="storage-recovery-actions">
@@ -666,5 +670,5 @@ import InputText from "primevue/inputtext";
         </svg>
       </h2>
     </div>
-  </aside>
+  </UiPanel>
 </template>

@@ -101,15 +101,7 @@ WorkTimeApp.ui.music = (() => {
     }
   }
   document.addEventListener("visibilitychange", musicVisibility);
-  function updateRange(input) {
-    const span = Number(input.max) - Number(input.min);
-    const fill =
-      span > 0 ? ((Number(input.value) - Number(input.min)) / span) * 100 : 0;
-    input.style.setProperty(
-      "--range-fill",
-      Math.max(0, Math.min(100, fill)) + "%",
-    );
-  }
+  const updateRange = WorkTimeApp.ui.native.updateSlider;
   const controller = WorkTimeApp.ui.createMusicController();
   const disconnectFooter = WorkTimeApp.ui.footerPlayback.connect(controller);
   const dialog = document.createElement("section");
@@ -127,7 +119,7 @@ WorkTimeApp.ui.music = (() => {
     labels = [];
   let registerBindings = true;
   function node(tag, cls, parent) {
-    const element = document.createElement(tag);
+    const element = WorkTimeApp.ui.native.createElement(tag);
     if (cls) element.className = cls;
     parent?.append(element);
     return element;

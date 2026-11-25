@@ -1,0 +1,16 @@
+{
+  "name": "@hworktime/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./theme.css": "./src/theme/tokens.css"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "dependencies": {
+    "qingicon-vue": "2.0.8"
+  }
+}

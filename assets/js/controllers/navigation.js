@@ -850,7 +850,7 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     };
     const status = $("batchPreviewStatus");
     const line = (tag, text, className = "") => {
-      const element = document.createElement(tag);
+      const element = WorkTimeApp.ui.native.createElement(tag);
       element.className = className;
       element.textContent = text;
       return element;

@@ -353,3 +353,7 @@ Thumbs.db
 !/vite.config.mjs
 !/tsconfig.json
 !/pnpm-lock.yaml
+
+!/packages/
+/packages/*/node_modules/
+!/pnpm-workspace.yaml

@@ -1,5 +1,11 @@
 # HWorkTime · 工时记录
 
+## 界面组件与主题
+
+站点从 pnpm 工作区包 `@hworktime/ui` 按名称引入 Vue 组件。工作区和备份转换工具共用组件样式。按钮、选择器、表单、弹窗、面板、标签栏和状态提示由该包提供；棋盘、媒体播放和日历拖动等命令式视图通过包的 `native` 接口创建控件，继续使用各自的事件与数据服务。
+
+在 `packages/ui/src/theme/tokens.css` 维护共享默认值。设置 `--ui-control-radius` 可调整一组控件的圆角，设置 `--ui-button-radius` 可单独调整按钮。颜色使用 `--ui-accent`、`--ui-surface`、`--ui-text` 和 `--ui-border`；字号、字重、边框和图标线宽分别使用 `--ui-font-size`、`--ui-weight`、`--ui-stroke` 和 `--ui-icon-stroke`。变量可以定义在根元素、功能容器或单个实例上。
+
 用于记录工时、安排日程和查看作息统计的个人工具，支持电脑和手机使用。
 
 [在线使用](https://xueke-alan.github.io/HWorkTime/)

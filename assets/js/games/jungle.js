@@ -61,7 +61,7 @@ WorkTimeApp.games.register({
       failed = true;
     }
     const node = (parent, tag, className) => {
-      const el = document.createElement(tag);
+      const el = WorkTimeApp.ui.native.createElement(tag);
       el.className = className;
       parent.append(el);
       return el;

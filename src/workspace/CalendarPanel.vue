@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { UiPanel, UiToolbar } from "@hworktime/ui";
 import {
   QiChevronLeft,
   QiChevronRight,
@@ -6,11 +7,11 @@ import {
   QiRotateCcw,
 } from "qingicon-vue";
 import AnalysisMetrics from "../analysis/AnalysisMetrics.vue";
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import { version } from "../../package.json";
 </script>
 <template>
-  <section class="panel">
+  <UiPanel as="section" class="panel">
     <div class="panel-head">
       <div class="row between">
         <div class="row month-controls">
@@ -85,7 +86,7 @@ import { version } from "../../package.json";
               <use href="#ui-calendar-analysis" /></svg
           ></Button>
         </div>
-        <div class="calendar-toolbar-actions">
+        <UiToolbar as="div" class="calendar-toolbar-actions">
           <Button
             id="batchToggle"
             data-action-hint
@@ -122,7 +123,7 @@ import { version } from "../../package.json";
             ><svg class="ui-icon" aria-hidden="true">
               <use href="#ms-settings" /></svg
           ></Button>
-        </div>
+        </UiToolbar>
       </div>
     </div>
     <div class="panel-content-viewport">
@@ -244,5 +245,5 @@ import { version } from "../../package.json";
         data-i18n-aria-label="copy.16d4ac0d6d"
       ></div>
     </div>
-  </section>
+  </UiPanel>
 </template>

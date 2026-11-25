@@ -215,7 +215,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
           priority === "oa" ? "source.switchManual" : "source.switchOA",
         );
     return both
-      ? '<button type="button" class="record-source-pair source-toggle ' +
+      ? '<button data-ui="button" type="button" class="record-source-pair source-toggle ' +
           priority +
           '" data-source-date="' +
           day.oa.date +
@@ -1117,7 +1117,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
         ? chineseMonths[m.month - 1]
         : WorkTimeApp.i18n.monthName(monthKey + "-01");
       return (
-        '<h3><button class="year-month-switch" type="button" data-year-month-switch="' +
+        '<h3><button data-ui="button" class="year-month-switch" type="button" data-year-month-switch="' +
         monthKey +
         '" aria-pressed="' +
         active +
@@ -1165,7 +1165,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
           .filter(Boolean)
           .join(" ");
       return (
-        '<button type="button" class="' +
+        '<button data-ui="button" type="button" class="' +
         classes +
         '" data-year-date="' +
         d.date +
@@ -1318,11 +1318,8 @@ WorkTimeApp.ui.createCalendar = function (options) {
     let cards = [...$("yearAnalysisCards").children];
     if (cards.length !== data.length) {
       cards = data.map(([label, , , featured]) => {
-        const card = document.createElement("article");
-        card.className = "card" + (featured ? " average-card" : "");
-        card.innerHTML =
-          '<div class="card-label"></div><div class="metric"></div>';
-        card.querySelector(".card-label").textContent = label;
+        const card = WorkTimeApp.ui.native.createMetricCard(label);
+        card.classList.toggle("average-card", !!featured);
         return card;
       });
       $("yearAnalysisCards").replaceChildren(...cards);

@@ -18,6 +18,7 @@ declare global {
       createIcon(icon: string): Element;
     };
     ui: {
+      native: typeof import("@hworktime/ui").native;
       mountGameToolbar: typeof import("./games/menu").mountGameToolbar;
       mountMusicTransport: typeof import("./media/mount").mountMusicTransport;
       importRecords: typeof import("./imports/records").records;

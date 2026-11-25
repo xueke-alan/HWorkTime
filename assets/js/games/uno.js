@@ -291,7 +291,7 @@ WorkTimeApp.games.register({
     };
     function node(parent, tag, cls, text) {
       if (parent === root && renderHost) parent = renderHost;
-      const el = document.createElement(tag);
+      const el = WorkTimeApp.ui.native.createElement(tag);
       if (cls) el.className = cls;
       if (text !== undefined) el.textContent = text;
       parent.append(el);

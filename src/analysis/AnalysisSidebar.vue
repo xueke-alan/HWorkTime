@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import Button from "primevue/button";
+import { UiPanel } from "@hworktime/ui";
+import { UiButton as Button } from "@hworktime/ui";
 import { catalog } from "../catalog";
 import { sidebar as view } from "./sidebar";
 </script>
@@ -18,7 +19,7 @@ import { sidebar as view } from "./sidebar";
         {{ catalog.t("analysis.sidebarShortTitle") }}
       </h2>
     </header>
-    <section class="analysis-sidebar-section">
+    <UiPanel as="section" class="analysis-sidebar-section">
       <h3>{{ catalog.t("analysis.sidebarObservation") }}</h3>
       <p id="analysisObservation" class="analysis-observation">
         {{ view?.observation }}
@@ -26,8 +27,8 @@ import { sidebar as view } from "./sidebar";
       <p id="analysisObservationContext" class="analysis-sidebar-muted">
         {{ view?.context }}
       </p>
-    </section>
-    <section class="analysis-sidebar-section">
+    </UiPanel>
+    <UiPanel as="section" class="analysis-sidebar-section">
       <h3>{{ catalog.t("analysis.sidebarFocus") }}</h3>
       <div
         id="analysisFocusDates"
@@ -80,8 +81,8 @@ import { sidebar as view } from "./sidebar";
           </p></template
         ><template v-else>{{ catalog.t("analysis.sidebarNoFocus") }}</template>
       </div>
-    </section>
-    <section class="analysis-sidebar-section">
+    </UiPanel>
+    <UiPanel as="section" class="analysis-sidebar-section">
       <h3>{{ catalog.t("analysis.sidebarScope") }}</h3>
       <div id="analysisSidebarScope" class="analysis-sidebar-scope">
         <div
@@ -94,6 +95,6 @@ import { sidebar as view } from "./sidebar";
         </div>
         <p class="analysis-sidebar-muted">{{ view?.comparison }}</p>
       </div>
-    </section>
+    </UiPanel>
   </section>
 </template>

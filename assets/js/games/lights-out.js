@@ -47,7 +47,7 @@ WorkTimeApp.games.register({
     const level = () => levels.find((l) => l.id === data.current);
     const state = () => replayState ?? data.drafts[data.current];
     const node = (tag, className, parent) => {
-      const el = document.createElement(tag);
+      const el = WorkTimeApp.ui.native.createElement(tag);
       el.className = className;
       parent?.append(el);
       return el;

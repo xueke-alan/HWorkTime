@@ -96,17 +96,15 @@ WorkTimeApp.ui.createSummary = function (options) {
     const targetPanel = document.querySelector(".target-panel");
     if (!cards.length) {
       cards = data.map(([label, , description], index) => {
-        const card = document.createElement("article");
-        card.className =
-          "card" +
-          (label === WorkTimeApp.i18n.t("copy.cc954e610b")
-            ? " average-card"
-            : "");
+        const card = WorkTimeApp.ui.native.createMetricCard(
+          label,
+          !!description,
+        );
+        card.classList.toggle(
+          "average-card",
+          label === WorkTimeApp.i18n.t("copy.cc954e610b"),
+        );
         if (index === 1) card.classList.add("surplus-card");
-        card.innerHTML =
-          '<div class="card-label"></div><div class="metric"></div>' +
-          (description ? '<div class="card-foot"></div>' : "");
-        card.firstElementChild.textContent = label;
         return card;
       });
       $("cards").replaceChildren(...cards);

@@ -45,7 +45,7 @@ WorkTimeApp.ui.secondaryControllers = (() => {
     );
     notice.append(label);
     if (error) {
-      const retry = document.createElement("button");
+      const retry = WorkTimeApp.ui.native.createElement("button");
       retry.type = "button";
       retry.className = "ui-button";
       retry.textContent = WorkTimeApp.i18n.t("copy.e2d53a6d3a");

@@ -17,7 +17,7 @@ WorkTimeApp.games.register({
     const t = (name, params) =>
       WorkTimeApp.i18n.t("games.garden." + name, params);
     const node = (tag, className, parent) => {
-      const element = document.createElement(tag);
+      const element = WorkTimeApp.ui.native.createElement(tag);
       element.className = className;
       parent?.append(element);
       return element;

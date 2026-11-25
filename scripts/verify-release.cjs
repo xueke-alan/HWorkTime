@@ -38,6 +38,45 @@ function serve(request, response) {
   fs.createReadStream(target).pipe(response);
 }
 
+async function verifyControlTheme(page) {
+  const weather = page.locator("#weatherDays");
+  const before = await weather.evaluate(
+    (el) => getComputedStyle(el).borderRadius,
+  );
+  const result = await weather.evaluate((el) => {
+    const area = el.closest(".language-settings");
+    area.style.setProperty("--ui-control-radius", "21px");
+    area.style.setProperty("--ui-motion", "0ms");
+    area.style.setProperty("--ui-stroke", "3px");
+    area.style.setProperty("--ui-font-size", "17px");
+    area.style.setProperty("--ui-border", "rgb(94, 31, 120)");
+    const style = getComputedStyle(el);
+    return [
+      style.borderRadius,
+      style.borderTopWidth,
+      style.fontSize,
+      style.borderTopColor,
+      getComputedStyle(document.getElementById("motionTrigger")).borderRadius,
+    ];
+  });
+  assert.deepEqual(result, ["21px", "3px", "17px", "rgb(94, 31, 120)", before]);
+  await weather.press("ArrowDown");
+  await page.getByRole("listbox").filter({ visible: true }).waitFor();
+  await weather.press("Escape");
+  assert.ok(await weather.evaluate((el) => el === document.activeElement));
+  await weather.evaluate((el) => {
+    const area = el.closest(".language-settings");
+    for (const name of [
+      "--ui-control-radius",
+      "--ui-motion",
+      "--ui-stroke",
+      "--ui-font-size",
+      "--ui-border",
+    ])
+      area.style.removeProperty(name);
+  });
+}
+
 async function verifyAgendaEditor(page) {
   await page.locator("#pageSettingsOpen").click();
   await page.locator("#agendaMode").click();
@@ -113,6 +152,9 @@ async function verifyCalendarAndRestore(page) {
   );
   await page.locator("#monthTitle").press("Space");
   await page.locator(".day[data-date]").first().waitFor();
+  await page.waitForFunction(
+    () => !document.getElementById("panelContent").inert,
+  );
   const file = await page.evaluate(() => {
     const state = WorkTimeApp.domain.state.defaultState();
     const month = WorkTimeApp.domain.time.businessDate(new Date()).slice(0, 7);
@@ -265,6 +307,7 @@ async function verify(url) {
       await select.waitFor();
       assert.match(await select.innerText(), new RegExp(String(expected)));
       if (expected === 5) {
+        await verifyControlTheme(page);
         await select.click();
         await page.getByRole("option", { name: /7/ }).click();
         await page.waitForFunction(
@@ -419,6 +462,7 @@ async function verify(url) {
     );
     assert.equal(await phone.locator("html").getAttribute("lang"), "en");
     await phone.locator("#pageSettingsOpen").tap();
+    await verifyControlTheme(phone);
     await phone.locator("#weatherDays").tap();
     await phone.getByRole("option", { name: /7/ }).tap();
     await phone.waitForFunction(
@@ -427,6 +471,16 @@ async function verify(url) {
     assert.ok(
       await phone.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    );
+    await phone.locator("#musicOpen").tap();
+    await phone.locator("#musicMinimize").waitFor();
+    assert.ok(
+      await phone.evaluate(
+        () =>
+          WorkTimeApp.i18n.t("media.music.albumLabel") ===
+            WorkTimeApp.data.locales.en["media.music.albumLabel"] &&
+          !!WorkTimeApp.data.locales.en["media.music.albumLabel"],
       ),
     );
     await mobile.close();

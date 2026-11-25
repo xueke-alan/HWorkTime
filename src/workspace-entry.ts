@@ -1,3 +1,4 @@
+import { native } from "@hworktime/ui";
 import "./catalog";
 import { createApp } from "vue";
 import Workspace from "./WorkWorkspace.vue";
@@ -17,6 +18,7 @@ import { createMediaSelectGroup } from "./media/selects";
 import { archiveView } from "./games/archive";
 import { records } from "./imports/records";
 export function mountWorkspace() {
+  WorkTimeApp.ui.native = native;
   WorkTimeApp.ui.renderAnalysisSidebar = renderAnalysisSidebar;
   WorkTimeApp.ui.renderAnalysisMetrics = renderAnalysisMetrics;
   WorkTimeApp.ui.afterAnalysisRender = afterAnalysisRender;

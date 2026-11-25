@@ -100,7 +100,7 @@ WorkTimeApp.games.register({
     let thought = null;
 
     function node(parent, tag, className) {
-      const element = document.createElement(tag);
+      const element = WorkTimeApp.ui.native.createElement(tag);
       element.className = className;
       parent.append(element);
       return element;

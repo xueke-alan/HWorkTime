@@ -19,6 +19,7 @@ WorkTimeApp.ui.vocabulary = (() => {
     if (disposed) return Promise.resolve();
     pending ||= (async () => {
       await Promise.all([
+        WorkTimeApp.i18n.loadModule("vocabulary"),
         WorkTimeApp.services.vocabularyIdle.load(),
         WorkTimeApp.services.assets
           .style("assets/css/vocabulary.css")
@@ -85,7 +86,7 @@ WorkTimeApp.ui.vocabulary = (() => {
       panel.replaceChildren();
       const heading = document.createElement("h2");
       heading.textContent = t("title");
-      const button = document.createElement("button");
+      const button = WorkTimeApp.ui.native.createElement("button");
       button.className = "ui-button";
       button.textContent = t("start");
       button.onclick = () => loader.open();

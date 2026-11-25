@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { UiToolbar, UiStatus } from "@hworktime/ui";
 import { ref } from "vue";
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import { QiCalendar } from "qingicon-vue";
 import { catalog } from "../catalog";
 defineProps<{ navigate: (page: string) => void; close: () => void }>();
@@ -14,7 +15,7 @@ defineExpose({
 </script>
 <template>
   <div class="game-surface" aria-hidden="true"></div>
-  <header class="typing-toolbar workspace-toolbar">
+  <UiToolbar as="header" class="typing-toolbar workspace-toolbar">
     <Button
       id="typingExitButton"
       type="button"
@@ -27,7 +28,7 @@ defineExpose({
     <div class="typing-heading">
       <h2 id="typingTitle">{{ catalog.t("typing.title") }}</h2>
     </div>
-  </header>
+  </UiToolbar>
   <div class="typing-main">
     <div class="typing-section-bar">
       <nav class="typing-navigation" :aria-label="catalog.t('typing.title')">
@@ -43,6 +44,6 @@ defineExpose({
       </nav>
     </div>
     <div class="typing-content"></div>
-    <div class="typing-notice" hidden role="status"></div>
+    <UiStatus as="div" class="typing-notice" hidden></UiStatus>
   </div>
 </template>

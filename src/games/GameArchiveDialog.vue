@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import Textarea from "primevue/textarea";
-import Checkbox from "primevue/checkbox";
+import { UiFileInput } from "@hworktime/ui";
+import {
+  UiButton as Button,
+  UiDialog as Dialog,
+  UiTextarea as Textarea,
+  UiCheckbox as Checkbox,
+} from "@hworktime/ui";
 import { ref } from "vue";
 import { catalog } from "../catalog";
 import { archiveView as view } from "./archive";
@@ -19,7 +22,6 @@ function choose(e: Event) {
   <Dialog
     id="gameArchiveDialog"
     class="game-archive-dialog"
-    modal
     :visible="view.open"
     :header="t('import')"
     :closable="false"
@@ -48,7 +50,7 @@ function choose(e: Event) {
           }
         "
       />
-      <input
+      <UiFileInput
         ref="file"
         type="file"
         hidden
@@ -85,14 +87,9 @@ function choose(e: Event) {
               }}</span
               ><label v-if="row.conflict" class="game-archive-choice"
                 ><Checkbox
-                  binary
                   :model-value="row.incoming"
-                  :pt="{
-                    input: {
-                      'data-game-conflict': row.id,
-                      'aria-label': row.name + ' · ' + t('incoming'),
-                    },
-                  }"
+                  :data-game-conflict="row.id"
+                  :aria-label="row.name + ' · ' + t('incoming')"
                   @update:model-value="(v) => view.choice?.(row.id, !!v)"
                 /><span>{{ t("incoming") }}</span></label
               >

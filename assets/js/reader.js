@@ -18,6 +18,7 @@ WorkTimeApp.ui.reader = (() => {
           if (!enabled()) return;
           const [mountToolbar] = await Promise.all([
             WorkTimeApp.ui.loadReaderToolbar(),
+            WorkTimeApp.i18n.loadModule("reader"),
             WorkTimeApp.services.assets.style("assets/css/reader.css"),
             WorkTimeApp.services.assets.script(
               "assets/js/ui/reader-runtime.min.js",

@@ -58,7 +58,7 @@ WorkTimeApp.games.register({
     }
     let draft = { ...options };
     function node(parent, tag, cls = "") {
-      const el = document.createElement(tag);
+      const el = WorkTimeApp.ui.native.createElement(tag);
       el.className = cls;
       parent.append(el);
       return el;

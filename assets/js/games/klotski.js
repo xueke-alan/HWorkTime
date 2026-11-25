@@ -55,7 +55,7 @@ WorkTimeApp.games.register({
       ":" +
       String(Math.floor(ms / 1000) % 60).padStart(2, "0");
     const node = (tag, className, parent) => {
-      const el = document.createElement(tag);
+      const el = WorkTimeApp.ui.native.createElement(tag);
       el.className = className;
       parent?.append(el);
       return el;

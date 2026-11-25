@@ -23,6 +23,7 @@ WorkTimeApp.ui.typing = (() => {
               "assets/js/ui/secondary-runtime.min.js",
             );
             await Promise.all([
+              WorkTimeApp.i18n.loadModule("typing"),
               WorkTimeApp.services.assets.style("assets/css/typing.css"),
               WorkTimeApp.services.assets.script(
                 "assets/js/ui/typing-runtime.min.js",

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Select from "primevue/select";
+import { UiSelect as Select } from "@hworktime/ui";
 import { computed } from "vue";
 import { catalog } from "../catalog";
 import { records } from "./records";

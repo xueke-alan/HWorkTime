@@ -24,13 +24,13 @@ const rules = {
 module.exports = [
   ...require("eslint-plugin-vue").configs["flat/essential"],
   {
-    files: ["src/**/*.vue"],
+    files: ["src/**/*.vue", "packages/ui/src/**/*.vue"],
     languageOptions: {
       parserOptions: { parser: require("@typescript-eslint/parser") },
     },
   },
   {
-    files: ["src/**/*.ts"],
+    files: ["src/**/*.ts", "packages/ui/src/**/*.ts"],
     languageOptions: { parser: require("@typescript-eslint/parser") },
     rules: { "no-debugger": "error" },
   },

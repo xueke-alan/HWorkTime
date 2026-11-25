@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import {
   QiShuffle,
   QiSkipBack,

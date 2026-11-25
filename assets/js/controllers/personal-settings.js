@@ -88,7 +88,7 @@ WorkTimeApp.ui.secondary.personal = function ({
     const list = $("workCityOptions");
     list.replaceChildren();
     for (const [index, city] of cityMatches.entries()) {
-      const option = document.createElement("button");
+      const option = WorkTimeApp.ui.native.createElement("button");
       option.className = "ui-option";
       option.type = "button";
       option.id = "workCityOption" + index;

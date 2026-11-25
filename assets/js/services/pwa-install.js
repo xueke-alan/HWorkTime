@@ -110,7 +110,7 @@ WorkTimeApp.services.pwaInstall = (() => {
       heading.id = "appInstallLabel";
       heading.className = "label";
       heading.htmlFor = "appInstallButton";
-      const button = document.createElement("button");
+      const button = WorkTimeApp.ui.native.createElement("button");
       button.id = "appInstallButton";
       button.type = "button";
       button.className = "ui-button";

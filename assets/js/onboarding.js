@@ -294,7 +294,7 @@ WorkTimeApp.ui.onboarding = (() => {
     const activeModal = document.querySelector("dialog:modal");
     if (activeModal && activeModal !== permissionsDialog) return;
     if (!permissionsDialog) {
-      const dialog = document.createElement("dialog");
+      const dialog = WorkTimeApp.ui.native.createElement("dialog");
       dialog.id = "startupPermissionsDialog";
       dialog.setAttribute("aria-labelledby", "startupPermissionsTitle");
       dialog.innerHTML = `
@@ -307,15 +307,15 @@ WorkTimeApp.ui.onboarding = (() => {
               <p class="help" id="runtimeFolderRecoveryHelp"></p>
             </div>
             <div class="startup-permissions-actions">
-              <button id="startupFolderAuthorize" type="button" class="ui-button primary"></button>
+              <button data-ui="button" id="startupFolderAuthorize" type="button" class="ui-button primary"></button>
             </div>
           </section>
           <section id="startupClipboardPermission" aria-labelledby="clipboardPermissionTitle" hidden>
             <h3 id="clipboardPermissionTitle"></h3>
             <div class="startup-permissions-copy"><p class="help" id="clipboardPermissionHelp"></p></div>
             <div class="startup-permissions-actions">
-              <button id="clipboardPermissionSkip" type="button" class="ui-button"></button>
-              <button id="clipboardPermissionAllow" type="button" class="ui-button primary"></button>
+              <button data-ui="button" id="clipboardPermissionSkip" type="button" class="ui-button"></button>
+              <button data-ui="button" id="clipboardPermissionAllow" type="button" class="ui-button primary"></button>
             </div>
           </section>
         </div>`;
@@ -454,7 +454,7 @@ WorkTimeApp.ui.onboarding = (() => {
     try {
       localStorage.setItem(KEY, "pending");
     } catch {}
-    const dialog = document.createElement("dialog");
+    const dialog = WorkTimeApp.ui.native.createElement("dialog");
     dialog.id = "onboardingDialog";
     dialog.className = "onboarding-dialog";
     dialog.setAttribute("aria-labelledby", "onboardingTitle");
@@ -478,7 +478,7 @@ WorkTimeApp.ui.onboarding = (() => {
           <div class="onboarding-stage">
           <h3 class="onboarding-stage-heading" data-onboarding-heading="install"><span data-stage-title></span><span class="onboarding-stage-status"></span></h3>
         <section id="onboardingInstall" data-onboarding-step="install">
-          <div class="onboarding-install-head"><h3 data-onboarding-title></h3><label class="onboarding-install-dismiss"><input type="checkbox" data-onboarding-dismiss-install><span></span></label></div><p data-onboarding-text></p><button class="ui-button onboarding-install-button" type="button" data-onboarding-install></button><p class="help" data-onboarding-manual role="status"></p>
+          <div class="onboarding-install-head"><h3 data-onboarding-title></h3><label class="onboarding-install-dismiss"><input data-ui="input" type="checkbox" data-onboarding-dismiss-install><span></span></label></div><p data-onboarding-text></p><button data-ui="button" class="ui-button onboarding-install-button" type="button" data-onboarding-install></button><p class="help" data-onboarding-manual role="status"></p>
         </section>
           </div>
         </li>
@@ -487,7 +487,7 @@ WorkTimeApp.ui.onboarding = (() => {
       <div class="dialog-foot">
         <p class="onboarding-folder-required" id="onboardingFolderRequired" role="status"></p>
         <div class="onboarding-actions">
-        <button class="ui-button primary" type="button" data-onboarding-next></button>
+        <button data-ui="button" class="ui-button primary" type="button" data-onboarding-next></button>
         </div>
       </div>`;
     document.body.append(dialog);
@@ -495,7 +495,7 @@ WorkTimeApp.ui.onboarding = (() => {
     const pwa = WorkTimeApp.services.pwaInstall;
     const folder = dialog.querySelector('[data-onboarding-step="folder"]');
     const install = dialog.querySelector('[data-onboarding-step="install"]');
-    const choose = document.createElement("button");
+    const choose = WorkTimeApp.ui.native.createElement("button");
     choose.type = "button";
     choose.className = "ui-button primary onboarding-folder-button";
     folder.querySelector("[data-onboarding-text]").after(choose);

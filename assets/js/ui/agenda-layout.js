@@ -78,7 +78,7 @@ WorkTimeApp.ui.createAgendaLayout = function ({
       if (!card) continue;
       const style = getComputedStyle(card);
       const retained = previous.get(day);
-      const button = retained || document.createElement("button");
+      const button = retained || WorkTimeApp.ui.native.createElement("button");
       const text = WorkTimeApp.i18n.number(count) + "+";
       const changed = button.textContent !== text;
       previous.delete(day);

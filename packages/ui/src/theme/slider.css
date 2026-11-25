@@ -1,0 +1,106 @@
+/* Shared music and reading sliders: slim visible rail, generous hit area. */
+body
+  :is(#musicDialog, #musicPanel, #readerDialog, #readerPanel)
+  input.media-range[type="range"] {
+  --range-rail: color-mix(in srgb, var(--ui-accent) 15%, var(--ui-surface));
+  appearance: none;
+  display: block;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  margin: 0;
+  padding: 0 !important;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ui-accent);
+  cursor: pointer;
+  outline: none;
+}
+body input.media-range[type="range"]::-webkit-slider-runnable-track {
+  height: var(--ui-slider-track-height, 4px);
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--ui-accent) var(--range-fill, 0%),
+    var(--range-rail) var(--range-fill, 0%)
+  );
+}
+body input.media-range[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: var(--ui-slider-thumb-size, 10px);
+  height: var(--ui-slider-thumb-size, 10px);
+  margin-top: calc(
+    (var(--ui-slider-track-height, 4px) - var(--ui-slider-thumb-size, 10px)) / 2
+  );
+  border: 2px solid var(--ui-surface);
+  border-radius: 50%;
+  background: var(--ui-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-accent) 30%, transparent);
+  transition:
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+body input.media-range[type="range"]::-moz-range-track {
+  height: var(--ui-slider-track-height, 4px);
+  border: 0;
+  border-radius: 999px;
+  background: var(--range-rail);
+}
+body input.media-range[type="range"]::-moz-range-progress {
+  height: var(--ui-slider-track-height, 4px);
+  border-radius: 999px;
+  background: var(--ui-accent);
+}
+body input.media-range[type="range"]::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--ui-slider-thumb-size, 10px);
+  height: var(--ui-slider-thumb-size, 10px);
+  border: 2px solid var(--ui-surface);
+  border-radius: 50%;
+  background: var(--ui-accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-accent) 30%, transparent);
+  transition:
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+body
+  input.media-range:is(:hover, :active, :focus-visible):not(
+    :disabled
+  )::-webkit-slider-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ui-accent) 12%, transparent);
+}
+body
+  input.media-range:is(:hover, :active, :focus-visible):not(
+    :disabled
+  )::-moz-range-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ui-accent) 12%, transparent);
+}
+body
+  :is(#musicDialog, #musicPanel, #readerDialog, #readerPanel)
+  input.media-range:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-accent) 60%, transparent);
+  outline-offset: 2px;
+}
+body input.media-range:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+body #readerDialog input.media-range,
+body #readerPanel input.media-range {
+  width: 100%;
+}
+:where(html:where([data-reduced-motion="true"]))
+  body
+  input.media-range::-webkit-slider-thumb {
+  transition: none;
+}
+:where(html:where([data-reduced-motion="true"]))
+  body
+  input.media-range::-moz-range-thumb {
+  transition: none;
+}

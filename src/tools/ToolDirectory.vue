@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { UiStatus } from "@hworktime/ui";
 import { ref, nextTick } from "vue";
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import { catalog } from "../catalog";
 export interface ToolEntry {
   id: string;
@@ -167,7 +168,7 @@ defineExpose({
         />
       </svg>
       <strong>{{ catalog.t(entry.label) }}</strong
-      ><span role="status"></span>
+      ><UiStatus as="span"></UiStatus>
     </Button>
   </div>
 </template>

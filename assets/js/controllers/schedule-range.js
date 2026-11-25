@@ -103,7 +103,7 @@ WorkTimeApp.ui.createScheduleRangeController = function ({
     });
     $("scheduleRangeOptions").replaceChildren();
     for (const item of $("scheduleRangeChoice").options) {
-      const option = document.createElement("button");
+      const option = WorkTimeApp.ui.native.createElement("button");
       option.className = "ui-button";
       option.type = "button";
       option.tabIndex = -1;

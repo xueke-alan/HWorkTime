@@ -6,6 +6,7 @@ export default defineConfig({
   build: {
     outDir: "dist/workspace",
     manifest: true,
+    cssCodeSplit: false,
     rollupOptions: {
       preserveEntrySignatures: "strict",
       input: {

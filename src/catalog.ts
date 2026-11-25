@@ -29,6 +29,10 @@ function synchronize() {
   catalog.locale.value = language;
 }
 synchronize();
+document.addEventListener("worktime:localemodule", (event) => {
+  const language = (event as CustomEvent<string>).detail;
+  catalog.setLocaleMessage(language, { ...catalogs[language] });
+});
 document.addEventListener("worktime:languagechange", synchronize);
 WorkTimeApp.i18n.setTranslator((key, values) => {
   if (loaded !== WorkTimeApp.i18n.language) synchronize();

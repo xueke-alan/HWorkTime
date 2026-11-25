@@ -236,7 +236,7 @@ WorkTimeApp.ui.createTemplateController = function (options) {
       ? model.state.timeTemplates
           .map(
             (t) =>
-              '<div class="time-template-chip"><button type="button" class="ui-button template-fill" data-template-fill="' +
+              '<div class="time-template-chip"><button data-ui="button" type="button" class="ui-button template-fill" data-template-fill="' +
               esc(t.id) +
               '" title="' +
               esc(
@@ -249,7 +249,7 @@ WorkTimeApp.ui.createTemplateController = function (options) {
               ) +
               '"><span class="button-label">' +
               esc(t.name) +
-              '</span></button><button type="button" class="ui-button template-edit icon-only" data-template-edit="' +
+              '</span></button><button data-ui="button" type="button" class="ui-button template-edit icon-only" data-template-edit="' +
               esc(t.id) +
               WorkTimeApp.i18n.t("copy.ac35793d79") +
               esc(t.name) +
@@ -318,7 +318,7 @@ WorkTimeApp.ui.createTemplateController = function (options) {
     list.innerHTML = model.state.timeTemplates
       .map((template) => {
         return (
-          '<div class="time-template-chip"><button type="button" class="ui-button template-fill" data-batch-template="' +
+          '<div class="time-template-chip"><button data-ui="button" type="button" class="ui-button template-fill" data-batch-template="' +
           esc(template.id) +
           '" title="' +
           esc(
@@ -331,7 +331,7 @@ WorkTimeApp.ui.createTemplateController = function (options) {
           ) +
           '"><span class="button-label">' +
           esc(template.name) +
-          '</span></button><button type="button" class="ui-button template-edit icon-only" data-batch-template-edit="' +
+          '</span></button><button data-ui="button" type="button" class="ui-button template-edit icon-only" data-batch-template-edit="' +
           esc(template.id) +
           WorkTimeApp.i18n.t("copy.ac35793d79") +
           esc(template.name) +

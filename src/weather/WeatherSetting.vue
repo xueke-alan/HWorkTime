@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { UiStatus } from "@hworktime/ui";
 import { computed, ref, onUnmounted } from "vue";
 import { catalog } from "../catalog";
-import Select from "primevue/select";
+import { UiSelect as Select } from "@hworktime/ui";
 import { QiChevronDown } from "qingicon-vue";
 import { useWeatherPreferences } from "./preferences";
 const preferences = useWeatherPreferences();
@@ -51,19 +52,6 @@ const motionOptions = computed(() =>
     label: t("motion." + value),
   })),
 );
-const tokens = {
-  root: {
-    background: "var(--paper)",
-    color: "var(--ink)",
-    borderColor: "var(--control-border)",
-    focusBorderColor: "var(--accent)",
-    borderRadius: "var(--control-radius)",
-  },
-  option: {
-    selectedBackground: "var(--accent-light)",
-    selectedColor: "var(--ink)",
-  },
-};
 </script>
 <template>
   <div class="field language-settings">
@@ -75,13 +63,11 @@ const tokens = {
       option-label="name"
       :model-value="language"
       :disabled="saving.language"
-      :dt="tokens"
-      fluid
       @update:model-value="save('language', $event)"
     />
-    <p class="theme-save-notice" role="status">
+    <UiStatus as="p" class="theme-save-notice">
       {{ failures.language ? t("language.failed") : "" }}
-    </p>
+    </UiStatus>
   </div>
   <div class="field language-settings">
     <label for="motionTrigger">{{ t("motion.label") }}</label>
@@ -92,13 +78,11 @@ const tokens = {
       option-label="label"
       :model-value="motion"
       :disabled="saving.motion"
-      :dt="tokens"
-      fluid
       @update:model-value="save('motion', $event)"
     />
-    <p class="theme-save-notice" role="status">
+    <UiStatus as="p" class="theme-save-notice">
       {{ failures.motion ? t("motion.failed") : "" }}
-    </p>
+    </UiStatus>
   </div>
   <div class="field language-settings">
     <label id="weatherLabel" for="weatherDays">{{
@@ -112,16 +96,14 @@ const tokens = {
       option-label="label"
       option-value="value"
       :disabled="preferences.busy"
-      :dt="tokens"
-      fluid
       @update:model-value="preferences.save"
     >
       <template #dropdownicon
         ><QiChevronDown :size="16" aria-hidden="true"
       /></template>
     </Select>
-    <p class="theme-save-notice" role="status">
+    <UiStatus as="p" class="theme-save-notice">
       {{ preferences.failed ? t("copy.121c73541e") : "" }}
-    </p>
+    </UiStatus>
   </div>
 </template>

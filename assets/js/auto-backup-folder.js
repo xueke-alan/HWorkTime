@@ -162,7 +162,7 @@ WorkTimeApp.ui.autoBackupFolderText = (() => {
       },
       retry: service.authorize,
     })) {
-      const button = document.createElement("button");
+      const button = WorkTimeApp.ui.native.createElement("button");
       button.type = "button";
       button.id = "autoBackupFolder" + key[0].toUpperCase() + key.slice(1);
       button.className =

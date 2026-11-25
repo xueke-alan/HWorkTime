@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import { QiSkipBack, QiSkipForward, QiPause, QiPlay } from "qingicon-vue";
 import { catalog } from "../catalog";
 import type { PlaybackSnapshot, PlaybackAction } from "./playback";

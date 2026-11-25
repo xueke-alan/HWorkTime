@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import { QiCalendar } from "qingicon-vue";
 import { catalog } from "../catalog";
 defineProps<{ exit: () => void }>();

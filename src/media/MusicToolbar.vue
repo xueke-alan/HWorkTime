@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { UiToolbar } from "@hworktime/ui";
 import { ref } from "vue";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
+import { UiButton as Button, UiInputText as InputText } from "@hworktime/ui";
 import { QiCalendar, QiSearch, QiFolder } from "qingicon-vue";
 import { catalog } from "../catalog";
 const props = defineProps<{
@@ -55,7 +55,7 @@ defineExpose({
     >
       <QiFolder aria-hidden="true" />
     </summary>
-    <div class="music-menu-panel music-toolbar">
+    <UiToolbar as="div" class="music-menu-panel music-toolbar">
       <Button
         v-for="key in ['choose', 'importFolder', 'rescan']"
         :key="key"
@@ -68,7 +68,7 @@ defineExpose({
         :label="label(key)"
         @click="activate(key)"
       />
-    </div>
+    </UiToolbar>
   </details>
   <Button
     id="musicMinimize"

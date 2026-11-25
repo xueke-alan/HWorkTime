@@ -43,7 +43,7 @@
     getContent: () => ({ title: WorkTimeApp.i18n.t("copy.7a66c0d036") }),
   });
   function node(tag, text, cls) {
-    const e = document.createElement(tag);
+    const e = WorkTimeApp.ui.native.createElement(tag);
     if (text !== undefined) e.textContent = text;
     if (cls) e.className = cls;
     return e;

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, type ObjectDirective } from "vue";
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import { metrics } from "./metrics";
 const expanded = ref(new Set<string>());
 function toggle(key: string) {
@@ -40,7 +40,6 @@ const vNumeric: ObjectDirective<HTMLElement, string> = {
           <div v-if="metric.dates.length > 1" class="analysis-date-disclosure">
             <Button
               type="button"
-              unstyled
               :aria-label="metric.dateHint"
               :aria-controls="'metric-dates-' + metric.key"
               :aria-expanded="expanded.has(metric.key)"

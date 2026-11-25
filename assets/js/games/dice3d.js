@@ -15,7 +15,7 @@ WorkTimeApp.games.dice3d = (() => {
     `rotateX(-57deg) rotateY(-18deg) rotateY(${spin}deg) rotateX(${pitch}deg) rotateZ(${bank}deg)`;
 
   function el(tag, cls, text, parent) {
-    const node = document.createElement(tag);
+    const node = WorkTimeApp.ui.native.createElement(tag);
     node.className = cls;
     parent.append(node);
     return node;

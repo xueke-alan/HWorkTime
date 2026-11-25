@@ -1,7 +1,7 @@
 (function (g) {
   "use strict";
   function node(tag, text, className) {
-    const value = document.createElement(tag);
+    const value = WorkTimeApp.ui.native.createElement(tag);
     if (text !== undefined) value.textContent = text;
     if (className) value.className = className;
     return value;

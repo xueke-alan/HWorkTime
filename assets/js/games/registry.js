@@ -22,6 +22,7 @@ WorkTimeApp.games = (() => {
         { fetchPriority: "high" },
       );
       await Promise.all([
+        WorkTimeApp.i18n.loadModule("games"),
         WorkTimeApp.services.assets.style("assets/css/game-session.css", {
           before: document.querySelector('link[rel="stylesheet"]'),
         }),

@@ -40,11 +40,19 @@ try {
     git(["archive", "--format=tar", "--output=" + archive, revision]);
     execFileSync("tar", ["-xf", path.basename(archive)], { cwd: snapshot });
     fs.unlinkSync(archive);
-    fs.symlinkSync(
-      path.join(root, "node_modules"),
-      path.join(snapshot, "node_modules"),
-      process.platform === "win32" ? "junction" : "dir",
+    // Resolve workspace links inside the archived revision, including its UI package.
+    const install = spawnSync(
+      "pnpm",
+      ["install", "--frozen-lockfile", "--prefer-offline", "--ignore-scripts"],
+      {
+        cwd: snapshot,
+        shell: process.platform === "win32",
+        stdio: "inherit",
+      },
     );
+    if (install.error) throw install.error;
+    if (install.status !== 0)
+      throw Error("Could not install the snapshot's locked dependencies.");
     console.log("Checking pushed commit " + revision + " in " + snapshot);
     const result = spawnSync("pnpm", ["run", "check:release"], {
       cwd: snapshot,

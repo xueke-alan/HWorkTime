@@ -81,7 +81,7 @@ WorkTimeApp.ui.createAgenda = function ({
     } catch {}
   }
   const make = (tag, id, className, parent) => {
-    const node = document.createElement(tag);
+    const node = WorkTimeApp.ui.native.createElement(tag);
     node.id = id;
     node.className = className;
     parent.append(node);
@@ -95,7 +95,7 @@ WorkTimeApp.ui.createAgenda = function ({
   );
   $("analysisToggle").after(modes);
   modes.innerHTML =
-    '<button type="button" id="agendaMode" class="ui-button icon-only" data-action-hint aria-pressed="false" aria-controls="calendar agendaEditor"><svg class="ui-icon" aria-hidden="true"><use href="#ms-event-note"/></svg></button>';
+    '<button data-ui="button" type="button" id="agendaMode" class="ui-button icon-only" data-action-hint aria-pressed="false" aria-controls="calendar agendaEditor"><svg class="ui-icon" aria-hidden="true"><use href="#ms-event-note"/></svg></button>';
   modes.setAttribute("role", "group");
   modes.prepend($("analysisToggle"));
   const modesRegion = document.createElement("div");
@@ -112,14 +112,14 @@ WorkTimeApp.ui.createAgenda = function ({
     attributes: true,
     attributeFilter: ["aria-pressed"],
   });
-  const viewToggle = document.createElement("button");
+  const viewToggle = WorkTimeApp.ui.native.createElement("button");
   viewToggle.id = "agendaViewToggle";
   viewToggle.type = "button";
   viewToggle.className = "ui-button icon-only agenda-view-toggle";
   viewToggle.setAttribute("aria-controls", "calendar");
   viewToggle.innerHTML =
     '<svg class="ui-icon" aria-hidden="true"><use href="#ms-calendar-month"/></svg>';
-  const yearViewToggle = document.createElement("button");
+  const yearViewToggle = WorkTimeApp.ui.native.createElement("button");
   yearViewToggle.id = "yearViewToggle";
   yearViewToggle.type = "button";
   yearViewToggle.className = "ui-button icon-only year-view-toggle";
@@ -220,7 +220,7 @@ WorkTimeApp.ui.createAgenda = function ({
   const weekdays = calendar.previousElementSibling;
   const weekdayLabels = [...weekdays.children];
   const workdaySwitch = (() => {
-    const button = document.createElement("button");
+    const button = WorkTimeApp.ui.native.createElement("button");
     button.type = "button";
     button.id = "agendaWorkdaysOnly";
     button.className = "agenda-workday-switch";
@@ -952,7 +952,7 @@ WorkTimeApp.ui.createAgenda = function ({
       card.toggleAttribute("data-agenda-week", visible);
       let button = card.querySelector(".agenda-week-select");
       if (selectable && card.dataset.previewDate && !button) {
-        button = document.createElement("button");
+        button = WorkTimeApp.ui.native.createElement("button");
         button.type = "button";
         button.className = "day-select agenda-week-select";
         button.setAttribute(
@@ -1991,9 +1991,9 @@ WorkTimeApp.ui.createAgenda = function ({
   pane.setAttribute("aria-labelledby", "agendaDate");
   pane.innerHTML = `
     <div class="editor-day-header editor-mode-header agenda-heading"><div id="agendaDate" class="editor-date"></div></div>
-    <div class="agenda-day-toolbar" hidden><button id="agendaBack" type="button" class="ui-button icon-only" hidden><svg class="ui-icon" aria-hidden="true"><use href="#ms-chevron-left"/></svg></button><h2 id="agendaFormTitle"></h2></div>
+    <div class="agenda-day-toolbar" hidden><button data-ui="button" id="agendaBack" type="button" class="ui-button icon-only" hidden><svg class="ui-icon" aria-hidden="true"><use href="#ms-chevron-left"/></svg></button><h2 id="agendaFormTitle"></h2></div>
     <div id="agendaCritical" class="agenda-critical" role="alert" hidden></div>
-    <section id="agendaDayDetails" class="agenda-day-details"><div id="agendaList" class="agenda-list" tabindex="0"></div><div class="agenda-list-actions"><button id="agendaNew" type="button" class="ui-button primary" data-agenda-text="new"></button></div></section>
+    <section id="agendaDayDetails" class="agenda-day-details"><div id="agendaList" class="agenda-list" tabindex="0"></div><div class="agenda-list-actions"><button data-ui="button" id="agendaNew" type="button" class="ui-button primary" data-agenda-text="new"></button></div></section>
     <div class="agenda-editor-body">
     <form id="agendaForm" class="agenda-form" aria-labelledby="agendaFormTitle">
       <fieldset id="agendaFields"></fieldset>
@@ -2025,7 +2025,7 @@ WorkTimeApp.ui.createAgenda = function ({
     statusMenu.innerHTML = statuses
       .map(
         (status) =>
-          `<button type="button" role="menuitemradio" aria-checked="${status === button.dataset.status}" data-agenda-status-choice="${status}"><span class="agenda-status-dot" data-status="${status}" aria-hidden="true"></span>${esc(statusLabel(status))}</button>`,
+          `<button data-ui="button" type="button" role="menuitemradio" aria-checked="${status === button.dataset.status}" data-agenda-status-choice="${status}"><span class="agenda-status-dot" data-status="${status}" aria-hidden="true"></span>${esc(statusLabel(status))}</button>`,
       )
       .join("");
     const rect = button.getBoundingClientRect();
@@ -2145,7 +2145,7 @@ WorkTimeApp.ui.createAgenda = function ({
     document.querySelector(".panel-head"),
   );
   controls.innerHTML =
-    '<button id="agendaOverviewOpen" class="ui-button" type="button" aria-haspopup="dialog" data-agenda-text="overviewMemo"></button>';
+    '<button data-ui="button" id="agendaOverviewOpen" class="ui-button" type="button" aria-haspopup="dialog" data-agenda-text="overviewMemo"></button>';
   const overviewDialog = make(
     "dialog",
     "agendaOverviewDialog",
@@ -2153,7 +2153,7 @@ WorkTimeApp.ui.createAgenda = function ({
     document.body,
   );
   overviewDialog.innerHTML =
-    '<div class="dialog-head"><h2></h2><button id="agendaOverviewClose" class="ui-button" type="button"></button></div><div class="agenda-overview-host"></div>';
+    '<div class="dialog-head"><h2></h2><button data-ui="button" id="agendaOverviewClose" class="ui-button" type="button"></button></div><div class="agenda-overview-host"></div>';
   const auxiliaryArea = editor.querySelector(".date-info-area");
   const originalAreaTabIndex = auxiliaryArea.getAttribute("tabindex");
   auxiliaryArea.tabIndex = -1;
@@ -2308,7 +2308,7 @@ WorkTimeApp.ui.createAgenda = function ({
   });
   summary.insertAdjacentHTML(
     "afterbegin",
-    '<section class="agenda-memo" aria-labelledby="agendaMemoLabel"><label id="agendaMemoLabel" for="agendaMemo" hidden></label><div class="agenda-memo-input"><span class="agenda-memo-watermark" aria-hidden="true"><span class="agenda-memo-important">Important</span><span>Note</span></span><textarea id="agendaMemo" rows="4" maxlength="10000" aria-labelledby="agendaMemoLabel" aria-describedby="agendaMemoStatus"></textarea></div><span id="agendaMemoStatus" role="status" aria-live="polite" hidden></span><button id="agendaMemoRetry" type="button" class="ui-button" hidden></button></section>',
+    '<section class="agenda-memo" aria-labelledby="agendaMemoLabel"><label id="agendaMemoLabel" for="agendaMemo" hidden></label><div class="agenda-memo-input"><span class="agenda-memo-watermark" aria-hidden="true"><span class="agenda-memo-important">Important</span><span>Note</span></span><textarea data-ui="textarea" id="agendaMemo" rows="4" maxlength="10000" aria-labelledby="agendaMemoLabel" aria-describedby="agendaMemoStatus"></textarea></div><span id="agendaMemoStatus" role="status" aria-live="polite" hidden></span><button data-ui="button" id="agendaMemoRetry" type="button" class="ui-button" hidden></button></section>',
   );
   function renderMemo() {
     if (
@@ -2447,14 +2447,14 @@ WorkTimeApp.ui.createAgenda = function ({
   }
   function entry(item) {
     return `<div class="agenda-item${item.status === "completed" ? " is-complete" : ""}">
-      <button type="button" class="agenda-complete" data-agenda-status="${esc(item.id)}" data-status="${item.status}" aria-haspopup="menu" aria-controls="agendaStatusMenu" aria-expanded="false" title="${esc(statusLabel(item.status))}" aria-label="${esc(t("changeStatus") + ": " + statusLabel(item.status) + " · " + item.title)}"${busy && !completingAgenda ? " disabled" : ""}></button>
-      <button type="button" class="agenda-item-copy" data-agenda-edit="${esc(item.id)}"><strong>${esc(item.title)}</strong><small>${esc(labelTime(item))}</small>${item.note ? `<span class="agenda-note">${esc(item.note)}</span>` : ""}</button>
-      <button type="button" class="agenda-delete" data-agenda-delete="${esc(item.id)}" aria-label="${esc(t("delete") + ": " + item.title)}"${busy && !completingAgenda ? " disabled" : ""}><span aria-hidden="true">×</span></button></div>`;
+      <button data-ui="button" type="button" class="agenda-complete" data-agenda-status="${esc(item.id)}" data-status="${item.status}" aria-haspopup="menu" aria-controls="agendaStatusMenu" aria-expanded="false" title="${esc(statusLabel(item.status))}" aria-label="${esc(t("changeStatus") + ": " + statusLabel(item.status) + " · " + item.title)}"${busy && !completingAgenda ? " disabled" : ""}></button>
+      <button data-ui="button" type="button" class="agenda-item-copy" data-agenda-edit="${esc(item.id)}"><strong>${esc(item.title)}</strong><small>${esc(labelTime(item))}</small>${item.note ? `<span class="agenda-note">${esc(item.note)}</span>` : ""}</button>
+      <button data-ui="button" type="button" class="agenda-delete" data-agenda-delete="${esc(item.id)}" aria-label="${esc(t("delete") + ": " + item.title)}"${busy && !completingAgenda ? " disabled" : ""}><span aria-hidden="true">×</span></button></div>`;
   }
 
   function chipMarkup(item) {
     const selected = formOpen && editingId === item.id;
-    return `<button type="button" class="agenda-chip${item.status === "completed" ? " is-complete" : ""}${selected ? " is-selected" : ""}" aria-current="${selected}" data-agenda-edit="${esc(item.id)}" data-status="${item.status}" title="${esc((item.allDay ? item.title : labelTime(item) + " · " + item.title) + " · " + statusLabel(item.status))}"><span class="agenda-chip-title"><span class="agenda-chip-title-text">${esc(item.title)}</span><span class="agenda-chip-status" data-status="${item.status}" role="img" aria-label="${esc(statusLabel(item.status))}"></span></span>${weekView && !item.allDay ? `<span class="agenda-chip-time">${esc(labelTime(item, true))}</span>` : ""}${weekView && item.note.trim() ? `<span class="agenda-chip-note">${esc(item.note)}</span>` : ""}${item.allDay || (item.end && rules.lastDate(item) > item.date) ? `<span class="agenda-resize-handle" data-agenda-resize="end" aria-hidden="true" title="${esc(t("resizeEnd"))}"></span>` : ""}</button>`;
+    return `<button data-ui="button" type="button" class="agenda-chip${item.status === "completed" ? " is-complete" : ""}${selected ? " is-selected" : ""}" aria-current="${selected}" data-agenda-edit="${esc(item.id)}" data-status="${item.status}" title="${esc((item.allDay ? item.title : labelTime(item) + " · " + item.title) + " · " + statusLabel(item.status))}"><span class="agenda-chip-title"><span class="agenda-chip-title-text">${esc(item.title)}</span><span class="agenda-chip-status" data-status="${item.status}" role="img" aria-label="${esc(statusLabel(item.status))}"></span></span>${weekView && !item.allDay ? `<span class="agenda-chip-time">${esc(labelTime(item, true))}</span>` : ""}${weekView && item.note.trim() ? `<span class="agenda-chip-note">${esc(item.note)}</span>` : ""}${item.allDay || (item.end && rules.lastDate(item) > item.date) ? `<span class="agenda-resize-handle" data-agenda-resize="end" aria-hidden="true" title="${esc(t("resizeEnd"))}"></span>` : ""}</button>`;
   }
   const agendaLayout = WorkTimeApp.ui.createAgendaLayout({
     calendar,
@@ -3157,7 +3157,7 @@ WorkTimeApp.ui.createAgenda = function ({
         ? ""
         : entries.map(chipMarkup).join("") +
           (!weekView && entries.length
-            ? `<button type="button" class="agenda-more" data-agenda-date="${date}" hidden>${esc(WorkTimeApp.i18n.number(entries.length))}+</button>`
+            ? `<button data-ui="button" type="button" class="agenda-more" data-agenda-date="${date}" hidden>${esc(WorkTimeApp.i18n.number(entries.length))}+</button>`
             : "");
       const previous = renderedContents.get(date);
       const changed =
@@ -3266,11 +3266,11 @@ WorkTimeApp.ui.createAgenda = function ({
                 .slice(0, expandedGroups.has(key) ? list.length : 3)
                 .map(
                   (item) =>
-                    `<button type="button" class="agenda-summary-link" data-agenda-jump="${esc(item.id)}"><span>${esc(item.title)}</span><small>${esc((item.endDate ?? item.date) > item.date ? labelTime(item) : WorkTimeApp.i18n.date(item.date) + " · " + labelTime(item))}</small></button>`,
+                    `<button data-ui="button" type="button" class="agenda-summary-link" data-agenda-jump="${esc(item.id)}"><span>${esc(item.title)}</span><small>${esc((item.endDate ?? item.date) > item.date ? labelTime(item) : WorkTimeApp.i18n.date(item.date) + " · " + labelTime(item))}</small></button>`,
                 )
                 .join(
                   "",
-                )}</div>${list.length > 3 ? `<button type="button" class="ui-button agenda-expand" data-agenda-expand="${key}" aria-expanded="${expandedGroups.has(key)}">${esc(t(expandedGroups.has(key) ? "showLess" : "showAll", { count: list.length }))}</button>` : ""}</section>`,
+                )}</div>${list.length > 3 ? `<button data-ui="button" type="button" class="ui-button agenda-expand" data-agenda-expand="${key}" aria-expanded="${expandedGroups.has(key)}">${esc(t(expandedGroups.has(key) ? "showLess" : "showAll", { count: list.length }))}</button>` : ""}</section>`,
           )
           .join("") ||
           `<p class="agenda-overview-empty">${esc(t("pendingEmpty"))}</p>`),
@@ -3831,6 +3831,7 @@ WorkTimeApp.ui.createAgenda = function ({
         if (!active || !auxiliaryOpen) return;
         const target = event.target;
         if (
+          !target.closest("dialog[open]") &&
           !auxiliaryArea.contains(target) &&
           !editor.querySelector(".notification-tabs").contains(target)
         )

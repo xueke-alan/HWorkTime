@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { UiTabList } from "@hworktime/ui";
 import ThemeSetting from "./ThemeSetting.vue";
 import WeatherSetting from "../weather/WeatherSetting.vue";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
+import { UiButton as Button, UiInputText as InputText } from "@hworktime/ui";
 </script>
 <template>
   <section
@@ -16,9 +16,9 @@ import InputText from "primevue/inputtext";
         我的设置
       </h2>
     </div>
-    <div
+    <UiTabList
+      as="div"
       class="settings-tabs"
-      role="tablist"
       aria-label="我的设置"
       data-i18n-aria-label="copy.165118b1d4"
     >
@@ -53,7 +53,7 @@ import InputText from "primevue/inputtext";
         data-i18n-text='{"0":"copy.c241ef1b93"}'
         >个人信息</Button
       >
-    </div>
+    </UiTabList>
     <section
       id="pageSettingsPane"
       class="settings-tab-panel"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, shallowRef } from "vue";
-import Select from "primevue/select";
+import { UiSelect as Select } from "@hworktime/ui";
 import { QiChevronDown } from "qingicon-vue";
 const props = defineProps<{
   source: HTMLSelectElement;
@@ -12,7 +12,7 @@ const options = shallowRef<
 >([]);
 const value = ref(""),
   disabled = ref(false);
-const picker = ref<InstanceType<typeof Select>>();
+const picker = ref<{ hide(focus?: boolean): void }>();
 function sync() {
   const native = props.source;
   const next = Array.from(native.options, (opt) => ({

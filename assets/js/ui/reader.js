@@ -24,17 +24,14 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
     return WorkTimeApp.ui.readerText(key, n);
   };
   function updateRange(input) {
-    input.style.setProperty("--range-fill", Number(input.value) / 10 + "%");
-    input.setAttribute(
-      "aria-valuetext",
-      Math.round(Number(input.value) / 10) + "%",
-    );
+    const percent = WorkTimeApp.ui.native.updateSlider(input);
+    input.setAttribute("aria-valuetext", Math.round(percent) + "%");
   }
   const controller = WorkTimeApp.ui.createReaderController();
   const bindings = [];
   let registerBindings = true;
   function node(tag, cls, parent, text) {
-    const e = document.createElement(tag);
+    const e = WorkTimeApp.ui.native.createElement(tag);
     if (cls) e.className = cls;
     if (text !== undefined) e.textContent = text;
     parent?.append(e);

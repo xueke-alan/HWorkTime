@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Button from "primevue/button";
+import { UiButton as Button } from "@hworktime/ui";
 import { QiDeleteTrash } from "qingicon-vue";
 import { catalog } from "../catalog";
 import { records } from "./records";

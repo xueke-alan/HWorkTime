@@ -1,6 +1,6 @@
 {
   "name": "hworktime",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "private": true,
   "description": "HWorkTime on GitHub Pages",
   "scripts": {
@@ -14,10 +14,10 @@
     "generate:locales": "node scripts/generate-locales.cjs && prettier --write \"assets/js/locales/**/*.js\" && pnpm run prepare:assets",
     "test": "pnpm run check",
     "check": "node scripts/check-site.cjs && pnpm run typecheck",
-    "lint": "eslint src assets/js scripts tools eslint.config.cjs --max-warnings 0",
+    "lint": "eslint packages/ui/src src assets/js scripts tools eslint.config.cjs --max-warnings 0",
     "format:css": "node scripts/clean-css.cjs",
-    "format:source": "prettier --write \"assets/js/**/*.js\" \"scripts/**/*.cjs\" \"tools/**/*.js\" eslint.config.cjs \"src/**/*.{ts,vue}\" vite.config.mjs",
-    "check:format": "prettier --check \"assets/js/**/*.js\" \"scripts/**/*.cjs\" \"tools/**/*.js\" eslint.config.cjs \"src/**/*.{ts,vue}\" vite.config.mjs",
+    "format:source": "prettier --write \"assets/js/**/*.js\" \"scripts/**/*.cjs\" \"tools/**/*.js\" eslint.config.cjs \"src/**/*.{ts,vue}\" vite.config.mjs \"packages/ui/src/**/*.{ts,vue,css}\"",
+    "check:format": "prettier --check \"assets/js/**/*.js\" \"scripts/**/*.cjs\" \"tools/**/*.js\" eslint.config.cjs \"src/**/*.{ts,vue}\" vite.config.mjs \"packages/ui/src/**/*.{ts,vue,css}\"",
     "prepare:assets": "node scripts/prepare-assets.cjs",
     "typecheck": "tsc -p jsconfig.json && vue-tsc --noEmit",
     "aeroplane:train": "node scripts/aeroplane/cli.cjs train",
@@ -60,12 +60,11 @@
     "vue-tsc": "3"
   },
   "dependencies": {
-    "@primeuix/themes": "3.1.1",
     "pinia": "3",
-    "primevue": "4",
     "qingicon-vue": "2.0.8",
     "vue": "3",
-    "vue-i18n": "11"
+    "vue-i18n": "11",
+    "@hworktime/ui": "workspace:*"
   },
   "packageManager": "pnpm@9.15.4",
   "pnpm": {

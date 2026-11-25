@@ -33,6 +33,7 @@ const manifest = JSON.parse(
   ),
 );
 const agendaModule = manifest["src/agenda/mount.ts"].file;
+const stylesheet = manifest["style.css"].file;
 const entry = path.join(site, "index.html");
 fs.writeFileSync(
   entry,
@@ -40,7 +41,7 @@ fs.writeFileSync(
     .readFileSync(entry, "utf8")
     .replace(
       "</head>",
-      `<meta name="workspace-module" content="workspace/${manifest["src/workspace-entry.ts"].file}"><meta name="agenda-editor-module" content="workspace/${agendaModule}"></head>`,
+      `<link rel="stylesheet" href="workspace/${stylesheet}"><meta name="workspace-module" content="workspace/${manifest["src/workspace-entry.ts"].file}"><meta name="agenda-editor-module" content="workspace/${agendaModule}"></head>`,
     ),
 );
 const converter = path.join(site, "tools/convert-backup.html");
@@ -48,6 +49,10 @@ fs.writeFileSync(
   converter,
   fs
     .readFileSync(converter, "utf8")
+    .replace(
+      "</head>",
+      `<link rel="stylesheet" href="../workspace/${stylesheet}"></head>`,
+    )
     .replace(
       "</body>",
       `<script type="module" src="../workspace/${manifest["src/converter/mount.ts"].file}"></script></body>`,

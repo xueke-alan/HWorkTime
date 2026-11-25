@@ -207,7 +207,7 @@ WorkTimeApp.ui.secondary.settings = function (options) {
           preferredRange.start === r.start &&
           preferredRange.end === r.end;
         return (
-          '<button type="button" class="ui-button schedule-list-item" data-schedule-index="' +
+          '<button data-ui="button" type="button" class="ui-button schedule-list-item" data-schedule-index="' +
           i +
           '" aria-pressed="' +
           selected +
