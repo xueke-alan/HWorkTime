@@ -38,6 +38,72 @@ function serve(request, response) {
   fs.createReadStream(target).pipe(response);
 }
 
+async function verifyAgendaEditor(page) {
+  await page.locator("#pageSettingsOpen").click();
+  await page.locator("#agendaMode").click();
+  await page.locator("#agendaNew").click();
+  const title = page.locator("#agendaTitle");
+  await title.fill("Pages agenda check");
+  await page.locator("#agendaNote").fill("Range and status");
+  const status = page.locator("#agendaItemStatus");
+  const row = page
+    .locator("#agendaList [data-agenda-edit]")
+    .filter({ hasText: "Pages agenda check" });
+  await page.locator("#agendaScheduleOpen").click();
+  const start = await page.locator("#agendaDateInput").inputValue();
+  const end = new Date(Date.parse(start + "T12:00:00Z") + 2 * 86400000)
+    .toISOString()
+    .slice(0, 10);
+  await page.locator("#agendaEndDateInput").fill(end);
+  await page.locator("[data-schedule-close]").click();
+  for (const [index, value] of [
+    "pending",
+    "completed",
+    "in-progress",
+    "cancelled",
+  ].entries()) {
+    if (index) await row.click();
+    if (index === 1) {
+      await page.locator("#agendaScheduleOpen").click();
+      await page.locator("label:has(#agendaAllDay)").click();
+      await page.locator("#agendaStart").fill("09:30");
+      await page.locator("#agendaEnd").fill("17:45");
+      await page.locator("[data-schedule-close]").click();
+    }
+    await status.click();
+    const options = page.getByRole("option");
+    assert.equal(await options.count(), 4);
+    await options.nth(index).click();
+    if (index === 1) await page.locator("#agendaNote").press("Control+Enter");
+    else await page.locator("#agendaSave").click();
+    await page.locator("#agendaForm").waitFor({ state: "hidden" });
+    await page
+      .locator('#agendaList [data-agenda-status][data-status="' + value + '"]')
+      .waitFor();
+  }
+  await page.reload();
+  await row.click();
+  assert.equal(
+    await page.locator("#agendaNote").inputValue(),
+    "Range and status",
+  );
+  assert.equal(
+    await page.locator(".agenda-status-input").getAttribute("data-status"),
+    "cancelled",
+  );
+  await page.locator("#agendaScheduleOpen").click();
+  assert.equal(await page.locator("#agendaDateInput").inputValue(), start);
+  assert.equal(await page.locator("#agendaEndDateInput").inputValue(), end);
+  assert.equal(await page.locator("#agendaStart").inputValue(), "09:30");
+  assert.equal(await page.locator("#agendaEnd").inputValue(), "17:45");
+  await page.locator("[data-schedule-close]").click();
+  await title.fill("Unsaved draft");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator("#agendaCancel").click();
+  await row.click();
+  assert.equal(await title.inputValue(), "Pages agenda check");
+}
+
 async function verify(url) {
   const browser = await chromium.launch({
     channel: process.env.WORKTIME_BROWSER_CHANNEL || "msedge",
@@ -70,9 +136,10 @@ async function verify(url) {
         await page.reload();
       }
     }
+    await verifyAgendaEditor(page);
     assert.deepEqual(errors, []);
     console.log(
-      "Pages entry, calendar, Vue weather setting and saved value after reload passed.",
+      "Pages entry, calendar, settings, four agenda statuses, range, discard and reload passed.",
     );
   } finally {
     await browser.close();

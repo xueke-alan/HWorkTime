@@ -26,11 +26,19 @@ bundleSite(site);
 fs.cpSync(path.join(root, "dist/settings"), path.join(site, "settings"), {
   recursive: true,
 });
+const manifest = JSON.parse(
+  fs.readFileSync(path.join(root, "dist/settings/.vite/manifest.json"), "utf8"),
+);
+const agendaModule = manifest["src/agenda/mount.ts"].file;
 const entry = path.join(site, "index.html");
 fs.writeFileSync(
   entry,
   fs
     .readFileSync(entry, "utf8")
+    .replace(
+      "</head>",
+      `<meta name="agenda-editor-module" content="settings/${agendaModule}"></head>`,
+    )
     .replace(
       "</body>",
       '<script type="module" src="settings/settings.js"></script></body>',
