@@ -81,7 +81,7 @@
   border: 0;
   box-shadow: none;
   padding-inline: 0.1rem;
-  font-size: 0.75rem;
+  font-size: var(--ui-font-size, 0.75rem);
   white-space: nowrap;
 }
 .link-action-button > .ui-icon {
@@ -125,7 +125,7 @@ body .link-modes .game-button {
   min-height: 0;
   min-width: 0;
   aspect-ratio: 1;
-  font-size: clamp(1rem, 2vw, 1.5rem);
+  font-size: var(--ui-font-size, clamp(1rem, 2vw, 1.5rem));
   font-weight: 600;
   padding: 0.75rem;
   display: flex;
@@ -146,7 +146,7 @@ body .link-modes .game-button {
   min-height: 4.1rem;
   padding: 0.5rem;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--ui-radius);
   background: var(--theme-surface-subtle, #f3f8f5);
   display: flex;
   flex-direction: column;
@@ -347,7 +347,7 @@ body .game-link .link-tile:disabled {
   .link-actions .link-action-button {
     gap: 0.1rem;
     padding-inline: 0;
-    font-size: 0.65rem;
+    font-size: var(--ui-font-size, 0.65rem);
   }
   body .link-modes .game-button {
     min-height: 0;
@@ -369,7 +369,7 @@ body .game-link .link-tile:disabled {
     gap: 0.25rem;
   }
   .link-actions .game-button {
-    font-size: 0.85rem;
+    font-size: var(--ui-font-size, 0.85rem);
   }
   .link-hud {
     gap: 0.25rem;

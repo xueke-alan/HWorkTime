@@ -1,4 +1,4 @@
-import { shallowRef } from "vue";
+import { controllerState } from "../controller-state";
 interface Row {
   label: string;
   value: string;
@@ -20,7 +20,7 @@ export interface SidebarView {
   scope: Row[];
   comparison: string;
 }
-export const sidebar = shallowRef<SidebarView>();
+export const sidebar = controllerState<{ value?: SidebarView }>({});
 export function renderAnalysisSidebar(view: SidebarView) {
-  sidebar.value = view;
+  sidebar.state.value = view;
 }

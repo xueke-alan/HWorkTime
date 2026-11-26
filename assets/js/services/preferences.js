@@ -161,6 +161,11 @@ WorkTimeApp.services.preferences = (() => {
           throw Error("Invalid animation preference");
         return savePreference({ motionMode });
       },
+      saveCalendarMascot(showCalendarMascot) {
+        if (typeof showCalendarMascot !== "boolean")
+          throw Error("Invalid calendar mascot preference");
+        return savePreference({ showCalendarMascot });
+      },
       saveWeatherDays(days) {
         if (![0, 3, 5, 7].includes(days))
           throw Error("Invalid weather display range");

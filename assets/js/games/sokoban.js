@@ -214,7 +214,7 @@ WorkTimeApp.games.register({
     );
     catalog.page.classList.add("sokoban-catalog");
     const chapters = catalog.categories;
-    chapters.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(chapters);
     const chapterNames = chaptersConfig.map((entry) => entry.id);
     const chapterButtons = chapterNames.map((_, index) =>
       button(chapters, "chapter-" + index, () => {
@@ -252,7 +252,7 @@ WorkTimeApp.games.register({
     const stage = node("div", "sokoban-stage", play);
     const board = node("div", "sokoban-board", stage);
     board.tabIndex = 0;
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const actions = node("div", "sokoban-actions", play);
     const directions = node("div", "sokoban-directions", play);
     const directionButtons = Object.keys(rules.directions).map((direction) => {
@@ -492,14 +492,14 @@ WorkTimeApp.games.register({
         warning.textContent = saveFailed ? t("saveFailed") : "";
         directionButtons.forEach(({ direction, element }) => {
           element.setAttribute("aria-label", t(direction));
-          element.title = t(direction);
+          element.dataset.hintText = t(direction);
         });
       }
       if (choosing) return;
       const map = maps[current],
         value = state(),
         position = rules.position(map, value);
-      theoryCard.title = t(
+      theoryCard.dataset.hintText = t(
         bank.optima?.[levels[current].id]?.moves?.basis === "public-record"
           ? "publicOptimaHelp"
           : "optimaHelp",

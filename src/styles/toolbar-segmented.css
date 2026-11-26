@@ -1,0 +1,84 @@
+.toolbar-segmented.ant-segmented {
+  --toolbar-segmented-space: 4px;
+  --toolbar-segmented-label-padding: 8px;
+  --ant-segmented-item-color: var(--toolbar-icon-color);
+  --ant-segmented-item-hover-color: var(--toolbar-icon-color);
+  --ant-segmented-item-selected-color: var(--toolbar-icon-color);
+  --ant-segmented-track-bg: var(--ui-surface);
+  --ant-segmented-item-hover-bg: color-mix(
+    in srgb,
+    var(--control-hover) 65%,
+    var(--ui-surface)
+  );
+  --ant-segmented-item-active-bg: var(--ui-highlight);
+  --ant-segmented-item-selected-bg: transparent;
+  height: var(--control-height, 40px);
+  box-sizing: border-box;
+  padding: 0 var(--toolbar-segmented-space);
+  border: var(--ui-stroke) solid var(--ui-border);
+  box-shadow: var(--control-shadow);
+  flex: 0 0 auto;
+  max-width: 100%;
+}
+.toolbar-segmented .ant-segmented-group {
+  gap: var(--toolbar-segmented-space);
+}
+.toolbar-segmented.ant-segmented .ant-segmented-item::after {
+  position: absolute;
+  inset: var(--toolbar-segmented-space) 0;
+  width: auto;
+  height: auto;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.toolbar-segmented.ant-segmented .ant-segmented-item-selected {
+  box-shadow: none;
+}
+.toolbar-segmented .ant-segmented-thumb {
+  visibility: hidden;
+}
+/* Keep one painted layer when the library swaps its moving thumb for the selected label. */
+.toolbar-segmented .ant-segmented-group[data-positioned]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--ui-highlight) 94%, var(--ui-accent));
+  clip-path: inset(
+    var(--toolbar-segmented-space) var(--view-right)
+      var(--toolbar-segmented-space) var(--view-left) round
+      var(--ui-button-radius)
+  );
+  transition: clip-path 180ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+:root[data-reduced-motion="true"]
+  .toolbar-segmented
+  .ant-segmented-group::before {
+  transition: none;
+}
+.toolbar-segmented .ant-segmented-group,
+.toolbar-segmented .ant-segmented-item-label {
+  height: 100%;
+}
+.toolbar-segmented .ant-segmented-item .ant-segmented-item-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding-inline: var(--toolbar-segmented-label-padding);
+  font-size: 14px;
+  line-height: 1.25;
+}
+.toolbar-segmented .ant-segmented-item-icon {
+  display: flex;
+}
+.toolbar-segmented .ant-segmented-item-icon > svg {
+  margin: 0;
+  width: 1.25em;
+  height: 1.25em;
+}
+@container (max-width: 460px) {
+  .toolbar-segmented.ant-segmented.toolbar-segmented--compact-on-narrow {
+    --toolbar-segmented-label-padding: 4px;
+  }
+}

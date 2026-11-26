@@ -1,0 +1,248 @@
+:where([data-ui="workspace"]) {
+  --summary-sidebar-width: 236px;
+  --editor-sidebar-width: 300px;
+  --workspace-divider-thickness: 2px;
+  --workspace-divider-length: 90%;
+  --workspace-divider-color: color-mix(
+    in srgb,
+    var(--control-border) 45%,
+    transparent
+  );
+  display: grid;
+  grid-template-columns: var(--summary-sidebar-width) minmax(0, 1fr) var(
+      --editor-sidebar-width
+    );
+  gap: 18px;
+  align-items: stretch;
+}
+@media (min-width: 1151px) {
+  :where([data-ui="workspace"]) {
+    flex: 1;
+    min-height: 0;
+  }
+  :where([data-ui="workspace"]) > .panel {
+    min-height: 0;
+  }
+}
+@media (max-width: 1150px) {
+  :where([data-ui="workspace"]) {
+    grid-template-columns: minmax(0, 1fr) var(--editor-sidebar-width);
+    gap: 16px;
+  }
+}
+@media (max-width: 850px) {
+  :where([data-ui="workspace"]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 540px) {
+  :where([data-ui="workspace"]) {
+    gap: 12px;
+  }
+}
+
+body .work-layout > .workspace {
+  grid-template-columns: minmax(0, 1fr) var(--editor-sidebar-width);
+}
+body .workspace > .work-main {
+  --calendar-inline-gutter: 12px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+body .work-main > .calendar-footer {
+  flex: none;
+  margin: 0;
+  padding-inline: var(--calendar-inline-gutter);
+}
+.work-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: var(--summary-sidebar-width) minmax(0, 1fr);
+  min-height: 0;
+}
+body .work-body > .panel {
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+@media (max-width: 1150px) {
+  .work-body {
+    grid-template-columns: 15rem minmax(0, 1fr);
+  }
+  .work-body > :is(.panel, .agenda-controls) {
+    grid-column: 1 / -1;
+  }
+  body .work-body > .summary-sidebar {
+    border-bottom: var(--ui-stroke) solid var(--line);
+  }
+}
+@media (max-width: 700px) {
+  .work-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (min-width: 1151px) {
+  .work-body {
+    --weekday-row-height: 2.5rem;
+    grid-template-rows: auto var(--weekday-row-height) minmax(0, 1fr);
+    grid-template-areas:
+      "brand tools"
+      "brand calendar"
+      "summary calendar";
+  }
+  .work-body > .sidebar-brand {
+    grid-area: brand;
+  }
+  .work-body > .workspace-header {
+    grid-area: tools;
+  }
+  body .work-body > .summary-sidebar {
+    grid-area: summary;
+    padding-block-start: 0;
+  }
+  body .work-body > section.panel {
+    grid-area: calendar;
+    border-inline-start: var(--ui-stroke) solid var(--line);
+  }
+  .workspace:not(.agenda-mode) .work-body .weekdays {
+    block-size: var(--weekday-row-height);
+    padding-block: 0;
+    align-items: center;
+  }
+}
+@media (min-width: 1800px) and (min-height: 900px) {
+  .work-body {
+    --weekday-row-height: 2.8rem;
+  }
+}
+@media (max-width: 850px) {
+  body .work-layout > .workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.calendar-mascot-perch {
+  display: none;
+}
+
+@media (min-width: 851px) {
+  .work-layout {
+    --work-layout-top-gap: 23px;
+  }
+
+  .work-layout > .workspace {
+    position: relative;
+  }
+
+  .work-layout > .workspace > .work-main {
+    grid-area: 1 / 1;
+  }
+
+  .workspace:not(.agenda-mode) > .calendar-mascot-perch {
+    display: block;
+    position: absolute;
+    grid-area: 1 / 1 / 2 / 2;
+    justify-self: center;
+    align-self: start;
+    inline-size: 0;
+    block-size: 0;
+    z-index: 9;
+  }
+
+  .work-layout .calendar-mascot-perch > .calendar-mascot {
+    --calendar-mascot-width: 112px;
+    position: absolute;
+    inset: 0 auto auto 0;
+    /* Fit the 114 px above the perch within the existing page inset. */
+    inline-size: min(
+      var(--calendar-mascot-width),
+      calc((var(--work-layout-top-gap) - 4px) * 344 / 114)
+    );
+    /* The hit area omits the transparent bottom of the 144-pixel frame. */
+    aspect-ratio: 344 / 134;
+    /* The belly rests 114 pixels from the top. */
+    transform: translate(-50%, -85.0746%);
+    appearance: none;
+    border: 0;
+    border-radius: 8px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .calendar-mascot-art {
+    position: absolute;
+    inset: 0 0 auto;
+    aspect-ratio: 344 / 144;
+    overflow: hidden;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 1px rgb(30 24 18 / 16%));
+  }
+
+  .calendar-mascot-art > img {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+  }
+
+  button.calendar-mascot {
+    cursor: pointer;
+  }
+
+  button.calendar-mascot:focus-visible {
+    outline: 2px solid var(--ui-focus);
+    outline-offset: 2px;
+  }
+
+  button.calendar-mascot:not([data-raised]) img {
+    animation: calendar-mascot-blink 13s step-end infinite;
+  }
+
+  button.calendar-mascot[data-raised] img {
+    transform: translateY(-66.666667%);
+  }
+}
+
+@media (min-width: 1151px) {
+  .wrap.work-layout {
+    --work-layout-max-height: 1080px;
+    --work-layout-block-inset: 1.285714rem;
+    --work-layout-top-gap: calc(
+      var(--work-layout-block-inset) +
+        max(0px, (100dvh - var(--work-layout-max-height)) / 2)
+    );
+    height: min(100dvh, var(--work-layout-max-height));
+    padding-block: var(--work-layout-block-inset);
+  }
+
+  .work-layout .calendar-mascot-perch > .calendar-mascot {
+    --calendar-mascot-width: clamp(138px, 12vw, 168px);
+  }
+}
+
+@keyframes calendar-mascot-blink {
+  0%,
+  33%,
+  77%,
+  100% {
+    transform: none;
+  }
+  32%,
+  76% {
+    transform: translateY(-33.333333%);
+  }
+}
+
+.calendar-mascot-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-inline: 8px;
+}

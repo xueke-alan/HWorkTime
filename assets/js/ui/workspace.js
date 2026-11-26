@@ -51,7 +51,7 @@ WorkTimeApp.ui.createSiteFooter = function (host, expanded = false) {
   activity.setAttribute("role", "status");
   activity.dataset.hint = "detail";
   activity.innerHTML =
-    '<svg class="ui-icon" aria-hidden="true"><use href="#ms-text-to-speech"/></svg><svg class="ui-icon site-audio-spinner" aria-hidden="true"><use href="#ms-progress-activity"/></svg><svg class="site-audio-divider" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 4v8"/></svg>';
+    '<svg class="ui-icon" aria-hidden="true"><use href="#icon-text-to-speech"/></svg><svg class="ui-icon site-audio-spinner" aria-hidden="true"><use href="#icon-progress-activity"/></svg><svg class="site-audio-divider" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 4v8"/></svg>';
   // The source may already contain the calendar's live indicator.
   meta.querySelector(".site-audio-activity")?.remove();
   meta.prepend(activity);
@@ -138,7 +138,7 @@ WorkTimeApp.ui.createSiteFooter = function (host, expanded = false) {
       setHint(label);
       return;
     }
-    activity.removeAttribute("title");
+    activity.removeAttribute("data-hint-text");
     if (
       idle.settings.enabled === false ||
       ["disabled", "paused"].includes(state.audioPhase)
@@ -275,13 +275,27 @@ WorkTimeApp.ui.createWorkspace = function ({
   }
   return {
     render,
-    mount() {
+    mount(yieldTask) {
       if (observer) return;
       disposed = false;
       disposeFooter = WorkTimeApp.ui.createSiteFooter(footer);
       observer = new window.ResizeObserver(syncFooter);
       observer.observe(footer);
-      render();
+      if (!yieldTask) return render();
+      return (async () => {
+        for (const paint of [
+          notifications.renderOAStaleNotice,
+          renderStats,
+          renderCalendar,
+          renderEditor,
+          renderAgenda,
+          notifications.updateNotificationEmptyState,
+        ]) {
+          await yieldTask();
+          if (disposed) return;
+          paint();
+        }
+      })();
     },
     dispose() {
       disposed = true;

@@ -60,11 +60,11 @@ not guaranteed completed depths or ratings.
 
 ```
 node scripts/rapfi/verify.cjs
-node scripts/verify-gomoku.cjs
-node scripts/verify-ai-thinking.cjs
+node scripts/verify/games/verify-gomoku.cjs
+node scripts/verify/games/verify-ai-thinking.cjs
 npm run prepare:site
 node scripts/rapfi/verify.cjs _site
-node scripts/verify-gomoku.cjs _site
+node scripts/verify/games/verify-gomoku.cjs _site
 ```
 
 The engine tests use real WASM and trained weights, covering both colors, all

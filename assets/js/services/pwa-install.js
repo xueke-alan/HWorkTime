@@ -121,7 +121,7 @@ WorkTimeApp.services.pwaInstall = (() => {
       icon.setAttribute("class", "ui-icon");
       icon.setAttribute("aria-hidden", "true");
       const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-      use.setAttribute("href", "#ms-install-desktop");
+      use.setAttribute("href", "#icon-install-desktop");
       icon.append(use);
       button.append(icon);
       host.append(heading, button);
@@ -129,7 +129,7 @@ WorkTimeApp.services.pwaInstall = (() => {
       function render() {
         heading.textContent = t("heading");
         const label = t(service.state.installed ? "installed" : "install");
-        button.title = label;
+        button.dataset.hintText = label;
         button.setAttribute("aria-label", label);
         button.disabled = pending || service.state.installed;
       }

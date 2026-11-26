@@ -59,7 +59,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--ui-radius);
   background: radial-gradient(
     ellipse at 45% 30%,
     #f0f2ed 0%,
@@ -112,12 +112,12 @@
   --game-button-edge: #303c39;
   margin-top: 0.3rem;
   min-width: 9rem;
-  background: #303c39;
-  border-color: #303c39;
-  color: #fff;
+  background: var(--ui-control-surface, #303c39);
+  border-color: var(--ui-control-border, #303c39);
+  color: var(--ui-on-accent, white);
 }
 .jump-cover .game-button:hover {
-  background: #465a52;
+  background: var(--ui-hover-surface, #465a52);
 }
 .jump-cover[data-ended="true"] {
   justify-content: center;
@@ -134,7 +134,7 @@
   width: min(160px, 45%);
   height: 4px;
   transform: translateX(-50%);
-  border-radius: 4px;
+  border-radius: var(--ui-radius);
   overflow: hidden;
   background: #cbd2cb;
   pointer-events: none;

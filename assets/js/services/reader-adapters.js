@@ -106,7 +106,7 @@ WorkTimeApp.services.readerAdapters = (() => {
     }
     if (!chunks.length) chunks.push({ start: 0, end: 0 });
     const iframe = document.createElement("iframe");
-    iframe.title = file.name;
+    iframe.setAttribute("aria-label", file.name);
     iframe.sandbox = "allow-same-origin";
     host.replaceChildren(iframe);
     const ready = new Promise((resolve) => (iframe.onload = resolve));
@@ -116,6 +116,7 @@ WorkTimeApp.services.readerAdapters = (() => {
     const doc = iframe.contentDocument,
       body = doc.querySelector("main"),
       style = doc.querySelector("style");
+    WorkTimeApp.ui.installControlKeys(doc);
     let s = settings,
       pos = clamp(location?.offset, text.length),
       at = -1,
@@ -157,7 +158,7 @@ WorkTimeApp.services.readerAdapters = (() => {
           if (a) {
             part.style.backgroundColor = a.color;
             part.style.color = "#222";
-            part.title = a.note || "";
+            if (a.note) part.setAttribute("aria-description", a.note);
           }
           paragraph.append(part);
         }
@@ -448,6 +449,7 @@ WorkTimeApp.services.readerAdapters = (() => {
       });
       rendition.on("keydown", (event) => forwardKey(host, event));
       rendition.hooks.content.register((contents) => {
+        WorkTimeApp.ui.installControlKeys(contents.document);
         contents.document.addEventListener("pointerdown", () =>
           host.dispatchEvent(new Event("readeractivity", { bubbles: true })),
         );
@@ -686,7 +688,7 @@ WorkTimeApp.services.readerAdapters = (() => {
             height: Math.abs(r[3] - r[1]) + "px",
             background: a.color,
           });
-          mark.title = a.note || "";
+          if (a.note) mark.setAttribute("aria-description", a.note);
           node.append(mark);
         }
     }

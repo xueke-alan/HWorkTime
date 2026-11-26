@@ -9,6 +9,8 @@ tests/fixtures/
 assets/js/locales/runtime/
 assets/js/games/catalog.js
 assets/js/ui/agenda-runtime.min.js
+assets/js/ui/agenda-feature.min.js
+assets/js/ui/games-panel-runtime.min.js
 assets/js/ui/core-runtime.min.js
 assets/js/ui/application-runtime.min.js
 assets/js/ui/date-runtime.min.js
@@ -22,3 +24,5 @@ assets/js/ui/media-text-runtime.min.js
 
 assets/js/ui/typing-runtime.min.js
 assets/js/ui/vocabulary-runtime.min.js
+assets/js/ui/*-file.min.js
+assets/js/ui/file-chunks/

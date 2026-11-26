@@ -1,13 +1,11 @@
 "use strict";
-/** Game-only transport, validation and recoverable localStorage transactions. */
+/** Game save validation, summaries and recoverable localStorage transactions. */
 WorkTimeApp.services.gameArchive = (() => {
   const sudokuPuzzles = (group) => [
     ...group.puzzles,
     ...(group.legacyPuzzles || []),
   ];
-  const PREFIX = "WORKTIME:GAMES:1:";
   const TYPE = "worktime-games";
-  const MAX_BYTES = 16 * 1024 * 1024;
   const REVISION = "worktime.games.archive.revision.v1";
   const JOURNAL = "worktime.games.archive.journal.v1";
   const BACKUP = "worktime.games.archive.before.v1";
@@ -38,27 +36,8 @@ WorkTimeApp.services.gameArchive = (() => {
       ]),
     ),
   );
-  const levelGames = [
-    "game-klotski",
-    "game-sudoku",
-    "game-sokoban",
-    "game-xiangqi",
-    "game-gomoku",
-    "game-lights-out",
-  ];
   const plain = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
   const clone = (v) => JSON.parse(JSON.stringify(v));
-  const stable = (v) =>
-    JSON.stringify(v, function (key, value) {
-      return plain(value)
-        ? Object.fromEntries(
-            Object.keys(value)
-              .sort()
-              .map((k) => [k, value[k]]),
-          )
-        : value;
-    });
-  const same = (a, b) => stable(a) === stable(b);
   const integer = (n, max = Number.MAX_SAFE_INTEGER) =>
     Number.isSafeInteger(n) && n >= 0 && n <= max;
   function fail(code, game = "") {
@@ -686,102 +665,6 @@ WorkTimeApp.services.gameArchive = (() => {
     else value.chapter = Math.floor(index / 20);
     return value;
   }
-  function hasContent(id, v) {
-    if (id === "game-aeroplane") return true;
-    if (id === "game-uno") return true;
-    if (matchGames.includes(id) && v.matchHistory?.length) return true;
-    if (
-      historyGames.includes(id) &&
-      Object.values(v.completionHistory || {}).some((records) => records.length)
-    )
-      return true;
-    if (["game-xiangqi", "game-gomoku"].includes(id) && v.match) return true;
-    if (id === "game-gomoku" && v.forbidden) return true;
-    if (id === "game-lights-out" || id === "game-klotski")
-      return Object.keys(v.completed).length > 0 || hasProgress(id, v);
-    if (id === "game-sliding-puzzle")
-      return Object.keys(v.best).length > 0 || hasProgress(id, v);
-    if (id === "game-jungle" || id === "game-ultimate-ttt")
-      return v.state.path.length > 0;
-    if (id === "game-jump") return v > 0;
-    if (id === "game-tank")
-      return v.best > 0 || v.custom !== null || v.muted === true;
-    if (id === "game-2048")
-      return (
-        v.best > 0 ||
-        v.aiBest > 0 ||
-        v.aiDemo != null ||
-        v.state.score > 0 ||
-        v.previous !== null
-      );
-    if (id === "game-minesweeper")
-      return (
-        v.state.status !== "ready" ||
-        Object.values(v.stats).some((s) => s.wins > 0)
-      );
-    if (id === "game-snake")
-      return v.state.ticks > 0 || Object.values(v.best).some((n) => n > 0);
-    if (id === "game-link")
-      return Object.values(v.best).some((n) => n > 0) || hasProgress(id, v);
-    if (id === "game-garden")
-      return hasProgress(id, v) || v.records.some((n) => n > 0);
-    if (Object.keys(v.completed).length) return true;
-    return Object.entries(v.drafts).some(([level, draft]) => {
-      if (
-        id === "game-sokoban" ||
-        id === "game-xiangqi" ||
-        id === "game-gomoku"
-      )
-        return draft.path.length > 0;
-      const puzzle = WorkTimeApp.data.sudoku.groups
-        .flatMap(sudokuPuzzles)
-        .find((p) => p.id === level);
-      return (
-        draft.elapsed > 0 ||
-        draft.hints > 0 ||
-        draft.notes.some(Boolean) ||
-        draft.values.some((n, i) => n !== Number(puzzle.givens[i]))
-      );
-    });
-  }
-  function hasProgress(id, v) {
-    if (id === "game-aeroplane") return v.state.phase !== "won";
-    if (id === "game-uno") return !!v.state && v.state.matchWinner === null;
-    if (id === "game-klotski")
-      return !!v.current || Object.values(v.drafts).some((s) => s.started);
-    if (["game-xiangqi", "game-gomoku"].includes(id) && v.match) return true;
-    if (id === "game-sliding-puzzle")
-      return Object.values(v.sessions).some((s) => s.started);
-    if (id === "game-jungle" || id === "game-ultimate-ttt")
-      return v.state.path.length > 0;
-    if (id === "game-jump") return false;
-    if (id === "game-tank") return v.custom !== null || v.muted !== undefined;
-    if (id === "game-2048")
-      return v.aiDemo != null || v.state.score > 0 || v.previous !== null;
-    if (id === "game-minesweeper") return v.state.status !== "ready";
-    if (id === "game-snake") return v.state.ticks > 0;
-    if (id === "game-link")
-      return (
-        !!v.state &&
-        (v.state.score > 0 ||
-          v.state.level > 0 ||
-          v.state.phase !== "playing" ||
-          v.state.hints < 3 ||
-          v.state.shuffles < 2 ||
-          v.state.board.some((tile) => tile === 0))
-      );
-    if (id === "game-garden") {
-      const tools = WorkTimeApp.games.gardenRules.difficulty(
-        v.state.level,
-      ).tools;
-      return (
-        v.state.moves > 0 ||
-        v.state.hintsLeft < tools ||
-        v.state.undoLeft < tools
-      );
-    }
-    return !!v.current || Object.keys(v.drafts).length > 0;
-  }
   function validate(value) {
     if (!plain(value) || value.type !== TYPE) fail("wrongType");
     if (value.version !== 1) fail("version");
@@ -795,297 +678,6 @@ WorkTimeApp.services.gameArchive = (() => {
     for (const [id, save] of Object.entries(value.games))
       games[id] = normalize(id, save);
     return { type: TYPE, version: 1, exportedAt: value.exportedAt, games };
-  }
-  function checkSize(text) {
-    if (new TextEncoder().encode(text).length > MAX_BYTES) fail("tooLarge");
-  }
-  async function encode(value) {
-    const raw = JSON.stringify(validate(value));
-    checkSize(raw);
-    const text =
-      typeof CompressionStream === "function"
-        ? PREFIX +
-          "GZIP:" +
-          (await WorkTimeApp.services.backup.encode(raw)).slice(
-            WorkTimeApp.services.backup.PREFIX.length,
-          )
-        : PREFIX + "JSON:" + raw;
-    checkSize(text);
-    return text;
-  }
-  async function decodeText(text) {
-    if (typeof text !== "string") fail("invalid");
-    text = text.trim();
-    checkSize(text);
-    if (text.startsWith("WORKTIME:GAMES:") && !text.startsWith(PREFIX))
-      fail("version");
-    if (text.startsWith(PREFIX + "GZIP:"))
-      return WorkTimeApp.services.backup.decode(
-        WorkTimeApp.services.backup.PREFIX +
-          text.slice((PREFIX + "GZIP:").length),
-        validate,
-        { maxBytes: MAX_BYTES, allowGameArchive: true },
-      );
-    if (text.startsWith(PREFIX + "JSON:"))
-      text = text.slice((PREFIX + "JSON:").length);
-    else if (!text.startsWith("{")) fail("wrongType");
-    return validate(JSON.parse(text));
-  }
-  async function decode(text) {
-    try {
-      return await decodeText(text);
-    } catch (error) {
-      if (
-        ["invalid", "wrongType", "version", "empty", "tooLarge"].includes(
-          error.code,
-        )
-      )
-        throw error;
-      fail("invalid");
-    }
-  }
-  function progress(id, v) {
-    if (id === "game-klotski")
-      return fields(v, [
-        "current",
-        "chapter",
-        "grouping",
-        "classics",
-        "drafts",
-      ]);
-    if (id === "game-sliding-puzzle") return fields(v, ["size", "sessions"]);
-    if (id === "game-jump") return null;
-    if (id === "game-2048") return fields(v, ["state", "previous", "aiDemo"]);
-    if (id === "game-tank") return fields(v, ["custom", "muted"]);
-    if (levelGames.includes(id))
-      return fields(v, [
-        "current",
-        "group",
-        "chapter",
-        "drafts",
-        "match",
-        "matchSession",
-      ]);
-    return fields(
-      v,
-      id === "game-minesweeper"
-        ? ["state", "elapsed", "manualPaused"]
-        : ["state", "previous", "matchSession"],
-    );
-  }
-  function merge(id, local, incoming, source = "local") {
-    if (local === null)
-      return {
-        value: clone(incoming),
-        conflict: false,
-        improved: hasContent(id, incoming),
-      };
-    if (id === "game-uno" && (local.profile || incoming.profile)) {
-      const equal = same(local, incoming);
-      return {
-        value: clone(source === "incoming" ? incoming : local),
-        conflict: !equal,
-        improved: false,
-      };
-    }
-    let conflict = false;
-    if (levelGames.includes(id)) {
-      conflict = Object.keys(local.drafts).some(
-        (key) =>
-          Object.hasOwn(incoming.drafts, key) &&
-          !same(local.drafts[key], incoming.drafts[key]),
-      );
-      conflict ||= !!(
-        local.current &&
-        incoming.current &&
-        local.current !== incoming.current
-      );
-    } else if (id === "game-tank") {
-      conflict = !!(
-        local.custom &&
-        incoming.custom &&
-        !same(local.custom, incoming.custom)
-      );
-      conflict ||=
-        local.muted !== undefined &&
-        incoming.muted !== undefined &&
-        local.muted !== incoming.muted;
-    } else
-      conflict =
-        id !== "game-jump" &&
-        hasProgress(id, local) &&
-        hasProgress(id, incoming) &&
-        !same(progress(id, local), progress(id, incoming));
-    if (["game-xiangqi", "game-gomoku"].includes(id))
-      conflict ||= !!(
-        local.match &&
-        incoming.match &&
-        !same(local.match, incoming.match)
-      );
-    const preferred =
-      source === "incoming" && hasProgress(id, incoming)
-        ? incoming
-        : hasProgress(id, local)
-          ? local
-          : hasProgress(id, incoming)
-            ? incoming
-            : local;
-    let out = clone(preferred);
-    if (id === "game-lights-out" || id === "game-klotski") {
-      out.drafts = { ...local.drafts, ...incoming.drafts, ...preferred.drafts };
-      out.completed = clone(local.completed);
-      for (const [level, record] of Object.entries(incoming.completed))
-        if (
-          (id === "game-klotski"
-            ? WorkTimeApp.games.klotskiRules
-            : WorkTimeApp.games.lightsOutRules
-          ).better(record, out.completed[level])
-        )
-          out.completed[level] = clone(record);
-    } else if (id === "game-sliding-puzzle") {
-      for (const size of WorkTimeApp.games.slidingPuzzleRules.sizes) {
-        const a = local.best[size],
-          b = incoming.best[size];
-        if (a || b)
-          out.best[size] = {
-            moves: Math.min(a?.moves ?? Infinity, b?.moves ?? Infinity),
-            time: Math.min(a?.time ?? Infinity, b?.time ?? Infinity),
-          };
-        out.sessions[size] = clone(
-          preferred.sessions[size] ||
-            local.sessions[size] ||
-            incoming.sessions[size] ||
-            null,
-        );
-        if (!out.sessions[size]) delete out.sessions[size];
-      }
-    } else if (id === "game-jump") out = Math.max(local, incoming);
-    else if (["game-2048", "game-tank"].includes(id)) {
-      out.best = Math.max(local.best, incoming.best);
-      if (id === "game-2048")
-        out.aiBest = Math.max(local.aiBest || 0, incoming.aiBest || 0);
-      if (id === "game-tank") {
-        out.custom = clone(preferred.custom ?? local.custom ?? incoming.custom);
-        out.muted = preferred.muted ?? local.muted ?? incoming.muted ?? false;
-      }
-    } else if (["game-snake", "game-link"].includes(id)) {
-      out.best = Object.fromEntries(
-        Object.keys(local.best).map((mode) => [
-          mode,
-          Math.max(local.best[mode], incoming.best[mode]),
-        ]),
-      );
-    } else if (id === "game-minesweeper") {
-      for (const mode of Object.keys(local.stats)) {
-        const a = local.stats[mode],
-          b = incoming.stats[mode];
-        out.stats[mode] = {
-          wins: Math.max(a.wins, b.wins),
-          best:
-            a.best === null
-              ? b.best
-              : b.best === null
-                ? a.best
-                : Math.min(a.best, b.best),
-        };
-      }
-    } else if (id === "game-garden")
-      out.records = local.records.map((n, i) =>
-        Math.max(n, incoming.records[i]),
-      );
-    else if (
-      ![
-        "game-jungle",
-        "game-ultimate-ttt",
-        "game-uno",
-        "game-aeroplane",
-      ].includes(id)
-    ) {
-      out.drafts = {
-        ...(source === "incoming" ? local.drafts : incoming.drafts),
-        ...preferred.drafts,
-      };
-      out.completed = clone(local.completed);
-      for (const [level, b] of Object.entries(incoming.completed)) {
-        const a = local.completed[level];
-        let better = !a;
-        if (a && id === "game-sudoku")
-          better =
-            b.hints < a.hints || (b.hints === a.hints && b.elapsed < a.elapsed);
-        if (a && id === "game-sokoban") {
-          const map = WorkTimeApp.games.sokobanRules.parse(
-            WorkTimeApp.data.sokoban.levels.find((p) => p.id === level),
-          );
-          const ar = WorkTimeApp.games.sokobanRules.restore(map, a),
-            br = WorkTimeApp.games.sokobanRules.restore(map, b);
-          better =
-            br.pushes < ar.pushes ||
-            (br.pushes === ar.pushes && br.moves < ar.moves);
-        }
-        if (better) out.completed[level] = clone(b);
-        if (a && id === "game-sudoku") {
-          const replay =
-            b.replay &&
-            (!a.replay ||
-              b.replay.finishedAt > a.replay.finishedAt ||
-              (b.replay.finishedAt === a.replay.finishedAt &&
-                source === "incoming"))
-              ? b.replay
-              : a.replay;
-          if (replay) out.completed[level].replay = clone(replay);
-        }
-      }
-      if (!out.current) {
-        const other = source === "incoming" ? local : incoming;
-        Object.assign(out, fields(other, ["current", "group", "chapter"]));
-      }
-      fixSelection(id, out);
-    }
-    if (["game-xiangqi", "game-gomoku"].includes(id)) {
-      const match =
-        source === "incoming"
-          ? (incoming.match ?? local.match)
-          : (local.match ?? incoming.match);
-      if (match) {
-        out.match = clone(match);
-        const owner = match === incoming.match ? incoming : local;
-        if (owner.matchSession) out.matchSession = clone(owner.matchSession);
-        else delete out.matchSession;
-      }
-    }
-    if (
-      historyGames.includes(id) &&
-      (local.completionHistory || incoming.completionHistory)
-    )
-      out.completionHistory = mergeHistory(
-        local.completionHistory,
-        incoming.completionHistory,
-      );
-    // A pristine local session must not hide meaningful imported progress.
-    if (
-      !hasProgress(id, local) &&
-      hasProgress(id, incoming) &&
-      id !== "game-jump"
-    ) {
-      Object.assign(out, progress(id, incoming));
-    }
-    if (
-      matchGames.includes(id) &&
-      (local.matchHistory || incoming.matchHistory)
-    )
-      out.matchHistory = mergeMatches(
-        local.matchHistory,
-        incoming.matchHistory,
-      );
-    const achievement = (v) =>
-      id === "game-jump"
-        ? v
-        : fields(v, ["best", "stats", "records", "completed", "matchHistory"]);
-    return {
-      value: normalize(id, out),
-      conflict,
-      improved: !same(achievement(local), achievement(out)),
-    };
   }
   function create(getStorage, notify = () => {}, notifySaved = () => {}) {
     let recovering = false;
@@ -1332,26 +924,13 @@ WorkTimeApp.services.gameArchive = (() => {
       }
       return { raw, games, revision: getStorage().getItem(REVISION) };
     }
-    function pack(games) {
+    function snapshot() {
       return {
         type: TYPE,
         version: 1,
         exportedAt: new Date().toISOString(),
-        games,
+        games: read().games,
       };
-    }
-    function exportArchive({
-      allowEmpty = false,
-      includeDefaults = false,
-    } = {}) {
-      const { games } = read();
-      const saves = Object.fromEntries(
-        Object.entries(games).filter(
-          ([id, value]) => includeDefaults || hasContent(id, value),
-        ),
-      );
-      if (!allowEmpty && !Object.keys(saves).length) fail("empty");
-      return pack(saves);
     }
     async function replace(archive, apply) {
       const incoming = validate(archive),
@@ -1397,81 +976,6 @@ WorkTimeApp.services.gameArchive = (() => {
       notify();
       return result;
     }
-    function preview(archive, choices = {}) {
-      const incoming = validate(archive),
-        snapshot = read();
-      const rows = Object.entries(incoming.games).map(([id, save]) => {
-        const local = snapshot.games[id] ?? null;
-        const result = merge(id, local, save, choices[id]);
-        return {
-          id,
-          ...result,
-          draftsAdded: Object.keys(result.value?.drafts || {}).filter(
-            (key) => !Object.hasOwn(local?.drafts || {}, key),
-          ).length,
-          completedAdded: Object.keys(result.value?.completed || {}).filter(
-            (key) => !Object.hasOwn(local?.completed || {}, key),
-          ).length,
-          status:
-            local === null
-              ? "added"
-              : same(local, result.value)
-                ? "unchanged"
-                : "merged",
-        };
-      });
-      return { archive: incoming, snapshot, choices: { ...choices }, rows };
-    }
-    function commit(previewed) {
-      const latest = read();
-      if (
-        !same(latest.raw, previewed.snapshot.raw) ||
-        latest.revision !== previewed.snapshot.revision
-      )
-        fail("changed");
-      // Recompute from validated data instead of trusting a caller-provided write set.
-      const current = preview(previewed.archive, previewed.choices);
-      const changed = current.rows.filter((row) => row.status !== "unchanged");
-      if (!changed.length) return current.rows;
-      const storage = getStorage();
-      const revision =
-        Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
-      const before = {
-        version: 1,
-        exportedAt: new Date().toISOString(),
-        raw: latest.raw,
-      };
-      // No game writes occur unless both the backup and recovery journal are durable.
-      storage.setItem(BACKUP, JSON.stringify(before));
-      storage.setItem(
-        JOURNAL,
-        JSON.stringify({ version: 1, revision, before: latest.raw }),
-      );
-      try {
-        storage.setItem(REVISION, revision);
-        for (const row of changed)
-          storage.setItem(keys[row.id], JSON.stringify(row.value));
-        storage.removeItem(JOURNAL);
-      } catch (error) {
-        try {
-          recover();
-        } catch {
-          fail("recovery");
-        }
-        throw error;
-      }
-      notify();
-      return current.rows;
-    }
-    function previousBackup() {
-      const text = getStorage().getItem(BACKUP);
-      if (!text) fail("noBackup");
-      const saved = JSON.parse(text),
-        games = {};
-      for (const [id, raw] of Object.entries(saved.raw))
-        if (raw !== null) games[id] = normalize(id, JSON.parse(raw));
-      return { ...pack(games), exportedAt: saved.exportedAt };
-    }
     function session() {
       let revision,
         unavailable = null;
@@ -1504,11 +1008,8 @@ WorkTimeApp.services.gameArchive = (() => {
       read,
       progressSummary,
       recover,
-      exportArchive,
+      snapshot,
       replace,
-      preview,
-      commit,
-      previousBackup,
       session,
       pendingRecovery: () => !!getStorage().getItem(JOURNAL),
     };
@@ -1526,9 +1027,7 @@ WorkTimeApp.services.gameArchive = (() => {
       ? window.navigator.locks.request("worktime-game-archive", run)
       : Promise.resolve().then(run);
   return {
-    PREFIX,
     TYPE,
-    MAX_BYTES,
     keys,
     REVISION,
     JOURNAL,
@@ -1540,15 +1039,10 @@ WorkTimeApp.services.gameArchive = (() => {
     restoreRecordedMatch,
     normalizeMatches,
     addCompletion,
-    merge,
     validate,
-    hasContent,
-    encode,
-    decode,
     create,
     ...owner,
     initialize: () => exclusive(owner.recover),
-    commit: (value) => exclusive(() => owner.commit(value)),
     replace: (value, apply) => exclusive(() => owner.replace(value, apply)),
   };
 })();

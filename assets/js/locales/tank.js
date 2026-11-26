@@ -49,9 +49,10 @@ for (const [language, messages] of Object.entries({
     "games.tank.testMap": "保存并试玩",
     "games.tank.back": "返回",
     "games.tank.editorHint":
-      "选地形后在地图上涂画；也可用方向键移动光标、空格放置。出生点与基地周围区域保留。",
+      "选地形后在地图上涂画；也可用方向键移动光标、Enter 键放置。出生点与基地周围区域保留。",
     "games.tank.board": "坦克战场，第 {stage} 关，剩余 {remaining} 辆敌军",
-    "games.tank.editorBoard": "地图编辑器：方向键移动光标，空格放置所选地形",
+    "games.tank.editorBoard":
+      "地图编辑器：方向键移动光标，Enter 键放置所选地形",
     "games.tank.saveFailed": "最高分或地图未能保存；仍可继续游戏。",
     "games.tank.help":
       "每关击毁 20 辆敌军即可过关；基地被任何炮弹击中，或所有玩家耗尽生命，则游戏结束。每人初始 3 条生命。\n1P：WASD 移动，J / 空格开火；单人也可用方向键。2P：方向键移动，Enter 开火。P 暂停。触屏按住方向与开火按钮。\n敌军有普通、快速、速射、装甲四种，分别计 100、200、300、400 分；装甲需命中 4 次。闪烁红色敌军被击中会掉落道具。每关至多同时出现 4 辆敌军，双人为 6 辆。\n星星图标：依次提升弹速、双发、破钢；头盔图标：10 秒护盾；铁锹图标：20 秒基地钢墙；时钟图标：10 秒冻结敌军；炸弹图标：清除场上敌军；坦克图标：增加一条生命。每件道具 500 分，每 20000 分奖励一条生命。\n砖墙可逐层击碎，钢墙需三级升级；河流不可穿越但炮弹可以；树林遮挡坦克；冰面有惯性。双人炮弹命中队友会使其定身 3 秒。重生后有短暂无敌，死亡会失去升级。\n双人通关时，击破数较多者额外获得 1000 分，同数不奖励。道具会保留到拾取或下一辆携带道具的敌军出现。自建地图有完整砖墙、钢墙和四方向半墙，共 14 种笔刷；通关后进入所选关卡的下一关。35 关地图循环，之后沿用第 35 关的敌军编排和出兵节奏。",
@@ -106,11 +107,11 @@ for (const [language, messages] of Object.entries({
     "games.tank.testMap": "Save & play",
     "games.tank.back": "Back",
     "games.tank.editorHint":
-      "Choose terrain and paint. Or move the cursor with arrows and place with Space. Spawn pads and the base perimeter are reserved.",
+      "Choose terrain and paint. Or move the cursor with arrows and place with Enter. Spawn pads and the base perimeter are reserved.",
     "games.tank.board":
       "Tank battlefield, stage {stage}, {remaining} enemies remaining",
     "games.tank.editorBoard":
-      "Map editor: arrows move the cursor, Space places the selected terrain",
+      "Map editor: arrows move the cursor, Enter places the selected terrain",
     "games.tank.saveFailed":
       "Could not save the best score or map. You can keep playing.",
     "games.tank.help":
@@ -164,9 +165,10 @@ for (const [language, messages] of Object.entries({
     "games.tank.testMap": "保存並試玩",
     "games.tank.back": "返回",
     "games.tank.editorHint":
-      "選地形後在地圖上塗畫；也可用方向鍵移動光標、空格放置。出生點與基地周圍區域保留。",
+      "選地形後在地圖上塗畫；也可用方向鍵移動光標、Enter 键放置。出生點與基地周圍區域保留。",
     "games.tank.board": "坦克戰場，第 {stage} 關，剩餘 {remaining} 輛敵軍",
-    "games.tank.editorBoard": "地圖編輯器：方向鍵移動光標，空格放置所選地形",
+    "games.tank.editorBoard":
+      "地圖編輯器：方向鍵移動光標，Enter 键放置所選地形",
     "games.tank.saveFailed": "最高分或地圖未能保存；仍可繼續遊戲。",
     "games.tank.help":
       "每關擊毀 20 輛敵軍即可過關；基地被任何炮彈擊中，或所有玩家耗盡生命，則遊戲結束。每人初始 3 條生命。\n1P：WASD 移動，J / 空格開火；單人也可用方向鍵。2P：方向鍵移動，Enter 開火。P 暫停。觸屏按住方向與開火按鈕。\n敵軍有普通、快速、速射、裝甲四種，分別計 100、200、300、400 分；裝甲需命中 4 次。閃爍紅色敵軍被擊中會掉落道具。每關至多同時出現 4 輛敵軍，雙人為 6 輛。\n星星图标：依次提升彈速、雙發、破鋼；頭盔圖示：10 秒護盾；鐵鍬圖示：20 秒基地鋼牆；時鐘圖示：10 秒凍結敵軍；炸彈圖示：清除場上敵軍；坦克图标：增加一條生命。每件道具 500 分，每 20000 分獎勵一條生命。\n磚牆可逐層擊碎，鋼牆需三級升級；河流不可穿越但炮彈可以；樹林遮擋坦克；冰面有慣性。雙人炮彈命中隊友會使其定身 3 秒。重生後有短暫無敵，死亡會失去升級。\n雙人通關時，擊破數較多者額外獲得 1000 分，同數不獎勵。道具會保留到拾取或下一輛攜帶道具的敵軍出現。自建地圖有完整磚牆、鋼牆和四方向半牆，共 14 種筆刷；通關後進入所選關卡的下一關。35 關地圖循環，之後沿用第 35 關的敵軍編排和出兵節奏。",
@@ -219,9 +221,10 @@ for (const [language, messages] of Object.entries({
     "games.tank.testMap": "保存並試玩",
     "games.tank.back": "返回",
     "games.tank.editorHint":
-      "選地形後在地圖上塗畫；也可用方向鍵移動光標、空格放置。出生點與基地周圍區域保留。",
+      "選地形後在地圖上塗畫；也可用方向鍵移動光標、Enter 键放置。出生點與基地周圍區域保留。",
     "games.tank.board": "坦克戰場，第 {stage} 關，剩餘 {remaining} 輛敵軍",
-    "games.tank.editorBoard": "地圖編輯器：方向鍵移動光標，空格放置所選地形",
+    "games.tank.editorBoard":
+      "地圖編輯器：方向鍵移動光標，Enter 键放置所選地形",
     "games.tank.saveFailed": "最高分或地圖未能保存；仍可繼續遊戲。",
     "games.tank.help":
       "每關擊毀 20 輛敵軍即可過關；基地被任何炮彈擊中，或所有玩家耗盡生命，則遊戲結束。每人初始 3 條生命。\n1P：WASD 移動，J / 空格開火；單人也可用方向鍵。2P：方向鍵移動，Enter 開火。P 暫停。觸屏按住方向與開火按鈕。\n敵軍有普通、快速、速射、裝甲四種，分別計 100、200、300、400 分；裝甲需命中 4 次。閃爍紅色敵軍被擊中會掉落道具。每關至多同時出現 4 輛敵軍，雙人為 6 輛。\n星星图标：依次提升彈速、雙發、破鋼；頭盔圖示：10 秒護盾；鐵鍬圖示：20 秒基地鋼牆；時鐘圖示：10 秒凍結敵軍；炸彈圖示：清除場上敵軍；坦克图标：增加一條生命。每件道具 500 分，每 20000 分獎勵一條生命。\n磚牆可逐層擊碎，鋼牆需三級升級；河流不可穿越但炮彈可以；樹林遮擋坦克；冰面有慣性。雙人炮彈命中隊友會使其定身 3 秒。重生後有短暫無敵，死亡會失去升級。\n雙人通關時，擊破數較多者額外獲得 1000 分，同數不獎勵。道具會保留到拾取或下一輛攜帶道具的敵軍出現。自建地圖有完整磚牆、鋼牆和四方向半牆，共 14 種筆刷；通關後進入所選關卡的下一關。35 關地圖循環，之後沿用第 35 關的敵軍編排和出兵節奏。",
@@ -275,9 +278,9 @@ for (const [language, messages] of Object.entries({
     "games.tank.testMap": "保存して遊ぶ",
     "games.tank.back": "戻る",
     "games.tank.editorHint":
-      "地形を選んで描画。矢印でカーソル移動、Space で配置も可能。出現地点と基地周辺は保護されます。",
+      "地形を選んで描画。矢印でカーソル移動、Enter で配置も可能。出現地点と基地周辺は保護されます。",
     "games.tank.board": "戦場、ステージ {stage}、残り {remaining} 両",
-    "games.tank.editorBoard": "マップ作成：矢印で移動、Space で地形を配置",
+    "games.tank.editorBoard": "マップ作成：矢印で移動、Enter で地形を配置",
     "games.tank.saveFailed":
       "スコアまたはマップを保存できませんでした。プレイは続行できます。",
     "games.tank.help":
@@ -332,9 +335,9 @@ for (const [language, messages] of Object.entries({
     "games.tank.testMap": "저장 후 플레이",
     "games.tank.back": "뒤로",
     "games.tank.editorHint":
-      "지형을 선택해 그리세요. 방향키로 커서를 옮기고 Space로 배치할 수도 있습니다. 출현 지점과 기지 주변은 보호됩니다.",
+      "지형을 선택해 그리세요. 방향키로 커서를 옮기고 Enter로 배치할 수도 있습니다. 출현 지점과 기지 주변은 보호됩니다.",
     "games.tank.board": "탱크 전장, 스테이지 {stage}, 적 {remaining}대 남음",
-    "games.tank.editorBoard": "맵 제작: 방향키로 커서 이동, Space로 지형 배치",
+    "games.tank.editorBoard": "맵 제작: 방향키로 커서 이동, Enter로 지형 배치",
     "games.tank.saveFailed":
       "점수 또는 맵을 저장하지 못했습니다. 계속 플레이할 수 있습니다.",
     "games.tank.help":

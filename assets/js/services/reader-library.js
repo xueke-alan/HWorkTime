@@ -205,8 +205,26 @@ WorkTimeApp.services.readerLibrary = (() => {
           "script,iframe,object,embed,form,base,meta[http-equiv],audio,video",
         )
         .forEach((e) => e.remove());
+      for (const title of doc.querySelectorAll("title")) {
+        if (title.namespaceURI !== "http://www.w3.org/2000/svg") continue;
+        const graphic = title.parentElement;
+        if (
+          !graphic.hasAttribute("aria-label") &&
+          !graphic.hasAttribute("aria-labelledby")
+        )
+          graphic.setAttribute("aria-label", title.textContent);
+        const description = doc.createElementNS(title.namespaceURI, "desc");
+        if (title.id) description.setAttribute("id", title.id);
+        description.textContent = title.textContent;
+        title.replaceWith(description);
+      }
       for (const e of doc.querySelectorAll("*"))
         for (const a of [...e.attributes]) {
+          if (a.name.toLowerCase() === "title") {
+            if (a.value && !e.hasAttribute("aria-description"))
+              e.setAttribute("aria-description", a.value);
+            e.removeAttribute(a.name);
+          }
           if (
             /^on/i.test(a.name) ||
             a.name === "srcset" ||
@@ -228,6 +246,9 @@ WorkTimeApp.services.readerLibrary = (() => {
           "default-src 'none'; img-src blob: data:; style-src 'unsafe-inline' blob:; font-src blob: data:; script-src 'none'; connect-src 'none'; frame-src 'none'; form-action 'none'",
         );
         head.prepend(meta);
+        const focusStyle = doc.createElementNS(head.namespaceURI, "style");
+        focusStyle.textContent = ":focus { outline: none !important; }";
+        head.append(focusStyle);
       }
       archive.file(entry.name, new XMLSerializer().serializeToString(doc));
     }

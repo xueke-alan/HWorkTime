@@ -3,7 +3,7 @@
 /** Shared date stamp for the calendar and selected-day headers. */
 WorkTimeApp.ui.headerDateMarkup = function (date, esc) {
   const divider =
-    '<svg class="calendar-date-divider" viewBox="0 0 12 24" aria-hidden="true" focusable="false"><path d="M9 4 3 20" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>';
+    '<svg class="calendar-date-divider" viewBox="0 0 12 24" aria-hidden="true" focusable="false"><use href="#icon-calendar-date-divider"/></svg>';
   const parts = WorkTimeApp.i18n.date(date).split(/\s*\/\s*/);
   return (
     '<span class="calendar-today-date">' +
@@ -38,7 +38,7 @@ WorkTimeApp.ui.scheduleDescription = function (schedule) {
 
 /** Create an isolated presentation view; state/view getters remain live after restore and navigation. */
 WorkTimeApp.ui.createDayPresentation = function (options) {
-  const { core: C, escape: esc, getState, getView } = options;
+  const { core: C, getState, getView } = options;
 
   function isFullLeave(day = {}, date = getView().selected) {
     const state = getState();
@@ -87,15 +87,12 @@ WorkTimeApp.ui.createDayPresentation = function (options) {
     );
   }
   function tag(label, cls = "", title = "") {
-    return (
-      '<span class="pill ' +
-      cls +
-      '"' +
-      (title ? ' title="' + esc(title) + '"' : "") +
-      '><span class="pill-text">' +
-      esc(label) +
-      "</span></span>"
-    );
+    return WorkTimeApp.ui.native.createBadge({
+      text: label,
+      className: "pill " + cls,
+      title,
+      textClass: "pill-text",
+    }).outerHTML;
   }
   function statusTag(label, info, cls = "") {
     const text = visibleStatus(label, info);

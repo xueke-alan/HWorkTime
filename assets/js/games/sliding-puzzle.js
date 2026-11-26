@@ -107,20 +107,20 @@ WorkTimeApp.games.register({
     }
     const board = node("div", "sliding-board", root);
     board.tabIndex = 0;
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const tiles = node("div", "sliding-tiles", board);
     const cover = node("div", "sliding-cover", board);
     cover.hidden = true;
-    const coverTitle = node("h3", "", cover),
-      result = node("p", "", cover);
-    const coverActions = node("div", "sliding-actions", cover);
-    const cancel = button(coverActions, "cancel", () => {
+    const resultView = WorkTimeApp.ui.mountGameResult(cover, signal);
+    function cancelChange() {
+      if (paused || disposed) return;
       confirmation = null;
       stamp = performance.now();
       render();
       board.focus();
-    });
-    const accept = button(coverActions, "accept", () => {
+    }
+    function acceptChange() {
+      if (paused || disposed) return;
       tick();
       stopMotion();
       data.sessions[data.size] =
@@ -132,7 +132,7 @@ WorkTimeApp.games.register({
       save();
       render();
       board.focus();
-    });
+    }
     const status = node("p", "game-sr-only", root);
     status.setAttribute("role", "status");
     const warning = node("p", "sliding-warning", root);
@@ -185,7 +185,7 @@ WorkTimeApp.games.register({
             duration: 380,
             easing: "ease-out",
           });
-        accept.focus({ preventScroll: true });
+        resultView.focus("sliding", "accept");
       } catch {
         // Cancellation is owned by the session lifecycle or another action.
       }
@@ -197,7 +197,7 @@ WorkTimeApp.games.register({
         confirmation = action;
         save();
         render();
-        cancel.focus();
+        resultView.focus("sliding", "cancel");
       } else {
         data.sessions[data.size] =
           action === "restart"
@@ -280,9 +280,8 @@ WorkTimeApp.games.register({
         [shuffle, "shuffle"],
       ]) {
         el.setAttribute("aria-label", t(name));
-        el.title = t(name);
+        el.dataset.hintText = t(name);
       }
-      cancel.textContent = t("cancel");
       undo.disabled = !state().history.length || !!confirmation;
       select.disabled = !!confirmation;
       difficulty.sync();
@@ -325,18 +324,30 @@ WorkTimeApp.games.register({
       }
       const won = rules.solved(state().board);
       cover.hidden = !confirmation && (!won || winPending);
-      cancel.hidden = !confirmation;
-      coverTitle.textContent = t(confirmation ? "confirm" : "won");
-      result.textContent = confirmation
-        ? t(confirmation) + "?"
-        : t("moves") +
-          " " +
-          state().history.length +
-          " · " +
-          clock(state().elapsed);
-      if (won && winRecord && !confirmation)
-        result.textContent += " · " + t("record");
-      accept.textContent = t(confirmation ? "accept" : "again");
+      if (!cover.hidden) {
+        const detail = confirmation
+          ? t(confirmation) + "?"
+          : t("moves") +
+            " " +
+            state().history.length +
+            " · " +
+            clock(state().elapsed) +
+            (winRecord ? " · " + t("record") : "");
+        const actions = confirmation
+          ? [{ id: "cancel", label: t("cancel"), run: cancelChange }]
+          : [];
+        actions.push({
+          id: "accept",
+          label: t(confirmation ? "accept" : "again"),
+          run: acceptChange,
+        });
+        resultView.update({
+          game: "sliding",
+          title: t(confirmation ? "confirm" : "won"),
+          detail,
+          actions,
+        });
+      }
       tiles.inert = !cover.hidden || winPending;
       status.textContent = won && !winPending ? t("won") : "";
       renderStats();

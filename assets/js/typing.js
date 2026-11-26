@@ -19,9 +19,12 @@ WorkTimeApp.ui.typing = (() => {
       try {
         if (!pending)
           pending = (async () => {
-            await WorkTimeApp.services.assets.script(
-              "assets/js/ui/secondary-runtime.min.js",
-            );
+            await Promise.all([
+              WorkTimeApp.ui.loadTypingViews(),
+              WorkTimeApp.services.assets.script(
+                "assets/js/ui/secondary-runtime.min.js",
+              ),
+            ]);
             await Promise.all([
               WorkTimeApp.i18n.loadModule("typing"),
               WorkTimeApp.services.assets.style("assets/css/typing.css"),
@@ -34,7 +37,7 @@ WorkTimeApp.ui.typing = (() => {
             throw error;
           });
         entry.setAttribute("aria-busy", "true");
-        entry.title = t("loading");
+        entry.dataset.hintText = t("loading");
         entry.querySelector("span").textContent = t("loading");
         await pending;
         if (
@@ -48,7 +51,7 @@ WorkTimeApp.ui.typing = (() => {
         await WorkTimeApp.ui.typing.open();
       } catch {
         if (disposed) return;
-        entry.title = t("loadFailed");
+        entry.dataset.hintText = t("loadFailed");
         entry.querySelector("span").textContent = t("loadFailed");
       } finally {
         entry.removeAttribute("aria-busy");

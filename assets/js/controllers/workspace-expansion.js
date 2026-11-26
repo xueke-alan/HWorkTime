@@ -10,9 +10,14 @@ WorkTimeApp.ui.createWorkspaceExpansion = function ({
 }) {
   const disposeFooter = WorkTimeApp.ui.createSiteFooter(shell, true);
   const workspace = document.querySelector(".workspace"),
-    origin = workspace.querySelector("section.panel");
-  const panels = [...workspace.children].filter((panel) =>
-    panel.matches(".summary-sidebar, section.panel, .editor"),
+    origin = workspace.querySelector(".work-body > section.panel");
+  const panels = [
+    workspace.querySelector(".summary-sidebar"),
+    origin,
+    workspace.querySelector(".editor"),
+  ];
+  const backgroundRoots = [...workspace.children].filter((panel) =>
+    panel.matches(".work-main, .editor"),
   );
   const compat = WorkTimeApp.ui.animationCompat,
     motion = compat.workspaceMotion,
@@ -77,7 +82,7 @@ WorkTimeApp.ui.createWorkspaceExpansion = function ({
     shell.hidden = true;
     workspace.classList.remove("is-game-expanded", "is-game-transitioning");
     origin.classList.remove("game-origin-muted");
-    panels.forEach((panel, i) => {
+    backgroundRoots.forEach((panel, i) => {
       panel.inert = savedInert[i];
     });
     document.documentElement.style.overflow = savedOverflow;
@@ -296,16 +301,16 @@ WorkTimeApp.ui.createWorkspaceExpansion = function ({
         )
       )
         return;
-      savedInert = panels.map((panel) => panel.inert);
+      savedInert = backgroundRoots.map((panel) => panel.inert);
       savedOverflow = document.documentElement.style.overflow;
       savedScroll = { x: scrollX, y: scrollY };
       document.documentElement.style.overflow = "hidden";
       shell.hidden = false;
       shell.focus({ preventScroll: true });
-      panels.forEach((panel) => {
+      backgroundRoots.forEach((panel) => {
         panel.inert = true;
-        WorkTimeApp.ui.motion?.stop(panel);
       });
+      panels.forEach((panel) => WorkTimeApp.ui.motion?.stop(panel));
       restingPanels = panels.map((panel) => readFrame(panel, panel !== origin));
       measure();
       setState("opening");

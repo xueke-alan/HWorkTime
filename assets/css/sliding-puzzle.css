@@ -73,7 +73,7 @@
   min-width: 0;
   min-height: 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: var(--ui-radius);
 }
 .game-sliding-puzzle .sliding-tiles .sliding-tile {
   --sliding-tile-fill: #dfe8f0;
@@ -145,10 +145,6 @@
 }
 .sliding-warning:empty {
   display: none;
-}
-.game-sliding-puzzle :is(button, select):focus-visible {
-  outline: 2px solid #6588a5;
-  outline-offset: -3px;
 }
 .game-sliding-puzzle .sliding-board:focus-visible {
   outline: none;

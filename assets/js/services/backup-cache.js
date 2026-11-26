@@ -154,7 +154,7 @@ WorkTimeApp.services.backupCache = (() => {
           );
           const archive = G.create(() => ({
             getItem: (key) => captured.get(key) ?? null,
-          })).exportArchive({ allowEmpty: true, includeDefaults: true });
+          })).snapshot();
           nextHeader = (({ games, ...header }) => header)(archive);
           for (const [id, text] of Object.entries(raw)) {
             if (Object.hasOwn(gameRaw, id) && gameRaw[id] === text) continue;

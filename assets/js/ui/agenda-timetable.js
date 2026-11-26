@@ -4,6 +4,7 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
   calendar,
   getState,
   chip,
+  describe,
   create,
   edit,
   select,
@@ -17,9 +18,9 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
   const scope = new AbortController();
   const root = document.createElement("div");
   root.className = "agenda-timetable";
-  const divider = document.createElement("div");
-  divider.className = "timetable-divider";
-  divider.setAttribute("aria-hidden", "true");
+  const surfaceView = WorkTimeApp.ui.mountTimetable(root);
+  let eventKeys = new Map();
+  let nextEventKey = 0;
   let geometry = null,
     session = null,
     signature = "",
@@ -29,9 +30,6 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
   let contentHidden = false;
   let blockClick = false;
   let axisAnimations = [];
-  // Canonical markup excludes the alignment service's later ink offsets.
-  // Comparing live innerHTML would replace unchanged labels on every render.
-  const timedContents = new WeakMap();
   let previewFrame = null,
     previewEvent = null;
   function stopPreview() {
@@ -88,102 +86,6 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
         ];
       }),
     );
-  }
-  function reconcileSurface(candidate, keepExits, retargets) {
-    const surface = [...root.children].find(
-      (node) => node.dataset.timetableDate === candidate.dataset.timetableDate,
-    );
-    if (!surface) {
-      root.append(candidate);
-      return candidate;
-    }
-    const patch = (node, next) => {
-      for (const attribute of [...node.attributes])
-        if (!next.hasAttribute(attribute.name))
-          node.removeAttribute(attribute.name);
-      for (const attribute of next.attributes)
-        if (node.getAttribute(attribute.name) !== attribute.value)
-          node.setAttribute(attribute.name, attribute.value);
-    };
-    patch(surface, candidate);
-    const scroll = surface.firstElementChild,
-      nextScroll = candidate.firstElementChild;
-    const grid = scroll.firstElementChild,
-      nextGrid = nextScroll.firstElementChild;
-    patch(scroll, nextScroll);
-    patch(grid, nextGrid);
-    const old = new Map(
-      [...grid.querySelectorAll(":scope > [data-axis-key]")].map((node) => [
-        node.dataset.axisKey,
-        node,
-      ]),
-    );
-    for (const [index, next] of [...nextGrid.children].entries()) {
-      let node = old.get(next.dataset.axisKey);
-      // Saving a new draft changes its identity but not its painted segment.
-      if (!node && next.classList.contains("timetable-event"))
-        node = [...old.values()].find(
-          (item) =>
-            item.classList.contains("timetable-draft") &&
-            item.dataset.axisStart === next.dataset.axisStart &&
-            item.dataset.axisEnd === next.dataset.axisEnd,
-        );
-      if (node) {
-        old.delete(node.dataset.axisKey);
-        const retarget =
-          keepExits &&
-          node.classList.contains("timetable-event") &&
-          ["top", "height", "left", "width"].some(
-            (key) => node.style[key] !== next.style[key],
-          );
-        const style = retarget ? getComputedStyle(node) : null;
-        const from = style && {
-          top: style.top,
-          height: style.height,
-          left: style.left,
-          width: style.width,
-          opacity: style.opacity,
-        };
-        patch(node, next);
-        const content = timedContents.get(next) ?? next.innerHTML;
-        if ((timedContents.get(node) ?? node.innerHTML) !== content)
-          node.innerHTML = next.innerHTML;
-        if (timedContents.has(next)) timedContents.set(node, content);
-        if (retarget) {
-          // Overlap columns may change without changing the time axis. Update
-          // that chip's destination rather than restoring a stale fill effect.
-          for (const animation of node.getAnimations()) animation.cancel();
-          const target = getComputedStyle(node);
-          const timing = WorkTimeApp.ui.motion.calendar;
-          retargets.push({
-            element: node,
-            frames: [
-              from,
-              {
-                top: target.top,
-                height: target.height,
-                left: target.left,
-                width: target.width,
-                opacity: target.opacity,
-              },
-            ],
-            options: {
-              duration: timing.contentDuration,
-              easing: timing.easing,
-              fill: "both",
-            },
-          });
-        }
-      } else node = next;
-      if (grid.children[index] !== node)
-        grid.insertBefore(node, grid.children[index] || null);
-    }
-    for (const node of old.values()) node.remove();
-    if (!keepExits)
-      grid
-        .querySelectorAll(".timetable-axis-exit")
-        .forEach((node) => node.remove());
-    return surface;
   }
   function morphAxis(previous, paint) {
     const timing = WorkTimeApp.ui.motion.calendar;
@@ -415,7 +317,7 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
       button.removeAttribute("data-agenda-edit");
       button.tabIndex = -1;
     }
-    if (!preview) timedContents.set(button, button.innerHTML);
+
     if (button.parentElement !== layer) layer.append(button);
     if (preview && (!existing || textChanged))
       WorkTimeApp.ui.alignment?.refresh([button]);
@@ -469,11 +371,8 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
       stopAxisMotion();
       geometry = null;
       signature = "";
-      const empty = document.createElement("div");
-      empty.className = "timetable-empty";
-      empty.setAttribute("role", "status");
-      empty.textContent = t("noWorkdays");
-      root.replaceChildren(empty);
+      surfaceView.empty(t("noWorkdays"));
+      eventKeys.clear();
       calendar.append(root);
       return;
     }
@@ -575,22 +474,9 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
     // Read destinations with CSS column transitions disabled. Otherwise the
     // axis animation targets an intermediate width and snaps when released.
     if (animateAxis) root.classList.add("is-axis-morphing");
-    if (!sameDates) {
-      // Column changes keep the shared rule connected, so filtering weekends
-      // cannot restart its entrance animation.
-      for (const child of [...root.children])
-        if (child !== divider) child.remove();
-    }
     const first = metrics[0];
     const last = metrics[metrics.length - 1];
     const dividerLeft = first.left + first.card.clientLeft;
-    Object.assign(divider.style, {
-      left: dividerLeft + "px",
-      top: bottomTop + "px",
-      width: last.left + last.width - last.card.clientLeft - dividerLeft + "px",
-    });
-    divider.classList.toggle("is-content-hidden", contentHidden);
-    if (divider.parentElement !== root) root.append(divider);
     const ticks = [
       ...new Set([
         axis.start,
@@ -605,65 +491,29 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
     ]
       .filter((m) => m >= axis.start && m <= axis.end)
       .sort((a, b) => a - b);
-    const retargets = [];
-    const columns = [],
-      scrolls = [];
-    for (let i = 0; i < dates.length; i++) {
-      const m = metrics[i];
-      const surface = document.createElement("div");
-      surface.className = "timetable-bottom-card";
-      surface.classList.toggle("is-selected", dates[i] === state.selectedDate);
-      surface.classList.toggle("is-rest", m.rest);
-      surface.classList.toggle("has-day-surface", !!m.daySurface);
-      if (m.daySurface)
-        surface.style.setProperty("--day-surface", m.daySurface);
-      if (m.dayEdge) surface.style.setProperty("--day-edge", m.dayEdge);
-      surface.dataset.timetableDate = dates[i];
-      surface.setAttribute("role", "group");
-      surface.setAttribute("aria-label", WorkTimeApp.i18n.date(dates[i]));
-      Object.assign(surface.style, {
-        left: m.left + "px",
-        top: bottomTop + "px",
-        width: m.width + "px",
-        height: bottomHeight + "px",
-        borderRadius: "0",
-        padding:
-          padding +
-          "px " +
-          m.paddingRight +
-          "px " +
-          padding +
-          "px " +
-          m.paddingLeft +
-          "px",
-      });
-      const scroll = document.createElement("div");
-      scroll.className = "timetable-scroll";
-      scroll.style.opacity = contentHidden ? "0" : "1";
-      scroll.tabIndex = 0;
-      scroll.setAttribute("aria-label", WorkTimeApp.i18n.date(dates[i]));
-      const grid = document.createElement("div");
-      grid.className = "timetable-grid timetable-column";
-      grid.dataset.timetableDate = dates[i];
-      grid.style.height = height + "px";
-      const schedule = state.schedules[i];
-      for (const [a, b] of [
-        [axis.start, math.minute(schedule.workStart)],
-        ...schedule.breaks.map((r) => [r.start, r.end]),
-        [math.minute(schedule.workEnd), axis.end],
-      ]) {
-        const start = Math.max(axis.start, a),
-          end = Math.min(axis.end, b);
-        if (end <= start) continue;
-        const shade = document.createElement("div");
-        shade.className = "timetable-offhours";
-        shade.dataset.axisKey = "shade:" + a + ":" + b;
-        shade.dataset.axisStart = String(start);
-        shade.dataset.axisEnd = String(end);
-        shade.style.top = axis.y(start) + "px";
-        shade.style.height = axis.y(end) - axis.y(start) + "px";
-        grid.append(shade);
+    const nextKeys = new Map();
+    const model = dates.map((date, index) => {
+      const m = metrics[index];
+      const schedule = state.schedules[index];
+      const marks = [];
+      function interval(kind, a, b, label) {
+        const start = Math.max(axis.start, a);
+        const end = Math.min(axis.end, b);
+        if (end > start)
+          marks.push({
+            key: kind + ":" + a + ":" + b,
+            className:
+              kind === "shade" ? "timetable-offhours" : "timetable-break",
+            start,
+            end,
+            top: axis.y(start),
+            height: axis.y(end) - axis.y(start),
+            label,
+          });
       }
+      interval("shade", axis.start, math.minute(schedule.workStart));
+      for (const b of schedule.breaks) interval("shade", b.start, b.end);
+      interval("shade", math.minute(schedule.workEnd), axis.end);
       for (const minute of ticks) {
         if (
           axis.bands.some(
@@ -671,57 +521,156 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
           )
         )
           continue;
-        const line = document.createElement("div");
-        line.className = "timetable-rule";
-        // Rest stripes paint their own edges. Keep coordinate markers,
-        // but do not paint a second grid stroke at either boundary.
-        line.classList.toggle(
-          "is-break-boundary",
-          schedule.breaks.some((b) => minute === b.start || minute === b.end),
+        const boundary = schedule.breaks.some(
+          (b) => minute === b.start || minute === b.end,
         );
-        line.dataset.minute = String(minute);
-        line.dataset.axisKey = "rule:" + minute;
-        line.dataset.axisStart = line.dataset.axisEnd = String(minute);
-        line.style.top = axis.y(minute) + "px";
-        grid.append(line);
+        marks.push({
+          key: "rule:" + minute,
+          className: "timetable-rule" + (boundary ? " is-break-boundary" : ""),
+          start: minute,
+          end: minute,
+          minute,
+          top: axis.y(minute),
+        });
       }
-      for (const b of schedule.breaks) {
-        const start = Math.max(axis.start, b.start),
-          end = Math.min(axis.end, b.end);
-        if (end <= start) continue;
-        const rest = document.createElement("div");
-        rest.className = "timetable-break";
-        rest.dataset.axisKey = "break:" + b.start + ":" + b.end;
-        rest.dataset.axisStart = String(start);
-        rest.dataset.axisEnd = String(end);
-        rest.style.top = axis.y(start) + "px";
-        rest.style.height = axis.y(end) - axis.y(start) + "px";
-        rest.title =
+      for (const b of schedule.breaks)
+        interval(
+          "break",
+          b.start,
+          b.end,
           t("timetableBreak") +
-          " " +
-          math.clock(b.start) +
-          "–" +
-          math.clock(b.end);
-        rest.setAttribute("aria-label", rest.title);
-        grid.append(rest);
-      }
-      for (const s of math.columns(segments.filter((s) => s.date === dates[i])))
-        placeTimed(s, grid, axis);
-      scroll.append(grid);
-      surface.append(scroll);
-      const retainedSurface = reconcileSurface(
-        surface,
-        keepAxisMotion,
-        retargets,
+            " " +
+            math.clock(b.start) +
+            "–" +
+            math.clock(b.end),
+        );
+      const hasDraft = segments.some(
+        (segment) => segment.date === date && segment.item.draft,
       );
-      const retainedScroll = retainedSurface.firstElementChild;
-      retainedScroll.scrollTop = timedScroll;
-      columns.push(retainedScroll.firstElementChild);
-      scrolls.push(retainedScroll);
-    }
+      const events = math
+        .columns(segments.filter((s) => s.date === date))
+        .map((s) => {
+          const { item } = s;
+          const identity = date + ":" + item.id;
+          const draftPosition = date + ":draft:" + s.start + ":" + s.end;
+          // The persisted item takes over its draft's painted surface.
+          const key =
+            eventKeys.get(identity) ??
+            (hasDraft ? undefined : eventKeys.get(draftPosition)) ??
+            String(++nextEventKey);
+          if (!hasDraft) eventKeys.delete(draftPosition);
+          nextKeys.set(identity, key);
+          if (item.draft) nextKeys.set(draftPosition, key);
+          const top = axis.y(s.start);
+          return {
+            key,
+            id: item.id,
+            title: item.title,
+            note: item.note || "",
+            status: item.status,
+            ...describe(item),
+            draft: !!item.draft,
+            selected: state.selectedId === item.id,
+            start: s.start,
+            end: s.end,
+            continuesBefore: s.continuesBefore,
+            continuesAfter: s.continuesAfter,
+            time:
+              (s.continuesBefore ? "↳ " : "") +
+              math.clock(s.start) +
+              (s.end === null ? "" : "–" + math.clock(s.end)) +
+              (s.continuesAfter ? " ↴" : ""),
+            style: {
+              top,
+              height: s.end === null ? 18 : Math.max(1, axis.y(s.end) - top),
+              left:
+                "calc(" +
+                (100 * (s.column || 0)) / (s.columns || 1) +
+                "% + 2px)",
+              width: "calc(" + 100 / (s.columns || 1) + "% - 4px)",
+            },
+          };
+        });
+      return {
+        date,
+        label: WorkTimeApp.i18n.date(date),
+        selected: date === state.selectedDate,
+        rest: m.rest,
+        surface: m.daySurface,
+        edge: m.dayEdge,
+        style: {
+          left: m.left,
+          top: bottomTop,
+          width: m.width,
+          height: bottomHeight,
+          borderRadius: 0,
+          padding:
+            padding +
+            "px " +
+            m.paddingRight +
+            "px " +
+            padding +
+            "px " +
+            m.paddingLeft +
+            "px",
+        },
+        marks,
+        events,
+      };
+    });
+    eventKeys = nextKeys;
+    surfaceView.render({
+      columns: model,
+      height,
+      hidden: contentHidden,
+      divider: {
+        left: dividerLeft,
+        top: bottomTop,
+        width: last.left + last.width - last.card.clientLeft - dividerLeft,
+      },
+    });
+    const scrolls = [...root.querySelectorAll(".timetable-scroll")];
+    const columns = scrolls.map((scroll) => {
+      scroll.scrollTop = timedScroll;
+      return scroll.firstElementChild;
+    });
     geometry = { dates, axis, columns, scrolls, cards, metrics, allHeight };
     if (animateAxis) morphAxis(previousGeometry, previousPaint);
-    else if (retargets.length) playAxisPlans(retargets, true);
+    else if (keepAxisMotion) {
+      const retargets = [];
+      for (const column of columns)
+        for (const node of column.querySelectorAll(".timetable-event")) {
+          const before = previousPaint.get(
+            column.dataset.timetableDate + ":" + node.dataset.axisKey,
+          );
+          if (
+            !before ||
+            ["top", "height", "left", "width"].every(
+              (key) => before.clone.style[key] === node.style[key],
+            )
+          )
+            continue;
+          for (const animation of node.getAnimations()) animation.cancel();
+          const target = getComputedStyle(node);
+          const from = {},
+            to = {};
+          for (const key of ["top", "height", "left", "width", "opacity"]) {
+            from[key] = before[key];
+            to[key] = target[key];
+          }
+          const timing = WorkTimeApp.ui.motion.calendar;
+          retargets.push({
+            element: node,
+            frames: [from, to],
+            options: {
+              duration: timing.contentDuration,
+              easing: timing.easing,
+              fill: "both",
+            },
+          });
+        }
+      if (retargets.length) playAxisPlans(retargets, true);
+    }
     if (focusId)
       [...root.querySelectorAll("[data-agenda-edit]")]
         .find((b) => b.dataset.agendaEdit === focusId)
@@ -1212,7 +1161,9 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
     cancel,
     setContentHidden(hidden) {
       contentHidden = hidden;
-      divider.classList.toggle("is-content-hidden", hidden);
+      root
+        .querySelector(".timetable-divider")
+        ?.classList.toggle("is-content-hidden", hidden);
       for (const node of root.querySelectorAll(".timetable-scroll"))
         node.style.opacity = hidden ? "0" : "1";
     },
@@ -1223,6 +1174,7 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
       if (frame !== null) cancelAnimationFrame(frame);
       observer.disconnect();
       scope.abort();
+      surfaceView.dispose();
       root.remove();
       calendar.classList.remove("agenda-dual-card-view");
       calendar.style.removeProperty("--agenda-all-card-height");

@@ -1071,7 +1071,7 @@ WorkTimeApp.ui.createAgendaDrag = function ({
             "http://www.w3.org/2000/svg",
             "use",
           );
-          use.setAttribute("href", "#ms-chevron-" + direction);
+          use.setAttribute("href", "#icon-chevron-" + direction);
           svg.append(use);
           return svg;
         };

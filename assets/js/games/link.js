@@ -111,45 +111,44 @@ WorkTimeApp.games.register({
     const scroll = node("div", "link-scroll", arena);
     const stage = node("div", "link-stage", scroll);
     const board = node("div", "link-board", stage);
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const line = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     line.classList.add("link-path");
     line.setAttribute("aria-hidden", "true");
     stage.append(line);
     const cover = node("div", "link-cover", arena);
     const paintPauseCover = WorkTimeApp.games.createPauseCover(cover, signal);
-    const coverTitle = node("h3", "", cover),
-      coverText = node("p", "", cover);
-    const primary = button(cover, "primary", () => {
-      if (confirming) {
-        confirming = false;
-        state = null;
-        save();
-        render();
-        modeButtons[0].element.focus();
-      } else if (state.phase === "cleared") next();
-      else if (["won", "lost"].includes(state.phase)) {
-        state = null;
-        save();
-        render();
-        modeButtons[0].element.focus();
-      } else {
-        setPaused(false);
-        render();
-        focusTile();
-      }
-    });
-    const cancel = button(cover, "cancel", () => {
-      confirming = false;
-      render();
-      primary.focus();
-    });
-    const paintRestartCover = WorkTimeApp.games.createRestartCover({
-      cover: cover,
-      cancel: cancel,
-      accept: primary,
+    const coverView = WorkTimeApp.ui.mountSessionCover(
+      cover,
+      "link",
       signal,
-    });
+      (id) => {
+        if (disposed || suspended || signal.aborted) return;
+        if (id === "cancel") {
+          confirming = false;
+          render();
+          coverView.focus("primary");
+          return;
+        }
+        if (confirming) {
+          confirming = false;
+          state = null;
+          save();
+          render();
+          modeButtons[0].element.focus();
+        } else if (state.phase === "cleared") next();
+        else if (["won", "lost"].includes(state.phase)) {
+          state = null;
+          save();
+          render();
+          modeButtons[0].element.focus();
+        } else {
+          setPaused(false);
+          render();
+          focusTile();
+        }
+      },
+    );
     const actions = node("div", "link-actions game-controls", root);
     const hint = actionButton(actions, "hint", "help", () => {
       if (!active() || (state.mode !== "zen" && !state.hints)) return;
@@ -189,7 +188,7 @@ WorkTimeApp.games.register({
         confirming = true;
         setPaused(true);
         render();
-        primary.focus();
+        coverView.focus("primary");
       } else {
         clearMotion();
         state = null;
@@ -341,7 +340,7 @@ WorkTimeApp.games.register({
       render();
       if (!suspended && !paused) {
         if (state.phase === "playing") focusTile(index);
-        else primary.focus({ preventScroll: true });
+        else coverView.focus("primary");
       }
     }
     function animateMatch(result, a, b) {
@@ -594,12 +593,12 @@ WorkTimeApp.games.register({
         state.targetProgress +
         "/3" +
         (state.mode === "tide" ? " · " + gravity : "");
-      objective.title =
+      objective.dataset.hintText =
         t("objective", {
           family: t("family" + state.target),
           n: state.targetProgress,
         }) + (state.mode === "tide" ? " · " + t("gravity" + direction) : "");
-      objective.setAttribute("aria-label", objective.title);
+      objective.setAttribute("aria-label", objective.dataset.hintText);
     }
     function paintStats() {
       if (!state) return;
@@ -636,7 +635,7 @@ WorkTimeApp.games.register({
       sidebar.hidden = !state;
       warning.textContent = saveFailed ? t("saveFailed") : "";
       if (!state) {
-        paintRestartCover(false);
+        coverView.reset();
         return;
       }
       paintObjective();
@@ -672,26 +671,37 @@ WorkTimeApp.games.register({
         t("paused"),
       );
       cover.hidden = state.phase === "playing" && !paused && !confirming;
-      coverTitle.textContent = t(
-        confirming ? "new" : state.phase === "playing" ? "paused" : state.phase,
-      );
-      coverText.textContent = confirming
-        ? t("confirm")
-        : state.phase === "playing"
-          ? t("resumeText")
-          : t("result", { n: state.score });
-      primary.textContent = t(
-        confirming
-          ? "changeMode"
-          : state.phase === "playing"
-            ? "resume"
-            : state.phase === "cleared"
-              ? "next"
-              : "again",
-      );
-      cancel.hidden = !confirming;
-      cancel.textContent = t("cancel");
-      paintRestartCover(confirming);
+      if (!cover.hidden)
+        coverView.display({
+          confirming,
+          title: t(
+            confirming
+              ? "new"
+              : state.phase === "playing"
+                ? "paused"
+                : state.phase,
+          ),
+          detail: confirming
+            ? t("confirm")
+            : state.phase === "playing"
+              ? t("resumeText")
+              : t("result", { n: state.score }),
+          actions: [
+            ...(confirming ? [{ id: "cancel", label: t("cancel") }] : []),
+            {
+              id: "primary",
+              label: t(
+                confirming
+                  ? "changeMode"
+                  : state.phase === "playing"
+                    ? "resume"
+                    : state.phase === "cleared"
+                      ? "next"
+                      : "again",
+              ),
+            },
+          ],
+        });
       fit();
     }
     listen(board, "click", (event) => {

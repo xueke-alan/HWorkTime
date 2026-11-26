@@ -1,0 +1,223 @@
+.game-menu-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: none;
+  padding: 0.5rem var(--editor-gutter, 1.428571rem);
+}
+.game-menu-header > h2 {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-body, 1rem);
+  overflow-wrap: anywhere;
+}
+.game-menu-storage-notice {
+  margin: 0;
+  color: var(--theme-danger, #a44336);
+  font-size: var(--text-small, 0.857143rem);
+  overflow-wrap: anywhere;
+}
+.game-menu-storage-notice:empty {
+  display: none;
+}
+.game-content:has(> .game-library) > .game-menu-header {
+  padding: 0 0 0.5rem;
+}
+.game-library {
+  display: grid;
+  grid-template-columns: clamp(5.5rem, 42%, 14rem) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  padding-inline: 0;
+}
+.game-content:has(> .game-library) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.game-content > .game-library {
+  padding-inline: 0;
+}
+.game-menu-list,
+.game-menu-detail {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+.game-menu-scroll {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.game-menu-list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  scroll-padding-block: 0;
+  scrollbar-width: none;
+}
+.game-menu-list::-webkit-scrollbar {
+  display: none;
+}
+.game-menu-scroll-track {
+  position: absolute;
+  inset-block: 3px;
+  inset-inline-end: 1px;
+  width: 8px;
+  opacity: 0;
+  touch-action: none;
+  transition: opacity 140ms;
+}
+.game-menu-scroll-track[hidden] {
+  display: none;
+}
+.game-menu-scroll:is(:hover, :focus-within, .is-dragging) > .game-menu-scroll-track {
+  opacity: 1;
+}
+.game-menu-scroll-thumb {
+  width: 4px;
+  margin-inline: auto;
+  border-radius: var(--ui-radius);
+  background: color-mix(in srgb, var(--ui-accent, var(--accent)) 35%, var(--ui-surface, var(--paper)));
+  cursor: grab;
+}
+.game-menu-scroll.is-dragging .game-menu-scroll-thumb {
+  background: var(--ui-accent, var(--accent));
+  cursor: grabbing;
+}
+.game-menu-detail {
+  padding: 0.45rem 0.25rem 0.75rem clamp(0.55rem, 4%, 1.5rem);
+  border-inline-start: var(--ui-stroke) solid var(--line);
+}
+.game-menu-detail-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.game-menu-detail-header .game-menu-artwork {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+.game-menu-detail h3 {
+  min-width: 0;
+  font-size: 1.1rem;
+  line-height: 1.3;
+}
+.game-menu-progress {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
+  max-width: 38ch;
+  margin-top: 0.6rem;
+  padding-top: 0.45rem;
+  border-top: var(--ui-stroke) solid var(--line);
+  font-size: var(--ui-font-size, var(--text-small));
+  line-height: 1.4;
+}
+.game-menu-progress h4 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 650;
+}
+.game-menu-progress p {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+body button.ui-button.primary.game-menu-play {
+  --control-height: 2rem;
+  box-shadow: none;
+  background: var(--ui-highlight, var(--accent-light));
+  border-color: color-mix(in srgb, var(--ui-accent, var(--accent)) 18%, white);
+  color: var(--ui-accent, var(--accent));
+  max-width: 100%;
+  height: auto !important;
+  max-height: none !important;
+  padding: 0.25rem 0.6rem !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+body button.ui-button.primary.game-menu-play:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-accent, var(--accent)) 14%, white);
+  border-color: color-mix(in srgb, var(--ui-accent, var(--accent)) 28%, white);
+}
+body button.ui-button.game-menu-entry {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 2rem;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  text-align: start;
+  white-space: normal;
+  color: var(--ui-text, var(--ink));
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transition: background-color 140ms;
+}
+.game-menu-artwork {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: var(--ui-radius);
+  background: color-mix(in srgb, var(--accent) 9%, var(--paper));
+  color: var(--accent);
+}
+.game-menu-entry .game-menu-artwork {
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 0;
+  background: transparent;
+}
+.game-menu-artwork > .ui-icon {
+  width: 70%;
+  height: 70%;
+}
+.game-menu-name {
+  min-width: 0;
+  font-size: var(--ui-font-size, var(--text-small));
+  font-weight: 650;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.game-menu-description {
+  margin: 0.35rem 0 0.55rem;
+  block-size: 4.2em;
+  max-width: 38ch;
+  overflow: auto;
+  color: var(--ui-muted, var(--muted));
+  font-size: var(--ui-font-size, var(--text-small));
+  font-weight: 400;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+body button.game-menu-entry:is(:hover, :focus-visible) {
+  background: var(--control-hover);
+}
+body button.ui-button.game-menu-entry:focus-visible {
+  outline: none;
+}
+body button.ui-button.game-menu-entry:is([aria-pressed="true"], :active) {
+  background: var(--theme-surface-active, color-mix(in srgb, var(--ui-accent, var(--accent)) 16%, var(--ui-surface, var(--paper))));
+  color: var(--ui-accent, var(--accent));
+}
+.game-menu-scroll:has(> .game-menu-scroll-track:not([hidden])) .game-menu-list {
+  padding-inline-end: 9px;
+}

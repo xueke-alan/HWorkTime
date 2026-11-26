@@ -58,7 +58,13 @@ WorkTimeApp.ui.secondaryControllers = (() => {
     // Calling the shared loader again also promotes an in-flight idle request.
     const task = WorkTimeApp.services.assets.script(
       "assets/js/ui/secondary-runtime.min.js",
-      { fetchPriority: priority },
+      {
+        fetchPriority: priority,
+        validate: () =>
+          ["settings", "personal", "imports"].every(
+            (name) => typeof WorkTimeApp.ui.secondary[name] === "function",
+          ),
+      },
     );
     if (!loading) {
       failed = false;
@@ -400,12 +406,7 @@ WorkTimeApp.ui.createImportController = function (options) {
   }
   return {
     bind() {
-      for (const id of [
-        "importOpen",
-        "sourceOpen",
-        "oaShortcut",
-        "importOASite",
-      ])
+      for (const id of ["importOpen", "sourceOpen", "oaShortcut"])
         $(id).dataset.secondaryEntry = "imports";
       events.handler($("importOpen"), "onclick", () => {
         oaReturn = { left: false, consumed: false };
@@ -420,7 +421,7 @@ WorkTimeApp.ui.createImportController = function (options) {
           record.value.openImport({ motionDuration: 0 });
           if (!openWebsite()) oaReturn = null;
         } else if (openWebsite()) {
-          run("openImport", $("importOASite"), { motionDuration: 0 });
+          run("openImport", $("importOpen"), { motionDuration: 0 });
         } else oaReturn = null;
       });
       events.listen(window, "blur", leftOAEntry);

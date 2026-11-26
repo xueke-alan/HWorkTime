@@ -68,6 +68,28 @@
     if (!g.Solar) throw Error("本地农历资料未能加载");
     return g.Solar.fromYmd(y, m, d).getLunar();
   }
+  function calendarLunar(date) {
+    const { starts, months, monthNames, dayNames } =
+      WorkTimeApp.data.lunarMonths;
+    const offset = (Date.parse(date) - Date.UTC(1900, 0, 1)) / 86400000;
+    if (!Number.isInteger(offset) || offset < 0 || date > "2100-12-31")
+      throw Error("农历支持 1900–2100 年");
+    let left = 0,
+      right = starts.length;
+    while (left + 1 < right) {
+      const middle = Math.floor((left + right) / 2);
+      if (starts[middle] <= offset) left = middle;
+      else right = middle;
+    }
+    const month = months[left],
+      day = 1 + offset - starts[left];
+    return {
+      getMonth: () => month,
+      getDay: () => day,
+      getMonthInChinese: () => monthNames[Math.abs(month) - 1],
+      getDayInChinese: () => dayNames[day - 1],
+    };
+  }
   function merged(items) {
     return [...new Map(items.map((x) => [x.id, x])).values()];
   }
@@ -300,7 +322,14 @@
         })),
     historyData,
     loadLunar: () =>
-      WorkTimeApp.services.assets.script("assets/vendor/lunar.min.js"),
+      Promise.all(
+        [
+          "assets/vendor/lunar.min.js",
+          "assets/data/festivals.js",
+          "assets/data/international-festivals.js",
+        ].map((file) => WorkTimeApp.services.assets.script(file)),
+      ),
     lunar,
+    calendarLunar,
   };
 })(typeof window === "undefined" ? globalThis : window);

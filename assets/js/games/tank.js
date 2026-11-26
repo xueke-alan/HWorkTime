@@ -251,7 +251,7 @@ WorkTimeApp.games.register({
     const arena = node("div", "tank-arena", playfield);
     const board = node("div", "tank-board", arena);
     board.tabIndex = 0;
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const canvas = node("canvas", "", board);
     canvas.width = 240 * 3;
     canvas.height = 208 * 3;
@@ -260,12 +260,11 @@ WorkTimeApp.games.register({
     ctx.imageSmoothingEnabled = false;
     const cover = node("div", "tank-cover", board);
     const paintPauseCover = WorkTimeApp.games.createPauseCover(cover, signal);
-    const eyebrow = node("span", "tank-eyebrow", cover);
-    eyebrow.textContent = "BATTLE CITY";
-    const heading = node("h3", "", cover),
-      description = node("p", "", cover);
-    const results = node("div", "tank-results", cover);
-    const play = button(cover, "start", () => {
+    const resultHost = node("div", "tank-cover-body", cover);
+    resultHost.style.display = "contents";
+    const resultView = WorkTimeApp.ui.mountGameResult(resultHost, signal);
+    function playFromCover() {
+      if (signal.aborted) return;
       if (mode === "clear") advance();
       else if (paused) {
         paused = false;
@@ -273,7 +272,7 @@ WorkTimeApp.games.register({
         board.focus();
         loop();
       } else start(state.custom);
-    });
+    }
     const editorBar = node("div", "tank-editor-bar", controls);
     editorBar.hidden = true;
     const brushShapes = node("div", "tank-brush-shapes", editorBar);
@@ -533,7 +532,7 @@ WorkTimeApp.games.register({
             clearInput();
             save();
             sync();
-            play.focus({ preventScroll: true });
+            resultView.focus("tank", "start");
             break;
           }
         }
@@ -590,7 +589,7 @@ WorkTimeApp.games.register({
           " · " +
           stageHeading.textContent,
       );
-      stagePicker.title = stageHeading.textContent;
+      stagePicker.dataset.hintText = stageHeading.textContent;
       closeStages.setAttribute(
         "aria-label",
         WorkTimeApp.i18n.t("games.levelStatus.returnGame"),
@@ -605,14 +604,14 @@ WorkTimeApp.games.register({
       });
       const isPaused = paused || suspended;
       pauseButton.disabled = mode !== "playing";
-      pauseButton.title = t(isPaused ? "resume" : "pause");
-      pauseButton.setAttribute("aria-label", pauseButton.title);
+      pauseButton.dataset.hintText = t(isPaused ? "resume" : "pause");
+      pauseButton.setAttribute("aria-label", pauseButton.dataset.hintText);
       WorkTimeApp.games.setIcon(pauseButton, isPaused ? "play-arrow" : "pause");
-      restart.title = t("restart");
-      restart.setAttribute("aria-label", restart.title);
+      restart.dataset.hintText = t("restart");
+      restart.setAttribute("aria-label", restart.dataset.hintText);
       restart.disabled = mode === "editor";
-      sound.title = t(muted ? "unmute" : "mute");
-      sound.setAttribute("aria-label", sound.title);
+      sound.dataset.hintText = t(muted ? "unmute" : "mute");
+      sound.setAttribute("aria-label", sound.dataset.hintText);
       sound.setAttribute("aria-pressed", String(!muted));
       sound.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/>${muted ? '<path d="m16 9 5 6m0-6-5 6"/>' : '<path d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>'}</g></svg>`;
       editor.textContent = t("editor");
@@ -638,42 +637,59 @@ WorkTimeApp.games.register({
       paintPauseCover(mode === "playing" && isPaused, t("paused"));
       cover.hidden = mode === "editor" || (mode === "playing" && !isPaused);
       cover.dataset.result = String(mode === "over" || mode === "clear");
-      heading.textContent = t(
-        mode === "over"
-          ? "over"
-          : mode === "clear"
-            ? "clear"
-            : isPaused
-              ? "paused"
-              : "name",
-      );
-      description.hidden = mode === "ready";
-      description.textContent = t(
-        mode === "over"
-          ? state.reason === "base"
-            ? "baseLost"
-            : "livesLost"
-          : mode === "clear"
-            ? "clearText"
-            : isPaused
-              ? "pauseText"
-              : "intro",
-      );
-      results.replaceChildren();
-      if (mode === "clear" || mode === "over")
-        state.players.forEach((p, i) => {
-          const row = node("p", "", results);
-          row.textContent = `${i + 1}P  ·  ${p.score}  ·  ${p.kills.map((n, k) => `${(k + 1) * 100}×${n}`).join("  ")}${state.bonusPlayer === i ? "  ★ +1000" : ""}`;
+      if (!cover.hidden) {
+        const ended = mode === "clear" || mode === "over";
+        const title = t(
+          mode === "over"
+            ? "over"
+            : mode === "clear"
+              ? "clear"
+              : isPaused
+                ? "paused"
+                : "name",
+        );
+        const detail =
+          mode === "ready"
+            ? undefined
+            : t(
+                mode === "over"
+                  ? state.reason === "base"
+                    ? "baseLost"
+                    : "livesLost"
+                  : mode === "clear"
+                    ? "clearText"
+                    : isPaused
+                      ? "pauseText"
+                      : "intro",
+              );
+        const lines = ended
+          ? state.players.map(
+              (p, i) =>
+                `${i + 1}P  ·  ${p.score}  ·  ${p.kills.map((n, k) => `${(k + 1) * 100}×${n}`).join("  ")}${state.bonusPlayer === i ? "  ★ +1000" : ""}`,
+            )
+          : [];
+        resultView.update({
+          game: "tank",
+          title,
+          detail,
+          lines,
+          actions: [
+            {
+              id: "start",
+              label: t(
+                mode === "clear"
+                  ? "next"
+                  : mode === "over"
+                    ? "again"
+                    : isPaused
+                      ? "resume"
+                      : "start",
+              ),
+              run: playFromCover,
+            },
+          ],
         });
-      play.textContent = t(
-        mode === "clear"
-          ? "next"
-          : mode === "over"
-            ? "again"
-            : isPaused
-              ? "resume"
-              : "start",
-      );
+      }
       feedback.textContent = t(
         mode === "editor"
           ? "editorHint"
@@ -1203,7 +1219,7 @@ WorkTimeApp.games.register({
           };
           draw();
         }
-        if (e.code === "Space") {
+        if (e.code === "Enter") {
           e.preventDefault();
           paintCell(cursor.x, cursor.y);
         }

@@ -9,10 +9,7 @@ WorkTimeApp.ui.createSidebarPanels = function ({
     ids = ["importDialog", "sourceDialog"],
     panes = new Map(ids.map((id) => [id, document.getElementById(id)])),
     overview = [...sidebar.children].filter(
-      (element) =>
-        !element.matches(
-          ".sidebar-header, .summary-divider, .sidebar-oa-workspace",
-        ),
+      (element) => !element.matches(".oa-entry, .sidebar-oa-workspace"),
     ),
     host = sidebar.querySelector(".sidebar-oa-workspace"),
     stack = [];
@@ -46,49 +43,24 @@ WorkTimeApp.ui.createSidebarPanels = function ({
     settingsCancel = document.getElementById("personalSettingsCancel"),
     tablist = settings.querySelector(".settings-tabs"),
     tabs = [...tablist.querySelectorAll('[role="tab"]')];
-  const animationCompat = WorkTimeApp.ui.animationCompat;
-  let settingsIconAnimation = null;
   let activeTab = tabs[0];
   function updateSettingsButton(animate = false) {
     const open = !settings.hidden;
-    settingsButton.classList.toggle("primary", open);
     settingsButton.setAttribute("aria-pressed", String(open));
     settingsButton.setAttribute("aria-expanded", String(open));
-    settingsButton.title = WorkTimeApp.i18n.t(
+    settingsButton.dataset.hintText = WorkTimeApp.i18n.t(
       open ? "copy.e2ae92e1ec" : "copy.165118b1d4",
     );
-    settingsButton.setAttribute("aria-label", settingsButton.title);
+    settingsButton.setAttribute("aria-label", settingsButton.dataset.hintText);
     settingsButton.dataset.actionHint = open
       ? "calendarHint.closeSettings"
       : "calendarHint.settings";
-    const use = settingsButton.querySelector("use"),
-      href = open ? "#ms-close" : "#ms-settings",
-      changed = use.getAttribute("href") !== href;
-    use.setAttribute("href", href);
-    if (!changed || !animate || animationCompat.preference().matches) return;
-    settingsIconAnimation?.cancel();
-    const icon = settingsButton.querySelector("svg"),
-      angle = open ? 65 : -65,
-      animation = animationCompat.animate(
-        icon,
-        [
-          { opacity: 0.2, transform: "scale(0.55) rotate(" + angle + "deg)" },
-          { opacity: 1, transform: "scale(1) rotate(0deg)" },
-        ],
-        {
-          duration: 280,
-          easing: "cubic-bezier(0.2, 0.7, 0.3, 1)",
-          fill: "both",
-        },
-      );
-    settingsIconAnimation = animation;
-    animation.finished
-      .then(() => {
-        if (settingsIconAnimation !== animation) return;
-        settingsIconAnimation = null;
-        animation.cancel();
-      })
-      .catch(() => {});
+    WorkTimeApp.ui.motion.setToggleIcon(
+      settingsButton,
+      open,
+      "#icon-settings",
+      animate,
+    );
   }
   function hidePopovers() {
     settings.dispatchEvent(new Event("settings-tab-leave", { bubbles: true }));
@@ -204,33 +176,11 @@ WorkTimeApp.ui.createSidebarPanels = function ({
   function render() {
     const active = stack.at(-1);
     sidebar.classList.toggle("is-oa-open", !!active);
-    const importOpen = document.getElementById("importOpen");
-    importOpen.classList.toggle("is-return", !!active);
-    const secondaryActions = document.querySelector(
-      ".import-secondary-actions",
-    );
-    secondaryActions.inert = !!active || importOpen.inert;
-    secondaryActions.setAttribute(
-      "aria-hidden",
-      String(secondaryActions.inert),
-    );
-    const returnLabel =
-      stack.length > 1
-        ? WorkTimeApp.i18n.t("copy.e1fa5c7224")
-        : WorkTimeApp.i18n.t("copy.13e491d46e");
-    importOpen.querySelector(".import-main > span").textContent = active
-      ? returnLabel
-      : WorkTimeApp.i18n.t("copy.f80695ff47");
-    importOpen
-      .querySelector(".import-main use")
-      .setAttribute("href", active ? "#ms-chevron-left" : "#ms-add");
-    importOpen.setAttribute(
-      "aria-label",
-      active ? returnLabel : WorkTimeApp.i18n.t("copy.f80695ff47"),
-    );
-    importOpen.title = active
-      ? returnLabel
-      : WorkTimeApp.i18n.t("copy.ed282645c7");
+    WorkTimeApp.ui.workspaceViews.oaActions.back = active
+      ? WorkTimeApp.i18n.t(
+          stack.length > 1 ? "copy.e1fa5c7224" : "copy.13e491d46e",
+        )
+      : "";
     host.hidden = !active;
     for (const element of overview)
       element.classList.toggle("sidebar-overview-hidden", !!active);
@@ -245,7 +195,7 @@ WorkTimeApp.ui.createSidebarPanels = function ({
       const close = pane.querySelector(".dialog-head [data-close]");
       if (close) {
         close.setAttribute("aria-label", back);
-        close.title = back;
+        close.dataset.hintText = back;
       }
       pane.querySelectorAll(".dialog-foot [data-close]").forEach((button) => {
         button.querySelector(".button-label").textContent =
@@ -286,9 +236,8 @@ WorkTimeApp.ui.createSidebarPanels = function ({
         sidebar.scrollIntoView({ block: "nearest" });
       (id === "importDialog"
         ? document.getElementById("pasteText")
-        : pane.querySelector(
-            "#importDetailRawText,[data-detail-step]:not(:disabled)",
-          ) || pane.querySelector(".dialog-head [data-close]")
+        : pane.querySelector("#importDetailRawText") ||
+          pane.querySelector(".dialog-head [data-close]")
       ).focus({ preventScroll: true });
       if (instant) {
         // Commit the final zero-duration state in the click handler before opening OA.
@@ -312,12 +261,7 @@ WorkTimeApp.ui.createSidebarPanels = function ({
       if (pane.open) pane.close();
     }
     render();
-    if (
-      !sidebar
-        .querySelector(".sidebar-actions")
-        .classList.contains("is-year-mode")
-    )
-      finishNavigationMotion();
+    finishNavigationMotion();
   }
   function closed(event) {
     const index = stack.findIndex((entry) => entry.id === event.target.id);
@@ -333,6 +277,13 @@ WorkTimeApp.ui.createSidebarPanels = function ({
     );
     if (previous) WorkTimeApp.ui.alignment?.refresh([panes.get(previous.id)]);
     const trigger = removed[0].trigger;
+    if (
+      !previous &&
+      (!trigger?.getClientRects().length || trigger.closest(".oa-entry"))
+    ) {
+      document.getElementById("importOpen").focus({ preventScroll: true });
+      return;
+    }
     if (trigger?.isConnected && trigger.getClientRects().length)
       trigger.focus({ preventScroll: true });
   }
@@ -374,7 +325,7 @@ WorkTimeApp.ui.createSidebarPanels = function ({
     window.removeEventListener("blur", finishNavigationMotion);
     document
       .getElementById("importOpen")
-      .removeEventListener("click", returnFromHeader);
+      .removeEventListener("click", returnFromHeader, true);
     for (const pane of panes.values())
       pane.removeEventListener("close", closed);
     stack.length = 0;
@@ -387,7 +338,7 @@ WorkTimeApp.ui.createSidebarPanels = function ({
   }
   document
     .getElementById("importOpen")
-    .addEventListener("click", returnFromHeader);
+    .addEventListener("click", returnFromHeader, true);
   document.addEventListener("keydown", keydown);
   document.addEventListener("visibilitychange", onVisibility);
   window.addEventListener("blur", finishNavigationMotion);

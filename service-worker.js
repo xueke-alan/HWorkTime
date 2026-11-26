@@ -6,16 +6,34 @@ const ENTRY = new URL("./index.html", self.registration.scope).href;
 const PRECACHE = new Set(
   SHELL.assets.map((asset) => new URL(asset, self.registration.scope).href),
 );
+function executableAssetType(pathname) {
+  if (/\.m?js$/i.test(pathname))
+    return /^(?:application|text)\/(?:x-)?(?:java|ecma)script$/i;
+  if (/\.css$/i.test(pathname)) return /^text\/css$/i;
+  return null;
+}
+function matchesAssetType(response, type) {
+  return (
+    !type ||
+    type.test(response?.headers.get("content-type")?.split(";")[0].trim() || "")
+  );
+}
 self.addEventListener("install", (event) => {
   // A failed dependency keeps the previous worker and its complete shell active.
   event.waitUntil(
-    caches
-      .open(CACHE)
-      .then((cache) =>
-        cache.addAll(
-          [...PRECACHE].map((url) => new Request(url, { cache: "reload" })),
-        ),
-      ),
+    (async () => {
+      const cache = await caches.open(CACHE);
+      await cache.addAll(
+        [...PRECACHE].map((url) => new Request(url, { cache: "reload" })),
+      );
+      await Promise.all(
+        [...PRECACHE].map(async (url) => {
+          const type = executableAssetType(new URL(url).pathname);
+          if (type && !matchesAssetType(await cache.match(url), type))
+            throw Error("Unexpected offline asset type: " + url);
+        }),
+      );
+    })(),
   );
 });
 self.addEventListener("activate", (event) => {
@@ -48,13 +66,20 @@ self.addEventListener("fetch", (event) => {
   const isEntry =
     url.pathname === new URL(ENTRY).pathname ||
     url.href.split(/[?#]/)[0] === self.registration.scope;
+  const installedPage =
+    navigation &&
+    (isEntry || PRECACHE.has(new URL(url.pathname, url.origin).href));
   const immutable =
     url.searchParams.has("v") && /\/assets\//.test(url.pathname);
   const cachedFirst = !navigation && (immutable || PRECACHE.has(url.href));
+  const assetType = executableAssetType(url.pathname);
   async function network(cache) {
     const response = await fetch(event.request);
+    // A static host can return its HTML entry with 200 for a missing asset.
+    if (response.ok && !matchesAssetType(response, assetType))
+      return Response.error();
     // Keep the installed entry paired with the assets from the same build.
-    if (response.ok && response.type !== "opaque" && !(navigation && isEntry)) {
+    if (response.ok && response.type !== "opaque" && !installedPage) {
       try {
         await cache.put(event.request, response.clone());
         // Bound historical content-hash variants of dynamically loaded assets.
@@ -77,11 +102,18 @@ self.addEventListener("fetch", (event) => {
     let cache, cached;
     try {
       cache = await caches.open(CACHE);
-      cached = await cache.match(navigation && isEntry ? ENTRY : event.request);
+      cached = await cache.match(
+        installedPage
+          ? isEntry
+            ? ENTRY
+            : new URL(url.pathname, url.origin).href
+          : event.request,
+      );
+      if (!matchesAssetType(cached, assetType)) cached = undefined;
     } catch {
       // Private browsing or storage pressure can disable CacheStorage.
     }
-    if (cachedFirst && cached) return cached;
+    if ((installedPage || cachedFirst) && cached) return cached;
     const request = network(cache);
     background.push(request);
     if (navigation && cached) {

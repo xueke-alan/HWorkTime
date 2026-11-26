@@ -33,4 +33,4 @@
 
 从冻结候选复验：`npm run aeroplane:evaluate`；通过后执行 `npm run aeroplane:export`。重新训练会生成新的候选，必须重新通过同一门槛。
 
-`scripts/verify-aeroplane.cjs` 对实际分发的权重执行规则、完整对局、存档传输、浏览器与 Worker 数值一致性检查，并覆盖六语言、主题、手机布局、动画取消、模型故障恢复、本地入口、HTTP 和断网续玩。浏览器检查记录及截图输出到 `test-results/aeroplane/`。
+`scripts/verify/games/verify-aeroplane.cjs` 对实际分发的权重执行规则、完整对局、存档传输、浏览器与 Worker 数值一致性检查，并覆盖六语言、主题、手机布局、动画取消、模型故障恢复、本地入口、HTTP 和断网续玩。浏览器检查记录及截图输出到 `test-results/aeroplane/`。

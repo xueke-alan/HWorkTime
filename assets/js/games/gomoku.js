@@ -114,7 +114,7 @@ WorkTimeApp.games.register({
     let selectedForbidden = save.forbidden ?? false;
     let forbiddenNotice = null;
     const difficultyOptions = node(setup, "div", "gomoku-difficulties");
-    difficultyOptions.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(difficultyOptions);
     const difficultyButtons = ["normal", "hard", "master"].map(
       (difficulty) => ({
         difficulty,
@@ -181,7 +181,7 @@ WorkTimeApp.games.register({
     const play = node(root, "div", "gomoku-play");
     const stage = node(play, "div", "gomoku-stage");
     const board = node(stage, "div", "gomoku-board");
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const art = node(board, "div", "gomoku-art");
     art.setAttribute("aria-hidden", "true");
     const grid = Array.from(
@@ -248,12 +248,12 @@ WorkTimeApp.games.register({
     const resultLayer = node(board, "div", "gomoku-result");
     resultLayer.hidden = true;
     resultLayer.setAttribute("aria-hidden", "true");
-    const resultFrame = node(resultLayer, "div", "gomoku-result-frame");
-    const resultWash = node(resultFrame, "div", "gomoku-result-wash");
-    const resultSplash = node(resultFrame, "div", "gomoku-result-splash");
-    const resultArt = node(resultFrame, "img", "gomoku-result-art");
-    resultArt.alt = "";
-    resultArt.draggable = false;
+    const brush = WorkTimeApp.ui.mountBrushResult(
+      resultLayer,
+      "gomoku",
+      signal,
+    );
+    const { image: resultArt, wash: resultWash, splash: resultSplash } = brush;
     const objective = node(controls, "div", "gomoku-objective");
     const title = node(objective, "h3", "gomoku-level-title");
     const goalText = node(objective, "p", "gomoku-detail");
@@ -263,10 +263,8 @@ WorkTimeApp.games.register({
     status.setAttribute("role", "status");
     const thinkingIndicator = node(controls, "div", "gomoku-thinking");
     thinkingIndicator.setAttribute("aria-hidden", "true");
-    // Material Symbols Rounded Psychology, Apache-2.0; Google revision 737e3324305806514d7909874fa1818ae1808232.
-    thinkingIndicator.innerHTML = `<svg class="gomoku-thinking-icon" viewBox="0 -960 960 960" focusable="false">
-      <path d="M240-252q-57-52-88.5-121.5T120-520q0-150 105-255t255-105q125 0 221.5 73.5T827-615l52 205q5 19-7 34.5T840-360h-80v120q0 33-23.5 56.5T680-160h-80v40q0 17-11.5 28.5T560-80q-17 0-28.5-11.5T520-120v-80q0-17 11.5-28.5T560-240h120v-160q0-17 11.5-28.5T720-440h68l-38-155q-23-91-98-148t-172-57q-116 0-198 81t-82 197q0 60 24.5 114t69.5 96l26 24v168q0 17-11.5 28.5T280-80q-17 0-28.5-11.5T240-120v-132Zm254-188Z" />
-      <path class="gomoku-thinking-gear" d="m434-410 4 32q1 8 6.5 13t13.5 5h44q8 0 13.5-5t6.5-13l4-32q8-3 14.5-7t11.5-9l30 13q7 3 14 1t11-9l22-38q4-7 2.5-14t-7.5-12l-26-19q2-8 2-16t-2-16l26-19q6-5 7.5-12t-2.5-14l-22-38q-4-7-11-9t-14 1l-30 13q-5-5-11.5-9t-14.5-7l-4-32q-1-8-6.5-13t-13.5-5h-44q-8 0-13.5 5t-6.5 13l-4 32q-8 3-14.5 7t-11.5 9l-30-13q-7-3-14-1t-11 9l-22 38q-4 7-2.5 14t7.5 12l26 19q-2 8-2 16t2 16l-26 19q-6 5-7.5 12t2.5 14l22 38q4 7 11 9t14-1l30-13q5 5 11.5 9t14.5 7Zm46-50q-25 0-42.5-17.5T420-520q0-25 17.5-42.5T480-580q25 0 42.5 17.5T540-520q0 25-17.5 42.5T480-460Z" />
+    thinkingIndicator.innerHTML = `<svg class="gomoku-thinking-icon" viewBox="0 0 256 256" focusable="false">
+      <use class="gomoku-thinking-gear" href="#icon-thinking-gear" />
     </svg>`;
     const actions = node(controls, "div", "gomoku-actions");
     const undo = button(actions, "undo", (keyboard) => {
@@ -434,7 +432,7 @@ WorkTimeApp.games.register({
             : "draw";
       const effect = { animations: [], decode: null, timer: null };
       resultEffect = effect;
-      resultArt.src = resultImages[outcome].src;
+      brush.paint(resultImages[outcome].src);
       effect.decode = compat.decode(resultArt);
       effect.decode.finished.then(() => {
         if (resultEffect !== effect) return;
@@ -451,7 +449,7 @@ WorkTimeApp.games.register({
         resultLayer.hidden = false;
         const animated =
           !reduced.matches && typeof resultArt.animate === "function";
-        resultWash.hidden = resultSplash.hidden = !animated;
+        brush.paint(resultImages[outcome].src, animated);
         if (animated) {
           const track = (element, frames, duration, delay = 0) =>
             effect.animations.push(

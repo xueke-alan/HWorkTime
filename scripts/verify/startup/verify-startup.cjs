@@ -1,0 +1,667 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const http = require("node:http");
+const { pathToFileURL } = require("node:url");
+const { chromium } = require("playwright");
+async function verifyOvertimeRules(page) {
+  const results = await page.evaluate(() => {
+    const { records, state } = WorkTimeApp.domain,
+      schedule = state.defaultState().settings,
+      workday = "2026-10-08",
+      calculate = (
+        start,
+        end,
+        extra = {},
+        settings = schedule,
+        date = workday,
+      ) =>
+        records.calculate(
+          date,
+          {
+            actual: {
+              start,
+              end,
+              nextDay: false,
+              effectiveMinutes: null,
+              ...extra.record,
+            },
+            ...extra.day,
+          },
+          settings,
+          true,
+        ),
+      cases = [
+        calculate("07:00", "17:30"),
+        calculate("07:00", "16:30"),
+        calculate("07:00", "18:30"),
+        calculate("08:54", "17:30"),
+        calculate("09:00", "19:00"),
+        calculate("07:00", "01:00", { record: { nextDay: true } }),
+        calculate("07:00", "07:30"),
+        calculate(
+          "07:00",
+          "17:30",
+          {},
+          {
+            ...schedule,
+            breaks: [{ start: 435, end: 465 }, ...schedule.breaks],
+          },
+        ),
+        calculate("08:00", "15:30", { day: { leaveMinutes: 120 } }),
+        calculate("08:00", "10:00", { day: { leaveMinutes: 480 } }),
+        calculate("18:00", "20:00", { day: { leaveMinutes: 480 } }),
+        calculate("", "", { record: { effectiveMinutes: 600 } }),
+        calculate("08:00", "17:30", { record: { effectiveMinutes: 600 } }),
+        calculate("07:00", "17:30", {}, schedule, "2026-10-11"),
+      ].map(({ minutes, overtime }) => [minutes, overtime]),
+      ends = [
+        ["07:00", 540],
+        ["08:00", 480],
+        ["09:00", 540],
+        ["20:00", 540],
+        ["07:00", 1320],
+      ].map(([start, target]) =>
+        records.endForDuration(start, target, schedule),
+      );
+    return { cases, ends };
+  });
+  assert.deepEqual(results.cases, [
+    [540, 0],
+    [480, -60],
+    [570, 30],
+    [426, -54],
+    [480, 0],
+    [960, 420],
+    [30, -480],
+    [510, 0],
+    [360, 0],
+    [120, 0],
+    [120, 120],
+    [600, 120],
+    [600, 0],
+    [540, 540],
+  ]);
+  assert.deepEqual(results.ends, [
+    { end: "19:00", nextDay: false },
+    { end: "17:30", nextDay: false },
+    { end: "20:00", nextDay: false },
+    { end: "05:00", nextDay: true },
+    null,
+  ]);
+}
+async function verifyCalendarAverage(page) {
+  const selectedDate = await page
+      .locator(".day.selected")
+      .getAttribute("data-date"),
+    day = page.locator('.day[data-date="2026-10-08"]'),
+    value = day.locator(".day-average-value");
+  await day.click();
+  assert.equal(await day.locator(".day-average").isVisible(), false);
+  await page.locator("#dayStart").fill("08:00");
+  await page.locator("#dayStart").press("Tab");
+  assert.equal(await day.locator(".day-average").isVisible(), false);
+  for (const [end, hours, below] of [
+    ["18:30", "0.50 h", true],
+    ["19:00", "1.00 h", false],
+    ["19:15", "1.25 h", false],
+  ]) {
+    await page.locator("#dayEnd").fill(end);
+    await page.locator("#dayEnd").press("Tab");
+    await page.waitForFunction(
+      (expected) =>
+        document.querySelector(
+          '.day[data-date="2026-10-08"] .day-average-value',
+        )?.textContent === expected,
+      hours,
+    );
+    assert.equal(
+      await value.evaluate((element) =>
+        element.classList.contains("below-target"),
+      ),
+      below,
+    );
+    if (below)
+      assert.equal(
+        await value.evaluate((element) => getComputedStyle(element).color),
+        "rgb(209, 59, 50)",
+      );
+    assert.equal(
+      await day.locator(".trend-icon use").getAttribute("href"),
+      "#icon-horizontal-rule",
+    );
+  }
+  await page.locator('.day[data-date="2026-10-11"]').click();
+  await page.locator("#plannedOvertimeToggle").click();
+  await page.waitForFunction(() =>
+    document
+      .querySelector('.day[data-date="2026-10-08"] .day-average-value')
+      ?.classList.contains("below-target"),
+  );
+  await page.locator("#plannedOvertimeToggle").click();
+  await page.waitForFunction(() => {
+    const value = document.querySelector(
+      '.day[data-date="2026-10-08"] .day-average-value',
+    );
+    return value && !value.classList.contains("below-target");
+  });
+  const additionalDates = ["2026-10-09", "2026-10-12", "2026-10-13"];
+  for (const date of ["2026-10-08", ...additionalDates]) {
+    await page.locator(`.day[data-date="${date}"]`).click();
+    await page.locator("#dayStart").fill("08:00");
+    await page.locator("#dayEnd").fill("19:00");
+    await page.locator("#dayEnd").press("Tab");
+  }
+  const lastDay = page.locator('.day[data-date="2026-10-13"]');
+  for (const [end, overtime, average, below] of [
+    ["18:58", "0.97 h", "0.99 h", true],
+    ["18:59", "0.98 h", "1.00 h", false],
+  ]) {
+    await page.locator("#dayEnd").fill(end);
+    await page.locator("#dayEnd").press("Tab");
+    await page.waitForFunction(
+      (expected) =>
+        document.querySelector('.day[data-date="2026-10-13"] .day-overtime')
+          ?.textContent === expected,
+      overtime,
+    );
+    assert.equal(
+      await lastDay.locator(".day-average-value").textContent(),
+      average,
+    );
+    assert.equal(
+      await lastDay.locator(".day-average-value.below-target").count(),
+      below ? 1 : 0,
+    );
+  }
+  for (const date of additionalDates) {
+    await page.locator(`.day[data-date="${date}"]`).click();
+    await page.locator("#clearManual").click();
+  }
+  await day.click();
+  await page.locator("#clearManual").click();
+  await page.waitForFunction(
+    () =>
+      document.querySelector('.day[data-date="2026-10-08"] .day-average')
+        .textContent === "",
+  );
+  await page.locator('.day[data-date="' + selectedDate + '"]').click();
+}
+async function verifyTemplates(page) {
+  const templates = Array.from({ length: 6 }, (_, index) => ({
+    name: "跨午夜工作模板名称用于验证长文本可以完整换行显示" + index,
+    start: "08:00",
+    end: "01:30",
+    nextDay: true,
+  }));
+  const text = await page.evaluate(
+    (items) => WorkTimeApp.services.templateShare.encode(items),
+    templates,
+  );
+  await page.locator("#dayImportTemplates").click();
+  await page.locator("#templateImportText").fill(text);
+  await page.waitForSelector("#templateImportPreview article");
+  assert.equal(await page.locator("#templateImportPreview article").count(), 6);
+  assert.equal(await page.locator(".template-preview-nextday").count(), 6);
+  assert.match(
+    await page.locator("#confirmTemplateImport").textContent(),
+    /替换/,
+    "The import action must disclose replacement of existing templates",
+  );
+  for (const width of [1440, 768, 540, 375, 320]) {
+    await page.setViewportSize({ width, height: 800 });
+    const geometry = await page.evaluate(() => {
+      const pane = document.querySelector(".template-import-preview-scroll");
+      return {
+        overflow: pane.scrollWidth - pane.clientWidth,
+        names: [
+          ...document.querySelectorAll("#templateImportPreview strong"),
+        ].map((element) => element.getBoundingClientRect().width),
+        inputHeight: document.querySelector("#templateImportText").clientHeight,
+        rowsFit: [
+          ...document.querySelectorAll("#templateImportPreview article"),
+        ].every((row) => row.scrollHeight <= row.clientHeight),
+      };
+    });
+    assert.ok(geometry.overflow <= 1, "Template preview must fit at " + width);
+    assert.ok(geometry.names.every((size) => size >= 50));
+    assert.ok(geometry.inputHeight >= 40);
+    assert.ok(geometry.rowsFit, "Long names must fit their preview rows");
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.locator("#templateImportText").fill("invalid");
+  assert.equal(await page.locator("#confirmTemplateImport").isDisabled(), true);
+  await page.waitForFunction(
+    () => document.querySelector("#templateImportError").textContent,
+  );
+  await page.locator("#templateImportText").fill(text);
+  await page.locator("#templateImportDialog [data-close]").first().click();
+  await page.waitForTimeout(350);
+  assert.equal(await page.locator("#templateImportPreview article").count(), 0);
+  await page.locator("#dayImportTemplates").click();
+  assert.equal(await page.locator("#templateImportText").inputValue(), "");
+  // A decode already in flight must not restore a preview after closing.
+  await page.evaluate(() => {
+    const transport = WorkTimeApp.services.templateShare;
+    const decode = transport.decode;
+    transport.decode = async (value) => {
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      return decode(value);
+    };
+    window.reviewRestoreDecode = () => {
+      transport.decode = decode;
+    };
+  });
+  await page.locator("#templateImportText").fill(text);
+  await page.locator("#parseTemplateImport").click();
+  await page.locator("#templateImportDialog [data-close]").first().click();
+  await page.waitForTimeout(250);
+  assert.equal(await page.locator("#templateImportPreview article").count(), 0);
+  assert.equal(await page.locator("#confirmTemplateImport").isDisabled(), true);
+  await page.evaluate(() => {
+    window.reviewRestoreDecode();
+    delete window.reviewRestoreDecode;
+  });
+  await page.locator("#dayImportTemplates").click();
+  await page.locator("#templateImportText").fill(text);
+  await page.waitForSelector("#templateImportPreview article");
+  await page.locator("#confirmTemplateImport").click();
+  await page.waitForFunction(
+    () => !document.querySelector("#templateImportDialog").open,
+  );
+  assert.equal(
+    await page.locator("#timeTemplateList [data-template-fill]").count(),
+    6,
+  );
+  assert.equal(await page.locator("#addTimeTemplate").isDisabled(), true);
+  // Exercise successful sharing without writing to the system clipboard.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (value) => {
+          window.reviewSharedText = value;
+        },
+      },
+    });
+  });
+  await page.locator("#dayShareTemplates").click();
+  await page.waitForFunction(() =>
+    document
+      .querySelector("#dayShareTemplates")
+      .classList.contains("is-copying"),
+  );
+  assert.deepEqual(
+    await page.evaluate(() =>
+      WorkTimeApp.services.templateShare.decode(window.reviewSharedText),
+    ),
+    templates,
+  );
+  await page.waitForFunction(
+    () =>
+      !document
+        .querySelector("#dayShareTemplates")
+        .classList.contains("is-copying"),
+  );
+  await page.locator("#timeTemplateList [data-template-fill]").first().click();
+  assert.equal(await page.locator("#dayStart").inputValue(), "08:00");
+  assert.equal(await page.locator("#dayEnd").inputValue(), "01:30");
+  assert.equal(
+    await page.locator("#dayNextToggle").getAttribute("aria-pressed"),
+    "true",
+  );
+  await page.reload();
+  await page.waitForFunction(
+    () => document.documentElement.dataset.appState === "ready",
+  );
+  assert.equal(
+    await page.locator("#timeTemplateList [data-template-fill]").count(),
+    6,
+  );
+  await page.evaluate(() =>
+    WorkTimeApp.services.preferences.page.saveMotionMode("system"),
+  );
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.locator("#monthTitle").click();
+  assert.equal(await page.locator("[data-year-date]").count(), 365);
+  const heatScales = await page.evaluate(() => {
+    const year = WorkTimeApp.ui.year;
+    const scale = (days) => year.scaleMaximum([{ days }]);
+    const weekend = { work: false, weekend: true, overtime: 480 };
+    const weekendMaximum = scale([weekend]);
+    return {
+      mixed: scale([weekend, { work: true, weekend: false, overtime: 61 }]),
+      weekendMaximum,
+      weekendRatio: year.heatColor(480, weekendMaximum).ratio,
+      empty: scale([]),
+      deficits: scale([{ weekend: false, overtime: -60 }]),
+    };
+  });
+  assert.deepEqual(heatScales, {
+    mixed: 120,
+    weekendMaximum: 0,
+    weekendRatio: 0,
+    empty: 0,
+    deficits: 0,
+  });
+  assert.equal(
+    await page.evaluate(
+      () => document.querySelector(".year-day").getAnimations().length,
+    ),
+    0,
+  );
+  await page.locator("#monthTitle").click();
+}
+async function verifyCalendar(page) {
+  assert.equal(await page.locator("#calendarToday").count(), 0);
+  assert.equal(
+    await page.locator("#editorDate .calendar-today-weekday").textContent(),
+    "周六",
+  );
+  await page.locator("#prevMonth").click();
+  assert.equal(await page.locator("#calendarToday").count(), 0);
+  await page.locator("#todayButton").click();
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  for (const [date, end, overtime] of [
+    ["2026-10-08", "19:30", "1.50 h"],
+    ["2026-10-09", "16:30", "-1.00 h"],
+  ]) {
+    await page.locator('.day[data-date="' + date + '"]').click();
+    await page.locator("#dayStart").fill("08:00");
+    await page.locator("#dayEnd").fill(end);
+    await page.locator("#dayEnd").blur();
+    await page.waitForFunction(
+      ({ date, overtime }) =>
+        document.querySelector('.day[data-date="' + date + '"] .day-overtime')
+          ?.textContent === overtime,
+      { date, overtime },
+    );
+  }
+  const first = page.locator('.day[data-date="2026-10-08"]');
+  const second = page.locator('.day[data-date="2026-10-09"]');
+  assert.equal(
+    await first.locator(".day-average-value").textContent(),
+    "1.50 h",
+  );
+  assert.equal(
+    await first.locator(".trend-flat use").getAttribute("href"),
+    "#icon-horizontal-rule",
+  );
+  assert.equal(
+    await second.locator(".day-average-value").textContent(),
+    "0.25 h",
+  );
+  assert.equal(await second.locator(".day-overtime.negative").count(), 1);
+  assert.match(
+    await second.locator(".day-select").getAttribute("aria-label"),
+    /当天加班 -1.00 h/,
+  );
+  // Every populated metric and marker must fit, including the payday cell.
+  for (const width of [1920, 1440, 1151, 850, 540, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.waitForTimeout(100);
+    const headerIssues = await page.evaluate(() => {
+      const header = document
+        .querySelector(".panel-head")
+        .getBoundingClientRect();
+      const controls = [
+        ...document.querySelector(".panel-head > .row").children,
+      ].map((element) => ({
+        name: element.id || element.className,
+        box: element.getBoundingClientRect(),
+      }));
+      const issues = [];
+      for (const [index, { name, box }] of controls.entries()) {
+        if (
+          box.left < header.left - 1 ||
+          box.right > header.right + 1 ||
+          box.top < header.top - 1 ||
+          box.bottom > header.bottom + 1
+        )
+          issues.push(name + " escapes header");
+        for (const other of controls.slice(index + 1))
+          if (
+            Math.min(box.right, other.box.right) -
+              Math.max(box.left, other.box.left) >
+              1 &&
+            Math.min(box.bottom, other.box.bottom) -
+              Math.max(box.top, other.box.top) >
+              1
+          )
+            issues.push(name + " overlaps " + other.name);
+      }
+      return issues;
+    });
+    assert.deepEqual(headerIssues, [], "Calendar header must fit at " + width);
+    const overflow = await page.evaluate(() => {
+      const cells = [...document.querySelectorAll(".day[data-date]")];
+      return cells.flatMap((cell) => {
+        const box = cell.getBoundingClientRect();
+        return [
+          ...cell.querySelectorAll(
+            ".dayhours > span, .day-average > span, .trend-icon, .date-markers",
+          ),
+        ]
+          .filter((element) => {
+            const rect = element.getBoundingClientRect();
+            return rect.left < box.left - 1 || rect.right > box.right + 1;
+          })
+          .map((element) => cell.dataset.date + ": " + element.textContent);
+      });
+    });
+    assert.deepEqual(overflow, [], "Calendar contents must fit at " + width);
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.evaluate(() => {
+    // Reopening during the return animation must stop motion on the hidden editor.
+    const button = document.querySelector("#pageSettingsOpen");
+    button.click();
+    button.click();
+    button.click();
+  });
+  assert.equal(
+    await page
+      .locator(".editor-content")
+      .evaluate((element) => element.getAnimations().length),
+    0,
+  );
+  await page.locator("#pageSettingsOpen").click();
+  await page.evaluate(() => {
+    document.querySelector("#pageSettingsOpen").click();
+    document.querySelector("#pageSettingsOpen").click();
+    document.querySelector("#pageSettingsOpen").click();
+  });
+  assert.equal(
+    await page
+      .locator(".editor-content")
+      .evaluate((element) => element.getAnimations().length),
+    0,
+  );
+  await page.locator("#pageSettingsOpen").click();
+  await page.waitForFunction(
+    () =>
+      document.querySelector("#pageSettingsOpen use").getAttribute("href") ===
+      "#icon-settings",
+  );
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.waitForFunction(
+    () =>
+      document.querySelector(".editor-content").getAnimations().length === 0,
+  );
+  assert.equal(
+    await page.evaluate(
+      () => document.querySelector(".editor-content").getAnimations().length,
+    ),
+    0,
+  );
+}
+async function verify() {
+  const root = path.resolve(process.argv[2] || "_site");
+  const types = {
+    ".html": "text/html",
+    ".js": "text/javascript",
+    ".css": "text/css",
+    ".svg": "image/svg+xml",
+  };
+  const server = http.createServer((request, response) => {
+    const file = path.resolve(
+      root,
+      "." + new URL(request.url, "http://localhost").pathname,
+    );
+    if (
+      !file.startsWith(root + path.sep) ||
+      !fs.existsSync(file) ||
+      !fs.statSync(file).isFile()
+    ) {
+      response.writeHead(404).end();
+      return;
+    }
+    response.setHeader(
+      "Content-Type",
+      types[path.extname(file)] || "application/octet-stream",
+    );
+    fs.createReadStream(file).pipe(response);
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  let browser;
+  try {
+    browser = await chromium.launch({
+      channel: process.env.WORKTIME_BROWSER_CHANNEL || "msedge",
+      headless: true,
+    });
+    for (const url of [
+      "http://127.0.0.1:" + server.address().port + "/index.html",
+      pathToFileURL(path.join(root, "index.html")).href,
+    ]) {
+      const context = await browser.newContext({
+        locale: "zh-CN",
+        serviceWorkers: "block",
+      });
+      await context.addInitScript(() =>
+        localStorage.setItem("worktime.onboarding.v1", "dismissed"),
+      );
+      const page = await context.newPage();
+      await page.clock.setFixedTime(new Date("2026-10-10T04:00:00Z"));
+      const errors = [],
+        historyRequests = [];
+      page.on("pageerror", (error) => errors.push(error.message));
+      page.on("request", (request) => {
+        if (/\/history\/\d{2}\.js/.test(request.url()))
+          historyRequests.push(request.url());
+      });
+      await page.route(/^https?:/, (route) =>
+        route.request().url().startsWith("http://127.0.0.1:")
+          ? route.continue()
+          : route.abort(),
+      );
+      await page.goto(url);
+      await page.waitForFunction(
+        () =>
+          document.documentElement.dataset.appState === "ready" &&
+          !document.documentElement.classList.contains("app-loading"),
+      );
+      assert.ok((await page.locator(".day[data-date]").count()) >= 28);
+      assert.equal(
+        historyRequests.length,
+        0,
+        "History must not block the default first screen",
+      );
+      await page.locator("#date-tab-history").click();
+      await page.waitForSelector(
+        '#date-context-festivals[aria-selected="true"]',
+      );
+      await page.waitForSelector(".festival-section");
+      assert.equal(historyRequests.length, 0);
+      await page.locator("#date-context-history").click();
+      await page.waitForSelector(".history-event");
+      assert.equal(historyRequests.length, 1);
+      await page.evaluate(() => WorkTimeApp.ui.dateInfo.setDate("2026-01-01"));
+      await page.waitForFunction(
+        () =>
+          document.querySelector(".date-context-date").textContent ===
+            "2026-01-01" && document.querySelector(".history-event"),
+      );
+      // A failed month request must be retryable without reloading the app.
+      await page.route(/\/history\/02\.js/, (route) => route.abort());
+      await page.evaluate(() => WorkTimeApp.ui.dateInfo.setDate("2026-02-01"));
+      await page.getByRole("button", { name: "重试", exact: true }).waitFor();
+      const failedHistoryRequests = historyRequests.filter((url) =>
+        /\/02\.js/.test(url),
+      ).length;
+      await page.unroute(/\/history\/02\.js/);
+      await page
+        .getByRole("button", { name: /重试|Retry|Try again/, exact: false })
+        .click();
+      await page.waitForSelector(".history-event");
+      assert.equal(
+        historyRequests.filter((url) => /\/02\.js/.test(url)).length,
+        failedHistoryRequests + 1,
+      );
+      // A slow previous selection cannot replace the current date's panel.
+      await page.route(/\/history\/05\.js/, async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        await route.continue();
+      });
+      await page.evaluate(() => {
+        WorkTimeApp.ui.dateInfo.setDate("2026-05-01");
+        WorkTimeApp.ui.dateInfo.setDate("2026-06-01");
+      });
+      await page.waitForSelector(".history-event");
+      await page.evaluate(() =>
+        WorkTimeApp.services.dateInfo.loadHistory("2026-05-01"),
+      );
+      assert.equal(
+        await page.locator(".date-context-date").textContent(),
+        "2026-06-01",
+      );
+      assert.equal(
+        await page.locator(".history-event-content p").first().textContent(),
+        await page.evaluate(
+          () =>
+            WorkTimeApp.services.dateInfo.getContent("history", "2026-06-01")
+              .events[0].text,
+        ),
+      );
+      await page.evaluate(async () => {
+        const service = WorkTimeApp.services.dateInfo;
+        await Promise.all([
+          service.loadHistory("2026-04-01"),
+          service.loadHistory("2026-04-02"),
+        ]);
+        for (let month = 1; month <= 12; month++)
+          await service.loadHistory(
+            "2026-" + String(month).padStart(2, "0") + "-01",
+          );
+      });
+      assert.equal(
+        historyRequests.filter((url) => /\/04\.js/.test(url)).length,
+        1,
+        "Concurrent requests share a month load",
+      );
+      assert.equal(
+        await page.evaluate(
+          () => Object.keys(WorkTimeApp.data.dateInfo.history).length,
+        ),
+        366,
+      );
+      assert.deepEqual(errors, []);
+      await verifyOvertimeRules(page);
+      await verifyCalendarAverage(page);
+      await verifyTemplates(page);
+      await verifyCalendar(page);
+      assert.deepEqual(errors, []);
+      await context.close();
+    }
+    console.log(
+      "Published HTTP/offline startup, lazy history, template import/persistence, responsive layout and reduced motion verified.",
+    );
+  } finally {
+    await browser?.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
+verify().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

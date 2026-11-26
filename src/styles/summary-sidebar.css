@@ -1,0 +1,360 @@
+#cards [data-stat-value],
+#cards #targetValue,
+#cards .overview-detail-row > strong,
+#cards .fixed-remaining-count {
+  font-family: var(--font-ui);
+}
+
+.overview-totals {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+#cards .overview-metric-card {
+  container-type: inline-size;
+  background-color: var(
+    --theme-surface-subtle,
+    color-mix(in srgb, var(--accent) 3%, var(--ui-surface))
+  );
+  border-color: var(--theme-border-soft, var(--line));
+  color: var(--ui-text);
+}
+#cards .overview-metric-card[data-summary-card="totals"] {
+  background-color: transparent;
+  margin-block-start: 8px;
+}
+.overview-metric-card .ant-card-body {
+  padding: 16px;
+}
+.overview-metric-heading,
+.overview-detail-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  align-items: baseline;
+  gap: 8px;
+}
+.overview-metric-heading > :first-child,
+.overview-detail-row > :first-child {
+  overflow-wrap: anywhere;
+}
+.overview-metric-heading > :first-child {
+  align-self: start;
+  margin-block-start: 3px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.overview-metric-heading > :last-child,
+.overview-detail-row > :last-child {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.overview-metric-heading > :last-child {
+  color: var(--ui-accent);
+}
+.overview-metric-heading > .is-negative {
+  color: var(--ui-danger);
+}
+.overview-metric-card [data-stat-description],
+.overview-metric-card #targetResult {
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.overview-metric-card [data-stat-description] {
+  margin-top: 6px;
+}
+.overview-target-details {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+.overview-target-details,
+.overview-totals > .overview-metric-heading + .overview-detail-row {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.overview-totals > .overview-metric-heading + .overview-detail-row {
+  margin-top: 4px;
+}
+.overview-detail-row {
+  font-size: 16px;
+  line-height: 1.4;
+}
+.overview-detail-row > :last-child {
+  gap: 3px;
+  font-size: 22px;
+}
+.overview-detail-row[hidden],
+.overview-target-details #targetResult:empty {
+  display: none;
+}
+#cards .overview-metric-card .summary-number-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+}
+#cards .overview-metric-card small {
+  margin: 0;
+  transform: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  opacity: 1;
+}
+.overview-metric-card .summary-number-column {
+  overflow: clip;
+}
+
+@container (max-width: 200px) {
+  .overview-metric-heading {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 4px;
+  }
+}
+
+@media (max-width: 1150px) {
+  .summary-sidebar #cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (540px < width <= 1150px) {
+  #cards .overview-metric-card[data-summary-card="balance"] {
+    margin-block-start: 8px;
+  }
+}
+
+@media (max-width: 540px) {
+  .summary-sidebar #cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+body .summary-sidebar > .oa-entry {
+  --oa-button-height: 48px;
+  position: static;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  flex: none;
+  gap: 0;
+  align-self: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+  margin: 16px 0 0;
+  padding: 0;
+}
+@media (min-width: 1151px) {
+  body .summary-sidebar > .oa-entry {
+    margin-block-start: 0;
+  }
+}
+body .summary-sidebar > .oa-entry::after,
+body .summary-sidebar #importDialog .import-dialog-foot::after {
+  content: "";
+  flex: none;
+  inline-size: var(--workspace-divider-length);
+  block-size: var(--workspace-divider-thickness);
+  margin-block: 15px;
+  border-radius: calc(var(--workspace-divider-thickness) / 2);
+  background: var(--workspace-divider-color);
+}
+body .summary-sidebar #importDialog .import-dialog-foot::after {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+body .summary-sidebar > .oa-entry::after {
+  grid-area: 2 / 1;
+}
+body .summary-sidebar #importDialog.sidebar-oa-pane .dialog-body {
+  padding-block-end: 0;
+}
+.import-input-grid > .import-clipboard-notice {
+  position: absolute;
+  inset-inline: 8px;
+  inset-block-end: 8px;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) 16px;
+  align-items: center;
+  column-gap: 6px;
+  pointer-events: none;
+}
+.import-clipboard-notice > .ant-alert-section {
+  grid-column: 2;
+}
+.import-clipboard-notice > .ant-alert-close-icon {
+  grid-column: 3;
+  justify-self: end;
+  margin-inline-start: 0;
+  pointer-events: auto;
+}
+.import-clipboard-notice .ant-alert-title {
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+}
+body .summary-sidebar #importDialog.sidebar-oa-pane .import-dialog-foot {
+  row-gap: 0;
+}
+body .summary-sidebar #importDialog .sidebar-history-scroll > #importDetails {
+  inline-size: min(100cqw, calc(100% - 10px));
+}
+body .summary-sidebar #importDialog #commitImport:is(:hover, :active):enabled {
+  color: var(--ui-on-accent, white);
+  background-color: color-mix(in srgb, var(--ui-accent) 88%, black);
+  border-color: transparent;
+}
+body .summary-sidebar #importDialog #commitImport:active:enabled {
+  background-color: color-mix(in srgb, var(--ui-accent) 80%, black);
+}
+body .oa-entry #oaRecordActions {
+  --oa-group-border: var(--ui-border, var(--control-border));
+  --oa-site-width: 68px;
+  display: flex;
+  box-sizing: border-box;
+  inline-size: var(--workspace-divider-length);
+  height: var(--oa-button-height);
+  border: var(--ui-stroke) solid var(--oa-group-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+@supports (width: round(nearest, calc(48px * sqrt(2)), 2px)) {
+  body .oa-entry #oaRecordActions {
+    --oa-site-width: round(
+      nearest,
+      calc(var(--oa-button-height) * sqrt(2)),
+      2px
+    );
+  }
+}
+body .oa-entry #oaRecordActions > #importOpen {
+  justify-content: center;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  margin-inline-end: 0;
+  padding-inline: 8px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+body .oa-entry #importOpen:not(:disabled) {
+  background: var(--ui-surface, #fff);
+}
+body .oa-entry #importOpen:hover:not(:disabled) {
+  background: var(--control-hover);
+}
+body .oa-entry #oaRecordActions > button {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: var(--ui-weight, 500);
+  line-height: 1.25;
+}
+body .oa-entry #oaRecordActions > #importOASite {
+  flex-shrink: 0;
+  width: var(--oa-site-width);
+  margin-inline-end: 0;
+  border-inline-start: var(--ui-stroke) solid var(--oa-group-border);
+  transition:
+    margin-inline-end var(--motion-normal) var(--motion-ease),
+    visibility 0s;
+}
+body .summary-sidebar.is-oa-open #oaRecordActions > #importOASite {
+  /* Slide the fixed-width button out of the clip as the main button grows. */
+  margin-inline-end: calc(-1 * var(--oa-site-width));
+  visibility: hidden;
+  pointer-events: none;
+  transition-delay: 0s, var(--motion-normal);
+}
+:where(:root[data-reduced-motion="true"])
+  body
+  .oa-entry
+  #oaRecordActions
+  > #importOASite,
+body
+  .summary-sidebar.sidebar-navigation-instant
+  #oaRecordActions
+  > #importOASite {
+  transition: none;
+}
+body .oa-entry #importOASite:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-accent) 9%, var(--ui-surface));
+}
+body .oa-entry #importOASite:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-accent) 14%, var(--ui-surface));
+}
+body .oa-entry #importOASite:active:not(:disabled) {
+  background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
+}
+body .oa-entry #oaRecordActions > button:focus-visible {
+  outline: 1px solid var(--ui-focus, var(--accent));
+  outline-offset: -2px;
+}
+.oa-entry > :where(#oaRecordActions, .sidebar-year-month) {
+  grid-area: 1 / 1;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease-out,
+    transform 220ms var(--motion-ease),
+    visibility 0s linear 220ms;
+}
+.oa-entry > #oaRecordActions {
+  transform: translateY(-6px);
+}
+.sidebar-year-month {
+  display: flex;
+  align-items: center;
+  block-size: var(--oa-button-height);
+  color: var(--theme-text-strong, var(--ink));
+  font-family: var(--font-ui);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  transform: translateY(6px);
+  white-space: nowrap;
+}
+.oa-entry:not(.is-year-mode) > #oaRecordActions,
+.oa-entry.is-year-mode > .sidebar-year-month {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition-delay: 60ms, 60ms, 0s;
+}
+.oa-entry:not(.is-year-mode) > #oaRecordActions {
+  pointer-events: auto;
+}
+.sidebar-year-month-text {
+  display: inline-flex;
+  align-items: center;
+}
+.sidebar-year-month-text > .calendar-date-divider {
+  width: 0.45em;
+  height: 0.9em;
+  translate: 0 calc(0.08em - 1px);
+}
+:root[data-reduced-motion="true"]
+  .oa-entry
+  > :where(#oaRecordActions, .sidebar-year-month) {
+  transition: none;
+}

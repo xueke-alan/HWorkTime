@@ -31,6 +31,6 @@
 
 `npm run aeroplane:evaluate` 复验冻结候选，全部门槛通过后使用 `npm run aeroplane:export` 发布权重。重新训练的新候选必须通过相同验收。
 
-`node scripts/verify-aeroplane.cjs` 验证六格与完整入口几何、终点反弹、规则 1 存档迁移、真实模型与 Worker 一致性、动画路径、四方基地骰子、六个顶面点数、120 次真实随机掷骰、六语言及源码／发布版离线运行。日志与截图位于 `test-results/aeroplane/`。
+`node scripts/verify/games/verify-aeroplane.cjs` 验证六格与完整入口几何、终点反弹、规则 1 存档迁移、真实模型与 Worker 一致性、动画路径、四方基地骰子、六个顶面点数、120 次真实随机掷骰、六语言及源码／发布版离线运行。日志与截图位于 `test-results/aeroplane/`。
 
 历史预览规则报告保留在 [规则 1 报告](EVALUATION-v1.md)，其中的七格终点与旧胜率不适用于当前规则。

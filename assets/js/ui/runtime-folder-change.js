@@ -4,7 +4,10 @@ WorkTimeApp.ui.showRuntimeFolderChange = (() => {
   let dialog;
   return () => {
     if (dialog?.open) return;
-    dialog?.remove();
+    if (dialog) {
+      WorkTimeApp.ui.workspaceViews.dispose(dialog);
+      dialog.remove();
+    }
     const runtime = WorkTimeApp.services.runtimeFolder;
     const text = WorkTimeApp.ui.runtimeFolderText;
     dialog = WorkTimeApp.ui.native.createElement("dialog");
@@ -12,31 +15,7 @@ WorkTimeApp.ui.showRuntimeFolderChange = (() => {
     view.id = "runtimeFolderChange";
     view.setAttribute("aria-labelledby", "runtimeFolderChangeTitle");
     view.setAttribute("closedby", "none");
-    const folderIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2Z"/></svg>`;
-    view.innerHTML = `<div class="dialog-head">
-        <h2 id="runtimeFolderChangeTitle"></h2>
-      </div>
-      <div class="dialog-body">
-        <div class="folder-change-locations">
-          <div class="folder-change-current">${folderIcon}<div class="folder-change-identity"><span class="folder-change-label" data-current-label></span><strong data-current></strong></div></div>
-          <button data-ui="button" type="button" class="folder-change-picker" data-select>
-            <span class="folder-change-destination-icon">${folderIcon}</span>
-            <span class="folder-change-identity"><span class="folder-change-label" data-target-label></span><strong data-target></strong></span>
-            <span class="folder-change-select-action"><span data-select-label></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></span>
-          </button>
-        <label class="folder-change-migration"><span class="folder-change-checkbox"><input data-ui="input" type="checkbox" data-migrate><span class="folder-change-check"><svg class="ui-icon" aria-hidden="true"><use href="#ms-check"/></svg></span></span><span><span class="folder-change-option-title" data-migrate-label></span><span class="folder-change-help" data-help></span></span></label>
-        </div>
-        <section class="folder-change-feedback hidden" data-feedback aria-live="polite">
-          <div class="folder-change-feedback-head"><p role="status" data-status></p><span class="folder-change-percent" data-percent></span></div>
-          <progress max="1" data-progress></progress>
-          <p class="folder-change-stats" data-stats></p><p class="folder-change-path" data-path></p>
-        </section>
-        <p class="hidden"><button data-ui="button" type="button" class="ui-button" data-authorize></button></p>
-      </div><div class="dialog-foot">
-        <button data-ui="button" type="button" class="ui-button" data-close></button>
-        <button data-ui="button" type="button" class="ui-button" data-abort></button>
-        <button data-ui="button" type="button" class="ui-button primary" data-submit></button>
-      </div>`;
+    WorkTimeApp.ui.workspaceViews.FolderChange(view);
     const find = (name) => view.querySelector(`[data-${name}]`);
     let selection = null,
       pending = false,

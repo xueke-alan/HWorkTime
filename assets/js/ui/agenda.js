@@ -10,6 +10,7 @@ WorkTimeApp.ui.createAgenda = function ({
   document,
   window,
 }) {
+  const { isDevelopmentEnabled } = WorkTimeApp;
   const rules = WorkTimeApp.domain.agenda;
   const statuses = ["pending", "completed", "in-progress", "cancelled"];
   const statusLabel = (status) =>
@@ -49,6 +50,7 @@ WorkTimeApp.ui.createAgenda = function ({
   let workdaysOnly = false;
   let showAllForMode = false;
   let modeSequence = null;
+  let changeAgendaMode;
   let weekSequence = null;
   let lastSavedView = null;
   try {
@@ -59,7 +61,7 @@ WorkTimeApp.ui.createAgenda = function ({
       ["attendance", "agenda"].includes(saved.mode) &&
       [0, 1, 2, 3].includes(saved.weeks)
     ) {
-      active = saved.mode === "agenda";
+      active = saved.mode === "agenda" && isDevelopmentEnabled();
       weekView = saved.weeks;
       workdaysOnly = saved.workdaysOnly === true;
       model.analysisMode = saved.analysis === true;
@@ -95,9 +97,11 @@ WorkTimeApp.ui.createAgenda = function ({
   );
   $("analysisToggle").after(modes);
   modes.innerHTML =
-    '<button data-ui="button" type="button" id="agendaMode" class="ui-button icon-only" data-action-hint aria-pressed="false" aria-controls="calendar agendaEditor"><svg class="ui-icon" aria-hidden="true"><use href="#ms-event-note"/></svg></button>';
-  modes.setAttribute("role", "group");
+    '<button data-ui="button" type="button" id="agendaMode" class="ui-button icon-only" data-action-hint aria-pressed="false" aria-controls="calendar agendaEditor"><svg class="ui-icon" aria-hidden="true"><use href="#icon-event-note"/></svg></button>';
+  WorkTimeApp.ui.native.setGroup(modes);
   modes.prepend($("analysisToggle"));
+  const agendaMode = $("agendaMode");
+  agendaMode.hidden = !isDevelopmentEnabled();
   const modesRegion = document.createElement("div");
   modesRegion.className = "agenda-toolbar-region agenda-modes-region";
   const modesDivider = document.createElement("span");
@@ -112,104 +116,64 @@ WorkTimeApp.ui.createAgenda = function ({
     attributes: true,
     attributeFilter: ["aria-pressed"],
   });
-  const viewToggle = WorkTimeApp.ui.native.createElement("button");
+  const viewToggle = document.createElement("div");
   viewToggle.id = "agendaViewToggle";
-  viewToggle.type = "button";
-  viewToggle.className = "ui-button icon-only agenda-view-toggle";
-  viewToggle.setAttribute("aria-controls", "calendar");
-  viewToggle.innerHTML =
-    '<svg class="ui-icon" aria-hidden="true"><use href="#ms-calendar-month"/></svg>';
-  const yearViewToggle = WorkTimeApp.ui.native.createElement("button");
-  yearViewToggle.id = "yearViewToggle";
-  yearViewToggle.type = "button";
-  yearViewToggle.className = "ui-button icon-only year-view-toggle";
-  yearViewToggle.setAttribute("aria-controls", "calendar");
-  yearViewToggle.setAttribute("aria-pressed", "false");
-  yearViewToggle.hidden = true;
-  yearViewToggle.innerHTML =
-    '<svg class="ui-icon" aria-hidden="true"><use href="#ms-local-fire-department"/></svg>';
-  let yearIconAnimation = null;
-  let yearWatermarkTimer = null;
-  function updateYearViewToggle(animate = false) {
-    const detail = model.yearViewMode === "calendar";
-    const use = yearViewToggle.querySelector("use"),
-      href = detail ? "#ms-calendar" : "#ms-local-fire-department",
-      changed = use.getAttribute("href") !== href;
-    use.setAttribute("href", href);
-    yearViewToggle.setAttribute(
-      "aria-label",
-      WorkTimeApp.i18n.t(
-        detail ? "yearView.calendarMode" : "yearView.heatmapMode",
-      ),
-    );
-    yearViewToggle.setAttribute("aria-pressed", String(detail));
-    yearViewToggle.dataset.actionHint = detail
-      ? "yearView.toHeatmap"
-      : "yearView.toCalendar";
-    yearViewToggle.dataset.yearMode = detail ? "calendar" : "heatmap";
-    if (!changed || !animate || !canAnimate()) return;
-    yearIconAnimation?.cancel();
-    const icon = yearViewToggle.querySelector("svg"),
-      angle = detail ? 65 : -65,
-      animation = animationCompat.animate(
-        icon,
-        [
-          { opacity: 0.2, transform: "scale(0.55) rotate(" + angle + "deg)" },
-          { opacity: 1, transform: "scale(1) rotate(0deg)" },
-        ],
-        {
-          duration: 280,
-          easing: "cubic-bezier(0.2, 0.7, 0.3, 1)",
-          fill: "both",
-        },
-      );
-    yearIconAnimation = animation;
-    animation.finished
-      .then(() => {
-        if (yearIconAnimation !== animation) return;
-        yearIconAnimation = null;
-        animation.cancel();
-      })
-      .catch(() => {});
+  viewToggle.hidden = true;
+  function renderAgendaDisplay() {
+    WorkTimeApp.ui.workspaceViews.AgendaDisplay(viewToggle, {
+      value: weekSequence?.weeks ?? weekView,
+      disabled: busy,
+      onChange: switchWeek,
+    });
   }
-  yearViewToggle.addEventListener("click", () => {
-    if (!model.yearMode || busy) return;
+  const yearViewToggle = document.createElement("div");
+  yearViewToggle.id = "yearViewToggle";
+  yearViewToggle.hidden = true;
+  function renderYearDisplay() {
+    WorkTimeApp.ui.workspaceViews.YearDisplay(yearViewToggle, {
+      value: model.yearViewMode,
+      disabled: busy,
+      onChange: (mode) =>
+        actions.requestSettingsExit(() => selectYearDisplay(mode)),
+    });
+  }
+  function selectYearDisplay(mode) {
+    if (disposed || !model.yearMode || busy || mode === model.yearViewMode)
+      return;
     actions.finishCalendarNavigation?.();
-    const detail = model.yearViewMode !== "calendar";
-    model.yearViewMode = detail ? "calendar" : "heatmap";
-    document.dispatchEvent(new Event("worktime:yearviewchange"));
-    // Toggle presentation only; keep every year card untouched so colours,
-    // text and positions animate in place.
-    $("calendar").classList.toggle("year-calendar-detail", detail);
+    if (!model.yearMode) return;
+    const detail = mode === "calendar";
+    model.yearViewMode = mode;
+    renderYearDisplay();
+    // Measure the segmented control before changing the styles of the year grid.
+    calendar.classList.toggle("year-calendar-detail", detail);
     const legend = $("yearLegend");
-    legend.classList.remove("hidden");
     legend.classList.toggle("is-inactive", detail);
     legend.setAttribute("aria-hidden", String(detail));
     const watermark = $("yearWatermark");
-    watermark.classList.remove("is-mode-transition");
-    if (yearWatermarkTimer !== null) window.clearTimeout(yearWatermarkTimer);
     watermark.classList.add("is-mode-transition");
     watermark.classList.toggle("is-visible", detail);
-    yearWatermarkTimer = window.setTimeout(() => {
-      yearWatermarkTimer = null;
-      watermark.classList.remove("is-mode-transition");
-    }, 620);
-    updateYearViewToggle(true);
-  });
-  const toolbarSlot = document.createElement("div");
-  toolbarSlot.className = "agenda-toolbar-slot";
-  const toolbarRegion = document.createElement("div");
-  toolbarRegion.className = "agenda-toolbar-region";
-  const toolbarDivider = document.createElement("span");
-  toolbarDivider.className = "agenda-toolbar-divider";
-  toolbarDivider.setAttribute("aria-hidden", "true");
-  $("batchToggle").before(toolbarRegion);
-  toolbarRegion.append(toolbarSlot, toolbarDivider);
-  toolbarSlot.append($("batchToggle"), viewToggle, yearViewToggle);
+    document.dispatchEvent(new Event("worktime:yearviewchange"));
+  }
+  const toolbarSlot = $("batchToggle").closest(".agenda-toolbar-slot");
+  const toolbarRegion = toolbarSlot.closest(".workspace-context-actions");
+  const toolbarDivider = toolbarRegion.querySelector(
+    ".workspace-action-divider",
+  );
+  const toolbarActions = toolbarRegion.parentElement;
+  const permanentActions = toolbarActions.querySelector(
+    ".workspace-permanent-actions",
+  );
+  const toolbarControls = {
+    attendance: $("batchToggle"),
+    year: yearViewToggle,
+    agenda: viewToggle,
+    analysis: null,
+  };
+  toolbarSlot.append(viewToggle, yearViewToggle);
   let toolbarKey = null;
   let toolbarAnimations = [];
-  let toolbarClone = null;
-  let viewIconAnimation = null;
+  const toolbarGhosts = new Map();
   const calendar = $("calendar");
   const dateEdges = WorkTimeApp.ui.createAgendaEdges({
     calendar,
@@ -226,7 +190,7 @@ WorkTimeApp.ui.createAgenda = function ({
     button.className = "agenda-workday-switch";
     button.hidden = true;
     button.innerHTML =
-      '<svg class="ui-icon" aria-hidden="true"><use href="#ms-right-panel-close"/></svg>';
+      '<svg class="ui-icon" aria-hidden="true"><use href="#icon-right-panel-close"/></svg>';
     button.setAttribute("role", "switch");
     button.setAttribute("aria-controls", "calendar");
     weekdays.append(button);
@@ -319,9 +283,6 @@ WorkTimeApp.ui.createAgenda = function ({
     finishWeekTransition();
     settleDrawer();
     stopSidebarMotion();
-    WorkTimeApp.ui.numbers.settle(
-      document.querySelector(".sidebar-brand-subtitle"),
-    );
     motion?.stop(weekLabelNode?.querySelector(".summary-number"));
     if (weekLabelNode) WorkTimeApp.ui.numbers.settle(weekLabelNode);
     if (pendingWeek) {
@@ -836,7 +797,7 @@ WorkTimeApp.ui.createAgenda = function ({
     workdaySwitch.inert = !visible;
     workdaySwitch.setAttribute("aria-hidden", String(!visible));
     if (!visible && workdaySwitch === document.activeElement)
-      (active ? $("agendaViewToggle") : $("agendaMode")).focus();
+      WorkTimeApp.ui.workspaceViews.focusMenu();
     if (!canAnimate() || (!visible && hidden)) {
       workdaySwitch.hidden = !visible;
       return;
@@ -898,7 +859,7 @@ WorkTimeApp.ui.createAgenda = function ({
     });
     showWorkdaySwitch(enabled === 1);
     workdaySwitch.setAttribute("aria-label", t("workdaysOnly"));
-    workdaySwitch.title = t("workdaysOnly");
+    workdaySwitch.dataset.hintText = t("workdaysOnly");
     workdaySwitch.setAttribute(
       "aria-checked",
       String(enabled === 1 && workdaysOnly && !showAllForMode),
@@ -1441,6 +1402,7 @@ WorkTimeApp.ui.createAgenda = function ({
       visibleWeekDates(1).length < 7 &&
       canAnimate()
     ) {
+      renderAgendaDisplay();
       const restored = await changeWeekdayColumns(() => {
         showAllForMode = true;
       }, true);
@@ -1989,18 +1951,7 @@ WorkTimeApp.ui.createAgenda = function ({
   editor.querySelector(".editor-content").after(pane);
   pane.hidden = true;
   pane.setAttribute("aria-labelledby", "agendaDate");
-  pane.innerHTML = `
-    <div class="editor-day-header editor-mode-header agenda-heading"><div id="agendaDate" class="editor-date"></div></div>
-    <div class="agenda-day-toolbar" hidden><button data-ui="button" id="agendaBack" type="button" class="ui-button icon-only" hidden><svg class="ui-icon" aria-hidden="true"><use href="#ms-chevron-left"/></svg></button><h2 id="agendaFormTitle"></h2></div>
-    <div id="agendaCritical" class="agenda-critical" role="alert" hidden></div>
-    <section id="agendaDayDetails" class="agenda-day-details"><div id="agendaList" class="agenda-list" tabindex="0"></div><div class="agenda-list-actions"><button data-ui="button" id="agendaNew" type="button" class="ui-button primary" data-agenda-text="new"></button></div></section>
-    <div class="agenda-editor-body">
-    <form id="agendaForm" class="agenda-form" aria-labelledby="agendaFormTitle">
-      <fieldset id="agendaFields"></fieldset>
-    </form>
-    </div>
-    <div class="agenda-feedback"><p id="agendaError" class="warnings" role="alert"></p><p id="agendaStatus" role="status" aria-live="polite"></p></div>
-    <div class="agenda-editor-footer" hidden><p id="agendaDraft" class="muted" role="status" hidden data-agenda-text="unsavedChanges"></p><div class="agenda-actions"></div></div>`;
+  WorkTimeApp.ui.workspaceViews.AgendaDayFrame(pane);
   const statusMenu = make(
     "div",
     "agendaStatusMenu",
@@ -2089,14 +2040,17 @@ WorkTimeApp.ui.createAgenda = function ({
   scheduleRoot.id = "agendaSchedule";
   scheduleRoot.className = "agenda-schedule-fields";
   const schedule = WorkTimeApp.ui.createAgendaSchedule({ root: scheduleRoot });
-  let fields = { title: "", note: "", status: "pending" };
+  const fields = { title: "", note: "", status: "pending" };
   let editorReady, formController;
   function loadEditor() {
     if (!editorReady) {
       const url = document.querySelector(
         'meta[name="agenda-editor-module"]',
-      ).content;
-      editorReady = import(new URL(url, document.baseURI).href)
+      )?.content;
+      const editor = WorkTimeApp.ui.fileWorkspace
+        ? WorkTimeApp.ui.fileWorkspace.loadAgenda()
+        : import(new URL(url, document.baseURI).href);
+      editorReady = editor
         .then(({ mount }) => {
           if (disposed) return;
           formController = mount($("agendaFields"), {
@@ -2106,7 +2060,6 @@ WorkTimeApp.ui.createAgenda = function ({
             cancel: returnToList,
             changed: formChanged,
           });
-          fields = formController.draft;
           times();
         })
         .catch(() => {
@@ -2138,12 +2091,14 @@ WorkTimeApp.ui.createAgenda = function ({
   summary.hidden = true;
   summary.innerHTML = '<div id="agendaOverview"></div>';
   const expandedGroups = new Set();
+  const workspaceHeader = document.querySelector(".workspace-header");
   const controls = make(
     "div",
     "agendaControls",
     "agenda-controls",
-    document.querySelector(".panel-head"),
+    workspaceHeader.parentElement,
   );
+  workspaceHeader.after(controls);
   controls.innerHTML =
     '<button data-ui="button" id="agendaOverviewOpen" class="ui-button" type="button" aria-haspopup="dialog" data-agenda-text="overviewMemo"></button>';
   const overviewDialog = make(
@@ -2357,10 +2312,9 @@ WorkTimeApp.ui.createAgenda = function ({
   function sidebarTargets() {
     return {
       attendance: [
-        oaActions,
-        document.querySelector(".summary-sidebar > .summary-divider"),
         $("cards"),
         document.querySelector(".summary-sidebar > .target-panel"),
+        oaActions,
         $("dayForm"),
       ],
       agenda: [
@@ -2398,7 +2352,7 @@ WorkTimeApp.ui.createAgenda = function ({
     schedule.render();
     $("agendaDraft").hidden = !hasDraft();
     if (!formController) return;
-    Object.assign(formController.view, {
+    formController.update({
       editing: Boolean(editingId),
       busy,
       locked: busy || model.loadIssue === "unsupported",
@@ -2445,16 +2399,9 @@ WorkTimeApp.ui.createAgenda = function ({
       ? t("allDay")
       : item.start + (item.end ? "–" + item.end : "");
   }
-  function entry(item) {
-    return `<div class="agenda-item${item.status === "completed" ? " is-complete" : ""}">
-      <button data-ui="button" type="button" class="agenda-complete" data-agenda-status="${esc(item.id)}" data-status="${item.status}" aria-haspopup="menu" aria-controls="agendaStatusMenu" aria-expanded="false" title="${esc(statusLabel(item.status))}" aria-label="${esc(t("changeStatus") + ": " + statusLabel(item.status) + " · " + item.title)}"${busy && !completingAgenda ? " disabled" : ""}></button>
-      <button data-ui="button" type="button" class="agenda-item-copy" data-agenda-edit="${esc(item.id)}"><strong>${esc(item.title)}</strong><small>${esc(labelTime(item))}</small>${item.note ? `<span class="agenda-note">${esc(item.note)}</span>` : ""}</button>
-      <button data-ui="button" type="button" class="agenda-delete" data-agenda-delete="${esc(item.id)}" aria-label="${esc(t("delete") + ": " + item.title)}"${busy && !completingAgenda ? " disabled" : ""}><span aria-hidden="true">×</span></button></div>`;
-  }
-
   function chipMarkup(item) {
     const selected = formOpen && editingId === item.id;
-    return `<button data-ui="button" type="button" class="agenda-chip${item.status === "completed" ? " is-complete" : ""}${selected ? " is-selected" : ""}" aria-current="${selected}" data-agenda-edit="${esc(item.id)}" data-status="${item.status}" title="${esc((item.allDay ? item.title : labelTime(item) + " · " + item.title) + " · " + statusLabel(item.status))}"><span class="agenda-chip-title"><span class="agenda-chip-title-text">${esc(item.title)}</span><span class="agenda-chip-status" data-status="${item.status}" role="img" aria-label="${esc(statusLabel(item.status))}"></span></span>${weekView && !item.allDay ? `<span class="agenda-chip-time">${esc(labelTime(item, true))}</span>` : ""}${weekView && item.note.trim() ? `<span class="agenda-chip-note">${esc(item.note)}</span>` : ""}${item.allDay || (item.end && rules.lastDate(item) > item.date) ? `<span class="agenda-resize-handle" data-agenda-resize="end" aria-hidden="true" title="${esc(t("resizeEnd"))}"></span>` : ""}</button>`;
+    return `<button data-ui="button" type="button" class="agenda-chip${item.status === "completed" ? " is-complete" : ""}${selected ? " is-selected" : ""}" aria-current="${selected}" data-agenda-edit="${esc(item.id)}" data-status="${item.status}" data-hint-text="${esc((item.allDay ? item.title : labelTime(item) + " · " + item.title) + " · " + statusLabel(item.status))}"><span class="agenda-chip-title"><span class="agenda-chip-title-text">${esc(item.title)}</span><span class="agenda-chip-status" data-status="${item.status}" role="img" aria-label="${esc(statusLabel(item.status))}"></span></span>${weekView && !item.allDay ? `<span class="agenda-chip-time">${esc(labelTime(item, true))}</span>` : ""}${weekView && item.note.trim() ? `<span class="agenda-chip-note">${esc(item.note)}</span>` : ""}${item.allDay || (item.end && rules.lastDate(item) > item.date) ? `<span class="agenda-resize-handle" data-agenda-resize="end" aria-hidden="true" data-hint-text="${esc(t("resizeEnd"))}"></span>` : ""}</button>`;
   }
   const agendaLayout = WorkTimeApp.ui.createAgendaLayout({
     calendar,
@@ -2535,6 +2482,17 @@ WorkTimeApp.ui.createAgenda = function ({
   });
   const timetable = WorkTimeApp.ui.createAgendaTimetable({
     calendar,
+    describe(item) {
+      return {
+        statusLabel: statusLabel(item.status),
+        tooltip:
+          labelTime(item) +
+          " · " +
+          item.title +
+          " · " +
+          statusLabel(item.status),
+      };
+    },
     getState: () => ({
       active,
       weeks: weekView,
@@ -2615,44 +2573,18 @@ WorkTimeApp.ui.createAgenda = function ({
       $("agendaStatus").textContent = text;
     },
   });
-  function updateBrand(agendaMode) {
-    const subtitle = document.querySelector(".sidebar-brand-subtitle");
-    const key = model.analysisMode
-      ? "analysis.toggle"
-      : agendaMode
-        ? "agenda.brand"
-        : "short.brand";
-    const titleKey = model.analysisMode || agendaMode ? key : "copy.5754e634a8";
-    // This shared rolling view owns the text; locale renders must not replace it.
-    subtitle.removeAttribute("data-i18n-text");
-    subtitle.setAttribute("data-i18n-title", titleKey);
-    WorkTimeApp.ui.numbers.set(subtitle, WorkTimeApp.i18n.t(key), {
-      animateWhole: true,
-      animateInitial: false,
-      motion: canAnimate(),
-    });
-    subtitle.title = WorkTimeApp.i18n.t(titleKey);
-  }
   function updateOaActions(target = active) {
     if (target && oaActions.contains(document.activeElement))
-      $("agendaMode").focus({ preventScroll: true });
+      WorkTimeApp.ui.workspaceViews.focusMenu();
     oaActions.hidden = target;
     oaActions.inert = target;
     oaActions.setAttribute("aria-hidden", String(target));
   }
   function stopToolbarMotion() {
-    viewIconAnimation?.cancel();
-    viewIconAnimation = null;
-    yearIconAnimation?.cancel();
-    yearIconAnimation = null;
     for (const animation of toolbarAnimations) animation.cancel();
     toolbarAnimations = [];
-    toolbarClone?.remove();
-    toolbarClone = null;
-    toolbarRegion.style.removeProperty("width");
-    toolbarRegion.style.removeProperty("margin-right");
-    toolbarDivider.style.removeProperty("opacity");
-    toolbarRegion.hidden = toolbarKey === "analysis";
+    for (const ghost of toolbarGhosts.values()) ghost.remove();
+    toolbarGhosts.clear();
   }
   function stopModesMotion() {
     for (const animation of modesAnimations) animation.cancel();
@@ -2751,262 +2683,144 @@ WorkTimeApp.ui.createAgenda = function ({
       stopModesMotion();
     });
   }
+  function toolbarPaint(element) {
+    const rect = element?.getBoundingClientRect();
+    if (!rect?.width || !rect.height) return null;
+    return { rect, opacity: Number(getComputedStyle(element).opacity) };
+  }
+  function cloneToolbarControl(control) {
+    const ghost = control.cloneNode(true);
+    const style = getComputedStyle(control);
+    for (const property of [
+      "color",
+      "background-color",
+      "border-color",
+      "border-radius",
+      "font",
+      "padding",
+    ])
+      ghost.style.setProperty(property, style.getPropertyValue(property));
+    for (const node of [ghost, ...ghost.querySelectorAll("*")]) {
+      node.removeAttribute("id");
+      if (node.matches("input[type=radio]")) node.removeAttribute("name");
+      for (const { name } of [...node.attributes])
+        if (name.startsWith("data-") && name !== "data-positioned")
+          node.removeAttribute(name);
+    }
+    ghost.dataset.toolbarSource = control.dataset.toolbarSource || control.id;
+    ghost.setAttribute("inert", "");
+    ghost.setAttribute("aria-hidden", "true");
+    ghost.classList.add("agenda-toolbar-outgoing");
+    return ghost;
+  }
   function renderToolbar() {
     renderModes();
-    const viewNames = [
-      "monthView",
-      "weekView",
-      "fortnightView",
-      "threeWeekView",
-    ];
-    const mode = model.analysisMode
+    const key = model.analysisMode
       ? "analysis"
       : model.yearMode
-        ? "attendance"
+        ? "year"
         : active
           ? "agenda"
           : "attendance";
-    // Year view swaps the attendance bulk-edit action for its display switch.
-    const key = mode === "attendance" && model.yearMode ? "year" : mode;
     const changed = toolbarKey !== null && toolbarKey !== key;
-    const incoming =
-      key === "analysis"
-        ? null
-        : key === "agenda"
-          ? viewToggle
-          : key === "year"
-            ? yearViewToggle
-            : $("batchToggle");
-    const animate = changed && canAnimate();
-    const regionWidth = animate
-      ? toolbarRegion.getBoundingClientRect().width
-      : 0;
-    const regionMargin = animate
-      ? getComputedStyle(toolbarRegion).marginRight
-      : "0px";
-    const dividerOpacity = animate
-      ? getComputedStyle(toolbarDivider).opacity
-      : "1";
-    const candidates = animate
-      ? [...toolbarSlot.children].filter((node) => !node.hidden)
-      : [];
-    const source = (node) => node.dataset.toolbarSource || node.id;
-    const visible = (nodes) =>
-      nodes.sort(
-        (a, b) =>
-          Number(getComputedStyle(b).opacity) -
-          Number(getComputedStyle(a).opacity),
-      )[0];
-    const old = visible(candidates.filter((node) => source(node) !== key));
-    const continuing = visible(
-      candidates.filter((node) => source(node) === key),
-    );
-    const incomingStyle = continuing && getComputedStyle(continuing);
-    const incomingPainted = incomingStyle &&
-      Number(incomingStyle.opacity) > 0.001 && {
-        opacity: incomingStyle.opacity,
-        transform: incomingStyle.transform,
-      };
-    let snapshot = null;
-    let painted = null;
-    if (
-      animate &&
-      old?.getClientRects().length &&
-      Number(getComputedStyle(old).opacity) > 0.001
-    ) {
-      const style = getComputedStyle(old);
-      painted = { opacity: style.opacity, transform: style.transform };
-      snapshot = old.cloneNode(true);
-      for (const ghost of snapshot.querySelectorAll(".agenda-toolbar-outgoing"))
-        ghost.remove();
-      snapshot.style.width = old.getBoundingClientRect().width + "px";
-      snapshot.style.height = old.getBoundingClientRect().height + "px";
-      for (const property of [
-        "color",
-        "background-color",
-        "border-color",
-        "border-radius",
-        "font",
-        "padding",
-      ])
-        snapshot.style.setProperty(property, style.getPropertyValue(property));
-      // The compatibility helper releases fill effects at native completion.
-      // Keep the snapshot's underlying state invisible until it is removed.
-      snapshot.style.opacity = "0";
-      snapshot.style.transform = "translateX(8px)";
-      for (const node of [snapshot, ...snapshot.querySelectorAll("*")]) {
-        node.removeAttribute("id");
-        for (const attribute of [...node.attributes])
-          if (attribute.name.startsWith("data-"))
-            node.removeAttribute(attribute.name);
+    const incoming = toolbarControls[key];
+    const animate =
+      changed && canAnimate() && typeof toolbarActions.animate === "function";
+    const previous = new Map();
+    const permanent = animate && toolbarPaint(permanentActions);
+    if (animate) {
+      for (const [control, ghost] of toolbarGhosts) {
+        const paint = toolbarPaint(ghost);
+        if (paint?.opacity) previous.set(control, { ...paint, ghost });
       }
-      snapshot.hidden = false;
-      snapshot.dataset.toolbarSource = source(old);
-      snapshot.inert = true;
-      snapshot.setAttribute("aria-hidden", "true");
-      snapshot.classList.add("agenda-toolbar-outgoing");
+      for (const control of [toolbarControls[toolbarKey], toolbarDivider]) {
+        const paint = toolbarPaint(control);
+        if (paint?.opacity)
+          previous.set(control, {
+            ...paint,
+            ghost: cloneToolbarControl(control),
+          });
+      }
     }
-    if (toolbarKey !== key) stopToolbarMotion();
+    if (changed) stopToolbarMotion();
     toolbarKey = key;
+    workspace.classList.toggle("agenda-mode", active);
     if (incoming) incoming.dataset.toolbarSource = key;
-    if (changed || !toolbarAnimations.length)
-      toolbarRegion.hidden = key === "analysis";
-    for (const button of [viewToggle, yearViewToggle, $("batchToggle")]) {
+    toolbarRegion.hidden = !incoming;
+    for (const button of [
+      viewToggle,
+      yearViewToggle,
+      toolbarControls.attendance,
+    ]) {
       const hidden = button !== incoming;
-      if (hidden && button.contains(document.activeElement))
-        $(
-          key === "analysis"
-            ? "analysisToggle"
-            : key === "year"
-              ? "monthTitle"
-              : "agendaMode",
-        ).focus({
-          preventScroll: true,
-        });
+      if (hidden && button.contains(document.activeElement)) {
+        if (key === "year") $("monthTitle").focus({ preventScroll: true });
+        else WorkTimeApp.ui.workspaceViews.focusMenu();
+      }
       button.hidden = hidden;
     }
     viewToggle.dataset.view = ["month", "week", "fortnight", "threeweek"][
       weekView
     ];
     viewToggle.dataset.agendaView = String(weekView);
-    const icon = viewToggle.querySelector("svg");
-    const use = icon.querySelector("use");
-    const iconHref = [
-      "#ms-calendar-month",
-      "#ms-view-week",
-      "#ms-calendar-view-month",
-      "#ms-calendar-view-month",
-    ][weekView];
-    if (use.getAttribute("href") !== iconHref) {
-      viewIconAnimation?.cancel();
-      viewIconAnimation = null;
-      use.setAttribute("href", iconHref);
-      // The view button stays in place; only its new glyph is revealed.
-      if (mode === "agenda" && !changed && canAnimate())
-        viewIconAnimation = animationCompat.animate(
-          icon,
-          [
-            { opacity: 0.35, transform: "scale(0.8)" },
-            { opacity: 1, transform: "scale(1)" },
-          ],
-          { duration: 180, easing: "ease-out", fill: "both" },
-        );
-    }
-    const nextView = viewNames[(weekView + 1) % 4];
-    viewToggle.dataset.actionHint = "agenda." + nextView;
-    viewToggle.title =
-      t(viewNames[weekView]) +
-      " · " +
-      t("switchView", {
-        view: t(nextView),
-      });
-    viewToggle.setAttribute("aria-label", viewToggle.title);
-    viewToggle.disabled = busy;
-    updateYearViewToggle();
-    yearViewToggle.disabled = busy;
-    if (!animate) return;
-    toolbarRegion.hidden = false;
-    const expandedWidth = toolbarRegion.getBoundingClientRect().width;
-    const gap =
-      parseFloat(getComputedStyle(toolbarRegion.parentElement).columnGap) || 0;
-    const startTime = document.timeline?.currentTime;
+    if (key === "agenda") renderAgendaDisplay();
+    if (key === "year") renderYearDisplay();
+    if (animate) return () => animateToolbar(incoming, previous, permanent);
+  }
+  // Measure after the page has rendered its new layout, including the month label.
+  function animateToolbar(incoming, previous, permanent) {
+    const origin = toolbarActions.getBoundingClientRect();
     const animations = [];
-    if (snapshot) {
-      toolbarClone = snapshot;
-      toolbarSlot.append(snapshot);
-      animations.push(
-        animationCompat.animate(
-          snapshot,
-          [
-            painted,
-            {
-              opacity: Number(painted.opacity) * 0.85,
-              transform: "translateX(4px)",
-              offset: 0.5,
-            },
-            { opacity: 0, transform: "translateX(8px)" },
-          ],
-          {
-            duration: 160,
-            easing: "cubic-bezier(0.4, 0, 0.8, 1)",
-            fill: "both",
-          },
-          startTime,
-        ),
+    const timing = {
+      duration: 220,
+      easing: "cubic-bezier(0.25, 0.65, 0.35, 1)",
+      fill: "both",
+    };
+    const play = (element, from, to) =>
+      animations.push(animationCompat.animate(element, [from, to], timing));
+    if (permanent) previous.set(permanentActions, permanent);
+    for (const control of [incoming, toolbarDivider, permanentActions]) {
+      const target = toolbarPaint(control);
+      if (!target) continue;
+      const from = previous.get(control);
+      previous.delete(control);
+      const dx = from
+        ? from.rect.left - target.rect.left
+        : control === incoming
+          ? 8
+          : 0;
+      const dy = from ? from.rect.top - target.rect.top : 0;
+      const opacity = from?.opacity ?? 0;
+      if (
+        Math.abs(dx) < 0.1 &&
+        Math.abs(dy) < 0.1 &&
+        opacity === target.opacity
+      )
+        continue;
+      play(
+        control,
+        { opacity, transform: `translate(${dx}px, ${dy}px)` },
+        { opacity: target.opacity, transform: "none" },
       );
     }
-    // Switching between attendance and agenda gets a short empty beat.
-    const replacementPause =
-      snapshot &&
-      incoming &&
-      (source(snapshot) === "attendance" || key === "attendance")
-        ? 80
-        : 0;
-    if (incoming)
-      animations.push(
-        animationCompat.animate(
-          incoming,
-          [
-            (!snapshot && incomingPainted) || {
-              opacity: 0,
-              transform: "translateX(8px)",
-            },
-            { opacity: 1, transform: "none" },
-          ],
-          {
-            duration: 200,
-            // Finish the previous button's exit before revealing its replacement.
-            delay: snapshot ? 160 + replacementPause : incomingPainted ? 0 : 40,
-            easing: "cubic-bezier(0.2, 0.65, 0.3, 1)",
-            fill: "both",
-          },
-          startTime,
-        ),
-      );
-    // Include the outer flex gap in the collapse, keeping the permanent actions anchored.
-    if (key === "analysis" || regionWidth !== expandedWidth) {
-      toolbarRegion.style.width =
-        key === "analysis" ? "0px" : expandedWidth + "px";
-      toolbarRegion.style.marginRight =
-        key === "analysis" ? -gap + "px" : "0px";
-      toolbarDivider.style.opacity = key === "analysis" ? "0" : "1";
-      animations.push(
-        animationCompat.animate(
-          toolbarRegion,
-          [
-            {
-              width: regionWidth + "px",
-              marginRight: regionWidth ? regionMargin : -gap + "px",
-            },
-            {
-              width: toolbarRegion.style.width,
-              marginRight: toolbarRegion.style.marginRight,
-            },
-          ],
-          {
-            duration: 200,
-            delay: key === "analysis" ? 160 : 0,
-            easing: "cubic-bezier(0.2, 0.65, 0.3, 1)",
-            fill: "both",
-          },
-          startTime,
-        ),
-      );
-      animations.push(
-        animationCompat.animate(
-          toolbarDivider,
-          [
-            { opacity: regionWidth ? dividerOpacity : "0" },
-            { opacity: toolbarDivider.style.opacity },
-          ],
-          {
-            duration: 160,
-            delay: key === "analysis" ? 160 : 40,
-            easing: "ease-out",
-            fill: "both",
-          },
-          startTime,
-        ),
+    for (const [control, { ghost, rect, opacity }] of previous) {
+      if (!ghost) continue;
+      Object.assign(ghost.style, {
+        left: `${rect.left - origin.left}px`,
+        top: `${rect.top - origin.top}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+        opacity: "0",
+      });
+      toolbarGhosts.set(control, ghost);
+      toolbarActions.append(ghost);
+      play(
+        ghost,
+        { opacity, transform: "none" },
+        {
+          opacity: 0,
+          transform: control === toolbarDivider ? "none" : "translateX(8px)",
+        },
       );
     }
     toolbarAnimations = animations;
@@ -3017,7 +2831,7 @@ WorkTimeApp.ui.createAgenda = function ({
   function render() {
     if (disposed) return;
     rememberView();
-    renderToolbar();
+    const playToolbar = renderToolbar();
     updateOaActions();
     if (!active || busy) {
       closeStatusMenu();
@@ -3025,13 +2839,11 @@ WorkTimeApp.ui.createAgenda = function ({
     }
     schedule.render();
     renderMemo();
-    updateBrand(active);
     modes.setAttribute(
       "aria-label",
       t("agenda") + " / " + WorkTimeApp.i18n.t("analysis.toggle"),
     );
     finishWeekTransition();
-    workspace.classList.toggle("agenda-mode", active);
     pane.hidden = summary.hidden = !active;
     const focusesToday =
       !model.yearMode &&
@@ -3059,16 +2871,19 @@ WorkTimeApp.ui.createAgenda = function ({
     pane.querySelector(".agenda-day-toolbar").hidden = !formOpen;
     pane.querySelector(".agenda-editor-footer").hidden = !formOpen;
     $("agendaBack").hidden = !formOpen;
-    $("agendaBack").title = t("backToList");
+    $("agendaBack").dataset.hintText = t("backToList");
     $("agendaBack").setAttribute("aria-label", t("backToList"));
     $("agendaFormTitle").textContent = t(editingId ? "edit" : "new");
     for (const node of modes.querySelectorAll("[data-agenda-text]"))
       node.textContent = t(node.dataset.agendaText);
-    $("agendaMode").title = t(active ? "attendance" : "agenda");
-    $("agendaMode").setAttribute("aria-label", $("agendaMode").title);
+    $("agendaMode").dataset.hintText = t(active ? "attendance" : "agenda");
+    $("agendaMode").setAttribute(
+      "aria-label",
+      $("agendaMode").dataset.hintText,
+    );
     $("agendaMode").setAttribute("aria-pressed", String(active));
     $("agendaMode").disabled = model.batchMode;
-    $("agendaNew").title = t("new");
+    $("agendaNew").dataset.hintText = t("new");
     $("agendaNew").setAttribute("aria-label", t("new"));
     $("agendaNew").disabled = busy || model.loadIssue === "unsupported";
     $("agendaBack").disabled = busy;
@@ -3076,6 +2891,7 @@ WorkTimeApp.ui.createAgenda = function ({
       agendaLayout.render();
       timetable.render();
       dateEdges.refresh();
+      playToolbar?.();
       return;
     }
     for (const node of pane.querySelectorAll("[data-agenda-text]"))
@@ -3116,11 +2932,14 @@ WorkTimeApp.ui.createAgenda = function ({
       "aria-label",
       WorkTimeApp.i18n.date(model.selected) + " · " + t("agenda"),
     );
-    updateMarkup(
-      $("agendaList"),
-      selectedItems.map(entry).join("") ||
-        `<div class="agenda-empty"><svg class="ui-icon" aria-hidden="true"><use href="#ms-event-note"/></svg><p>${esc(t("empty"))}</p></div>`,
-    );
+    WorkTimeApp.ui.workspaceViews.AgendaList($("agendaList"), {
+      items: selectedItems.map((item) => ({
+        ...item,
+        time: labelTime(item),
+        statusLabel: statusLabel(item.status),
+      })),
+      disabled: busy && !completingAgenda,
+    });
     // Decorate the existing keyed day cards; the calendar owns dates, headers,
     // selection, adjacent days, weather layers and responsive grid geometry.
     const useLanes =
@@ -3256,29 +3075,28 @@ WorkTimeApp.ui.createAgenda = function ({
       ],
       ["upcoming", otherPending.filter((item) => item.date > model.today)],
     ].filter(([, list]) => list.length);
-    updateMarkup(
-      $("agendaOverview"),
-      `<h2>${esc(t("pendingOverview"))}</h2>` +
-        (groups
-          .map(
-            ([key, list]) =>
-              `<section class="agenda-overview-section agenda-overview-${key}"><h3>${esc(t(key))} <span class="agenda-count">${list.length}</span></h3><div class="agenda-overview-items">${list
-                .slice(0, expandedGroups.has(key) ? list.length : 3)
-                .map(
-                  (item) =>
-                    `<button data-ui="button" type="button" class="agenda-summary-link" data-agenda-jump="${esc(item.id)}"><span>${esc(item.title)}</span><small>${esc((item.endDate ?? item.date) > item.date ? labelTime(item) : WorkTimeApp.i18n.date(item.date) + " · " + labelTime(item))}</small></button>`,
-                )
-                .join(
-                  "",
-                )}</div>${list.length > 3 ? `<button data-ui="button" type="button" class="ui-button agenda-expand" data-agenda-expand="${key}" aria-expanded="${expandedGroups.has(key)}">${esc(t(expandedGroups.has(key) ? "showLess" : "showAll", { count: list.length }))}</button>` : ""}</section>`,
-          )
-          .join("") ||
-          `<p class="agenda-overview-empty">${esc(t("pendingEmpty"))}</p>`),
-    );
+    WorkTimeApp.ui.workspaceViews.AgendaOverview($("agendaOverview"), {
+      groups: groups.map(([key, list]) => ({
+        key,
+        count: list.length,
+        expanded: expandedGroups.has(key),
+        items: list
+          .slice(0, expandedGroups.has(key) ? list.length : 3)
+          .map((item) => ({
+            id: item.id,
+            title: item.title,
+            time:
+              (item.endDate ?? item.date) > item.date
+                ? labelTime(item)
+                : WorkTimeApp.i18n.date(item.date) + " · " + labelTime(item),
+          })),
+      })),
+    });
     times();
     agendaDrag?.refresh();
     timetable.render();
     dateEdges.refresh();
+    playToolbar?.();
   }
   function select(
     date,
@@ -3433,12 +3251,37 @@ WorkTimeApp.ui.createAgenda = function ({
   }
   function setActive(value) {
     agendaDrag?.cancel();
-    active = value;
+    active = value && isDevelopmentEnabled();
     if (active) {
       model.agendaViewAnchor = model.selected;
       model.month = model.selected.slice(0, 7);
     }
     model.agendaViewWeeks = active ? weekView : 0;
+  }
+  function openAnalysisFromAgenda() {
+    if (busy || !leaveForm()) return;
+    finishTransitions();
+    return actions.transitionAnalysis(
+      true,
+      () => setActive(false),
+      revealSidebars,
+    );
+  }
+  function selectView(view) {
+    if (view === "agenda" && !isDevelopmentEnabled()) return;
+    if (model.batchMode || busy) return;
+    actions.finishCalendarNavigation();
+    const current = active
+      ? "agenda"
+      : model.analysisMode
+        ? "analysis"
+        : "calendar";
+    if (view === current) return;
+    if (active && view === "analysis") return openAnalysisFromAgenda();
+    if (active || view === "agenda") return changeAgendaMode(view === "agenda");
+    return actions.transitionAnalysis(view === "analysis", null, null, {
+      focusAttendance: view === "calendar",
+    });
   }
   function bind() {
     reset();
@@ -3452,8 +3295,24 @@ WorkTimeApp.ui.createAgenda = function ({
       void saveMemo();
     });
     listen($("agendaMemoRetry"), "click", () => void saveMemo());
+    listen(window, "hashchange", () => {
+      agendaMode.hidden = !isDevelopmentEnabled();
+      if (!agendaMode.hidden || (!active && !modeSequence?.target)) return;
+      modeSequence = null;
+      if (!active) return;
+      finishTransitions();
+      showAllForMode = false;
+      setActive(false);
+      model.selected = model.calendarSelected =
+        WorkTimeApp.domain.calendar.attendanceFocusDate(
+          model.month,
+          clock.today(),
+          model.state.days,
+        );
+      actions.render();
+    });
     const switchAgendaMode = () => {
-      if (model.batchMode || busy || !leaveForm()) return;
+      if (model.batchMode || busy || (active && !leaveForm())) return;
       actions.closeImport();
       // Read painted surfaces before cancelling an interrupted mode animation.
       const surfaces = new Map(
@@ -3477,7 +3336,7 @@ WorkTimeApp.ui.createAgenda = function ({
       actions.finishCalendarNavigation();
       if (model.yearMode) {
         finishTransitions();
-        actions.transitionPage({
+        return actions.transitionPage({
           direction: -1,
           update() {
             setActive(true);
@@ -3489,16 +3348,14 @@ WorkTimeApp.ui.createAgenda = function ({
             revealAgendaCards();
           },
         });
-        return;
       }
       if (model.analysisMode) {
         finishTransitions();
-        actions.transitionAnalysis(
+        return actions.transitionAnalysis(
           false,
           () => setActive(true),
           revealAgendaPage,
         );
-        return;
       }
       const staged = !!weekLayout && workdaysOnly;
       const movingDates = staged ? new Set(weekDates()) : null;
@@ -3635,11 +3492,27 @@ WorkTimeApp.ui.createAgenda = function ({
       revealSidebars();
       return pageMotion;
     };
-    listen($("agendaMode"), "click", async () => {
-      if (model.batchMode || busy || !leaveForm()) return;
+    changeAgendaMode = async (target) => {
+      if (target && !isDevelopmentEnabled()) return;
+      if (model.batchMode || busy || (active && !leaveForm())) return;
       weekSequence = null;
-      const request = { target: !(modeSequence?.target ?? active) };
+      const request = { target };
       modeSequence = request;
+      if (request.target) {
+        try {
+          await WorkTimeApp.services.assets.style(
+            "assets/css/agenda-details.css",
+          );
+        } catch (error) {
+          if (!disposed && request === modeSequence) {
+            modeSequence = null;
+            window.alert(error.message);
+          }
+          return;
+        }
+        if (disposed || request !== modeSequence || !isDevelopmentEnabled())
+          return;
+      }
       if (
         !workdaysOnly ||
         weekView !== 1 ||
@@ -3649,7 +3522,7 @@ WorkTimeApp.ui.createAgenda = function ({
       ) {
         modeSequence = null;
         showAllForMode = false;
-        if (request.target !== active) switchAgendaMode();
+        if (request.target !== active) return switchAgendaMode();
         return;
       }
       if (request.target === active) {
@@ -3685,7 +3558,10 @@ WorkTimeApp.ui.createAgenda = function ({
         modeSequence = null;
         showAllForMode = false;
       }
-    });
+    };
+    listen(agendaMode, "click", () =>
+      changeAgendaMode(!(modeSequence?.target ?? active)),
+    );
     listen(
       document.querySelector(".panel-head"),
       "click",
@@ -3707,13 +3583,7 @@ WorkTimeApp.ui.createAgenda = function ({
         event.preventDefault();
         event.stopImmediatePropagation();
         if (id === "analysisToggle") {
-          if (busy || !leaveForm()) return;
-          finishTransitions();
-          actions.transitionAnalysis(
-            true,
-            () => setActive(false),
-            revealSidebars,
-          );
+          openAnalysisFromAgenda();
           return;
         }
         if (
@@ -3778,9 +3648,11 @@ WorkTimeApp.ui.createAgenda = function ({
       event.stopPropagation();
       void click(event);
     });
-    listen(viewToggle, "click", () =>
-      switchWeek(((weekSequence?.weeks ?? weekView) + 1) % 4),
-    );
+    // Keep direct command activation available to existing scripted callers.
+    listen(viewToggle, "click", (event) => {
+      if (event.target === viewToggle && !event.isTrusted)
+        switchWeek(((weekSequence?.weeks ?? weekView) + 1) % 4);
+    });
     listen(window, "resize", () => {
       syncOverviewHost();
       settleDrawer();
@@ -3941,6 +3813,7 @@ WorkTimeApp.ui.createAgenda = function ({
   return {
     bind,
     render,
+    selectView,
     hasDraft: () => hasDraft() || memoDirty || memoSaving || agendaDrag?.active,
     async prepareAgendaArchive() {
       await saveMemo();
@@ -3948,14 +3821,18 @@ WorkTimeApp.ui.createAgenda = function ({
     },
     dispose() {
       disposed = true;
+      WorkTimeApp.ui.workspaceViews.dispose(viewToggle);
+      WorkTimeApp.ui.workspaceViews.dispose(yearViewToggle);
       agendaDrag.dispose();
       agendaLayout.dispose();
       dateEdges.dispose();
       timetable.dispose();
       schedule.dispose();
       formController?.dispose();
+      WorkTimeApp.ui.workspaceViews.dispose($("agendaOverview"));
+      WorkTimeApp.ui.workspaceViews.dispose($("agendaList"));
+      WorkTimeApp.ui.workspaceViews.dispose(pane);
       statusPopover.destroy();
-      updateBrand(false);
       contentObserver.disconnect();
       observedHosts.clear();
       finishTransitions();
@@ -3979,7 +3856,7 @@ WorkTimeApp.ui.createAgenda = function ({
         tab.removeAttribute("aria-expanded");
       for (const animation of modesAnimations) animation.cancel();
       modesRegion.before($("analysisToggle"));
-      toolbarRegion.before($("batchToggle"));
+      toolbarRegion.hidden = false;
       $("batchToggle").hidden = false;
       for (const node of [
         modes,
@@ -3989,9 +3866,6 @@ WorkTimeApp.ui.createAgenda = function ({
         controls,
         viewToggle,
         yearViewToggle,
-        toolbarSlot,
-        toolbarDivider,
-        toolbarRegion,
         overviewDialog,
         drawerGrip,
       ])

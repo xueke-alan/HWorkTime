@@ -161,7 +161,7 @@ WorkTimeApp.games.register({
           confirming = true;
           save();
           render();
-          cancel.focus();
+          resultView.focus("klotski", "cancel");
         } else reset();
       },
       "restart-alt",
@@ -169,7 +169,7 @@ WorkTimeApp.games.register({
     const boardHost = node("div", "klotski-board-host", playLayout);
     const board = node("div", "klotski-board", boardHost);
     board.tabIndex = 0;
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const tiles = node("div", "klotski-tiles", board);
     const pieceButtons = Array.from({ length: 10 }, (_, piece) => {
       const el = node("button", "klotski-piece", tiles);
@@ -180,26 +180,22 @@ WorkTimeApp.games.register({
     const exit = node("div", "klotski-exit", boardHost);
     const cover = node("div", "klotski-cover", boardHost);
     cover.hidden = true;
-    cover.setAttribute("role", "group");
-    const coverTitle = node("h3", "", cover);
-    const result = node("p", "", cover);
-    const coverActions = node("div", "klotski-result-actions", cover);
-    const cancel = button(coverActions, "cancel", () => {
+    WorkTimeApp.ui.native.setGroup(cover);
+    const resultView = WorkTimeApp.ui.mountGameResult(cover, signal);
+    function cancelRestart() {
       confirming = false;
       stamp = performance.now();
       render();
       restart.focus();
-    });
-    const accept = button(coverActions, "accept", reset);
-    const next = button(coverActions, "next", () => {
+    }
+    function nextLevel() {
       const bank = data.classics
         ? levels.filter((l) => l.classic !== undefined)
         : levels;
       const index = bank.findIndex((l) => l.id === data.current);
       if (index >= 0 && index < bank.length - 1) openLevel(bank[index + 1].id);
       else showChooser();
-    });
-    const back = button(coverActions, "back", showChooser);
+    }
     const catalog = G.createLevelPage(root, "klotski-level-page", signal);
     const chapterButtons = rules.groups.map((_, chapter) => {
       const el = button(catalog.categories, "chapter-" + chapter, () => {
@@ -445,7 +441,7 @@ WorkTimeApp.games.register({
           [{ opacity: 0 }, { opacity: 1 }],
           { duration: 220, easing: "ease-out" },
         );
-      next.focus({ preventScroll: true });
+      resultView.focus("klotski", "next");
     }
     function showChooser() {
       tick();
@@ -593,20 +589,35 @@ WorkTimeApp.games.register({
       boardHost.classList.toggle("is-escaped", escaped);
       cover.hidden = !confirming && (!solved || winPending);
       board.inert = !cover.hidden || winPending;
-      coverTitle.textContent = t(confirming ? "confirm" : "won");
-      result.textContent = confirming
-        ? t("confirmRestart")
-        : t("result", {
-            moves: state().path.length,
-            time: clock(state().elapsed),
-          });
-      cancel.hidden = !confirming;
-      next.hidden = confirming;
-      back.hidden = confirming;
-      cancel.textContent = t("cancel");
-      accept.textContent = t(confirming ? "restart" : "again");
-      next.textContent = t("next");
-      back.textContent = t("choose");
+      if (!cover.hidden) {
+        const action = (id, label, callback) => ({
+          id,
+          label: t(label),
+          run: () => {
+            if (!paused && !disposed) callback();
+          },
+        });
+        resultView.update({
+          game: "klotski",
+          title: t(confirming ? "confirm" : "won"),
+          detail: confirming
+            ? t("confirmRestart")
+            : t("result", {
+                moves: state().path.length,
+                time: clock(state().elapsed),
+              }),
+          actions: confirming
+            ? [
+                action("cancel", "cancel", cancelRestart),
+                action("accept", "restart", reset),
+              ]
+            : [
+                action("accept", "again", reset),
+                action("next", "next", nextLevel),
+                action("back", "choose", showChooser),
+              ],
+        });
+      }
       status.textContent = solved && !winPending ? t("won") : "";
     }
     function render() {
@@ -688,7 +699,7 @@ WorkTimeApp.games.register({
         [undo, "undo"],
         [restart, "restart"],
       ]) {
-        el.title = t(name);
+        el.dataset.hintText = t(name);
         el.setAttribute("aria-label", t(name));
       }
       choose.disabled = confirming;
@@ -786,7 +797,7 @@ WorkTimeApp.games.register({
         return;
       }
       const focused = event.target.closest("[data-piece]");
-      if (["Enter", " "].includes(event.key) && focused) {
+      if (event.key === "Enter" && focused) {
         event.preventDefault();
         selected = Number(focused.dataset.piece);
         renderBoard();

@@ -15,11 +15,14 @@ WorkTimeApp.ui.secondary.imports = function (options) {
     clipboard,
   } = options;
   const view = WorkTimeApp.ui.importRecords;
+  const { oaActions } = WorkTimeApp.ui.workspaceViews;
   let preview = null;
   let disposed = false;
   let importParseTimer = null;
   let resultsMode = "history";
   let inputRevision = 0;
+  let importSaving = false;
+  let historyCleanup = null;
   function anomalyReason(record) {
     if (!record.start && !record.end)
       return WorkTimeApp.i18n.t("copy.afaa05cdc4");
@@ -33,19 +36,33 @@ WorkTimeApp.ui.secondary.imports = function (options) {
       return WorkTimeApp.i18n.t("copy.381c22871c");
     return "";
   }
-  function recordCells(record) {
+  function describeRecord(record) {
+    const restDay = record.status === "off";
     const time =
       record.start || record.end
         ? ((record.start || "") + " - " + (record.end || "")).trim()
         : "-";
+    return {
+      date: record.date,
+      time:
+        time + (record.nextDay ? WorkTimeApp.i18n.t("copy.c751037c58") : ""),
+      restDay: restDay ? WorkTimeApp.i18n.t("copy.743a4ad0dd") : "",
+      anomaly: restDay ? "" : anomalyReason(record),
+    };
+  }
+  function recordCells(record) {
+    const statusClass = record.restDay
+      ? "import-record-rest-day"
+      : "import-record-anomaly";
     return (
       "<strong>" +
       esc(record.date.replace(/-/g, "/")) +
       "</strong><span>" +
-      esc(time) +
-      (record.nextDay ? WorkTimeApp.i18n.t("copy.c751037c58") : "") +
-      '</span><span class="import-record-anomaly">' +
-      esc(anomalyReason(record)) +
+      esc(record.time) +
+      '</span><span class="' +
+      statusClass +
+      '">' +
+      esc(record.restDay || record.anomaly) +
       "</span>"
     );
   }
@@ -60,10 +77,8 @@ WorkTimeApp.ui.secondary.imports = function (options) {
   }
   function resetImportInput() {
     inputRevision++;
-    $("importClipboardNotice").hidden = true;
+    oaActions.clipboardNotice = false;
     $("pasteText").value = "";
-    view.rows = [];
-    view.choices = {};
     invalidatePreview();
   }
   function setImportParseStatus(status) {
@@ -72,34 +87,41 @@ WorkTimeApp.ui.secondary.imports = function (options) {
     summary.setAttribute("aria-busy", String(status === "pending"));
     $("importDetails").classList.toggle(
       "hidden",
-      ["idle", "pending"].includes(status),
+      status !== "success" && status !== "warning",
     );
-  }
-  function collapseImportDetails() {
-    $("importDetails").classList.add("hidden");
   }
   function scheduleImportParse() {
     invalidatePreview(!$("pasteText").value.trim());
-    setImportParseStatus("pending", WorkTimeApp.i18n.t("copy.a0f28b2e00"));
+    setImportParseStatus("pending");
     importParseTimer = setTimeout(parseImport, 250);
   }
   function invalidatePreview(showHistory = true) {
-    collapseImportDetails();
     clearTimeout(importParseTimer);
     importParseTimer = null;
-    setImportParseStatus("idle", "");
+    setImportParseStatus("idle");
     preview = null;
     $("commitImport").disabled = true;
-    if (showHistory) $("importTable").classList.add("hidden");
-    $("importSummary").textContent = WorkTimeApp.i18n.t("copy.8b76d80fc7");
+    const summary = $("importSummary");
+    summary.textContent = WorkTimeApp.i18n.t("copy.8b76d80fc7");
+    summary.removeAttribute("data-hint-text");
     $("importWarnings").textContent = "";
     if (showHistory) {
+      $("importTable").classList.add("hidden");
+      view.rows = [];
+      view.choices = {};
       $("importResultsTitle").textContent =
         WorkTimeApp.i18n.t("copy.dc71cd204d");
       $("importHistoryList").classList.remove("hidden");
       renderImportHistory();
       animateResults("history");
     }
+  }
+  function showImportParseError(message, detail) {
+    invalidatePreview();
+    const summary = $("importSummary");
+    summary.textContent = message;
+    summary.dataset.hintText = detail || message;
+    setImportParseStatus("error");
   }
   function prepareClipboardText(text) {
     return WorkTimeApp.services.imports.prepare(
@@ -131,10 +153,16 @@ WorkTimeApp.ui.secondary.imports = function (options) {
             clock.today(),
           ),
         { records, warnings, rows } = plan;
-      preview = rows.length ? plan : null;
-      $("importWarnings").textContent = warnings
-        .map(WorkTimeApp.i18n.message)
-        .join("\n");
+      const warningText = warnings.map(WorkTimeApp.i18n.message).join("\n");
+      if (!rows.length) {
+        showImportParseError(
+          WorkTimeApp.i18n.t("import.noAttendanceData"),
+          warningText,
+        );
+        return;
+      }
+      preview = plan;
+      $("importWarnings").textContent = warningText;
       $("importSummary").textContent =
         WorkTimeApp.i18n.t("copy.19b361b64c") +
         records.length +
@@ -143,18 +171,11 @@ WorkTimeApp.ui.secondary.imports = function (options) {
         WorkTimeApp.i18n.t("copy.3bc4aa604d") +
         rows.filter((x) => x.result.conflict).length +
         WorkTimeApp.i18n.t("copy.2f47bca658");
-      $("importSummary").title =
-        warnings.map(WorkTimeApp.i18n.message).join("\n") ||
-        $("importSummary").textContent;
+      $("importSummary").dataset.hintText =
+        warningText || $("importSummary").textContent;
       view.choices = {};
-      view.rows = rows.map(({ record, result, old }) => ({
-        date: record.date,
-        time:
-          (record.start || record.end
-            ? ((record.start || "") + " - " + (record.end || "")).trim()
-            : "-") +
-          (record.nextDay ? WorkTimeApp.i18n.t("copy.c751037c58") : ""),
-        anomaly: anomalyReason(record),
+      const describedRows = rows.map(({ record, result, old }) => ({
+        ...describeRecord(record),
         conflict: result.conflict
           ? result.repeated
             ? WorkTimeApp.i18n.t("copy.36486f62eb")
@@ -169,40 +190,34 @@ WorkTimeApp.ui.secondary.imports = function (options) {
           : "",
         manual: !!model.state.days[record.date]?.actual,
       }));
-      $("importTable").classList.toggle("hidden", !rows.length);
+      view.rows = describedRows;
+      $("importTable").classList.remove("hidden");
       $("importHistoryList").classList.add("hidden");
       $("importResultsTitle").textContent =
         WorkTimeApp.i18n.t("copy.2dc2565cb9");
       animateResults("results");
       const abnormalDates = new Set(
-        rows
-          .filter((row) => row.result.conflict || anomalyReason(row.record))
-          .map((row) => row.record.date),
+        describedRows
+          .filter((row) => row.conflict || row.anomaly)
+          .map((row) => row.date),
       );
       $("importHistoryCount").textContent =
         rows.length +
         WorkTimeApp.i18n.t("copy.0d19dbc09e") +
         abnormalDates.size +
         WorkTimeApp.i18n.t("copy.8fc2846555");
-      $("commitImport").disabled = !rows.length;
+      $("commitImport").disabled = importSaving;
       setImportParseStatus(
-        !rows.length
-          ? "error"
-          : warnings.length || rows.some((x) => x.result.conflict)
-            ? "warning"
-            : "success",
+        warnings.length || rows.some((x) => x.result.conflict)
+          ? "warning"
+          : "success",
       );
-      if (!rows.length && !warnings.length)
-        $("importSummary").textContent = WorkTimeApp.i18n.t("copy.f99e8f1ad6");
-      if (!rows.length && !warnings.length)
-        $("importWarnings").textContent = WorkTimeApp.i18n.t("copy.7a813c10de");
     } catch (error) {
-      invalidatePreview();
-      setImportParseStatus("error", WorkTimeApp.i18n.t("copy.0a95106968"));
-      $("importSummary").textContent = WorkTimeApp.i18n.t("copy.52574f7e25");
-      $("importWarnings").textContent =
+      showImportParseError(
+        WorkTimeApp.i18n.t("copy.52574f7e25"),
         WorkTimeApp.i18n.t("copy.0542674ee0") +
-        WorkTimeApp.i18n.message(error.message);
+          WorkTimeApp.i18n.message(error.message),
+      );
     }
   }
   async function commitOARecords(
@@ -212,43 +227,39 @@ WorkTimeApp.ui.secondary.imports = function (options) {
     count = records.length,
     focusDate = records[0]?.date,
   ) {
-    const id = WorkTimeApp.services.archive.uuid();
-    const saved = (
-      await application.importRecords({
-        id,
-        at: clock.now().toISOString(),
-        year,
-        sources,
-        count,
-        records: records.map((record) => ({ ...record })),
-      })
-    ).persisted;
+    await historyCleanup;
+    const result = await application.importRecords({
+      id: WorkTimeApp.services.archive.uuid(),
+      at: clock.now().toISOString(),
+      year,
+      sources,
+      count,
+      records,
+    });
+    if (result.duplicate || !result.applied || disposed) return result;
     if (focusDate) {
       model.month = focusDate.slice(0, 7);
       model.selected = model.calendarSelected = focusDate;
     }
     actions.render();
     renderImportHistory();
-    return saved;
+    return result;
   }
   const dialogs = WorkTimeApp.ui.confirmations,
     removal = dialogs.removal;
   let importToDelete = null;
-  function importHistoryByTime() {
-    return model.state.imports
-      .slice()
-      .reverse()
-      .sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
-  }
   async function renderImportHistory() {
     try {
+      await historyCleanup;
       await hydrateImports();
     } catch (error) {
       actions.toast(WorkTimeApp.i18n.message(error.message), "error");
       return;
     }
     if (disposed) return;
-    const logs = importHistoryByTime();
+    const logs = WorkTimeApp.domain.observations.recentImports(
+      model.state.imports,
+    );
     const dates = new Set(
       logs.flatMap((log) => importIndex.describe(log).acceptedDates),
     );
@@ -278,6 +289,13 @@ WorkTimeApp.ui.secondary.imports = function (options) {
       };
     });
   }
+  function openImportHistory() {
+    if ($("importDialog").open && !historyCleanup)
+      historyCleanup = application.deduplicateImports().finally(() => {
+        historyCleanup = null;
+      });
+    void renderImportHistory();
+  }
   let detailId = null;
   async function showImportDetail(id, valid = () => true) {
     try {
@@ -287,11 +305,8 @@ WorkTimeApp.ui.secondary.imports = function (options) {
       return;
     }
     if (disposed || !valid()) return;
-    const logs = importHistoryByTime(),
-      index = logs.findIndex((log) => log.id === id),
-      log = logs[index];
+    const log = model.state.imports.find((log) => log.id === id);
     if (!log) return;
-    const changedDetail = detailId !== null && detailId !== id;
     detailId = id;
     const pane = $("sourceDialog");
     pane.classList.add("import-detail-view");
@@ -309,12 +324,12 @@ WorkTimeApp.ui.secondary.imports = function (options) {
         }),
       ) +
       WorkTimeApp.i18n.t("copy.b336d19181");
-    const records = log.records;
+    const records = log.records.map(describeRecord);
     $("sourceBody").innerHTML =
       '<div class="import-detail-toolbar"><span class="muted">' +
       records.length +
       WorkTimeApp.i18n.t("copy.0d19dbc09e") +
-      records.filter((record) => anomalyReason(record)).length +
+      records.filter((record) => record.anomaly).length +
       WorkTimeApp.i18n.t("copy.6827141ae0") +
       '<div class="import-parsed-list">' +
       records
@@ -326,19 +341,7 @@ WorkTimeApp.ui.secondary.imports = function (options) {
       WorkTimeApp.i18n.t("copy.d7f42a424c") +
       esc(log.sources.map((source) => source.raw).join("\n\n")) +
       "</textarea></div>";
-    pane.querySelector(".dialog-foot").innerHTML =
-      WorkTimeApp.i18n.t("copy.5c7f465892") +
-      (index === 0 ? " disabled" : "") +
-      '><svg class="ui-icon" aria-hidden="true"><use href="#ms-chevron-left"/></svg></button><span class="muted">' +
-      (index + 1) +
-      " / " +
-      logs.length +
-      WorkTimeApp.i18n.t("copy.80bab87117") +
-      (index === logs.length - 1 ? " disabled" : "") +
-      '><svg class="ui-icon" aria-hidden="true"><use href="#ms-chevron-right"/></svg></button>';
     $("sourceBody").scrollTop = 0;
-    if (changedDetail && pane.open)
-      WorkTimeApp.ui.motion?.play($("sourceBody"), "motion-sidebar-forward");
     WorkTimeApp.ui.alignment?.refresh([pane]);
   }
   async function showSources(valid = () => true) {
@@ -395,7 +398,7 @@ WorkTimeApp.ui.secondary.imports = function (options) {
       input.value = text;
       inputRevision++;
       parseImport(plan);
-      $("importClipboardNotice").hidden = !preview;
+      oaActions.clipboardNotice = !!preview;
     } catch {
       if (current())
         actions.toast(WorkTimeApp.i18n.t("copy.a97d627f90"), "error");
@@ -407,15 +410,15 @@ WorkTimeApp.ui.secondary.imports = function (options) {
     bound = true;
     disposed = false;
     events.listen(document, "worktime:languagechange", () => {
-      if (preview) {
+      if ($("importDialog").open) {
         const choices = { ...view.choices };
         parseImport();
-        view.choices = choices;
+        if (preview) view.choices = choices;
       } else renderImportHistory();
       if ($("sourceDialog").open && detailId) showImportDetail(detailId);
     });
     events.listen($("importDialog"), "close", resetImportInput);
-    events.listen($("importDialog"), "sidebar-open", renderImportHistory);
+    events.listen($("importDialog"), "sidebar-open", openImportHistory);
     events.handler($("importHistoryList"), "onclick", async (e) => {
       await hydrateImports();
       const view = e.target.closest("[data-view-import]"),
@@ -469,7 +472,6 @@ WorkTimeApp.ui.secondary.imports = function (options) {
         removal.busy = false;
       }
     };
-    events.listen($("sourceDialog"), "click", detailClick);
     events.handler($("oaLinkForm"), "onsubmit", async (event) => {
       event.preventDefault();
       try {
@@ -490,80 +492,59 @@ WorkTimeApp.ui.secondary.imports = function (options) {
     });
     events.handler($("pasteText"), "oninput", () => {
       inputRevision++;
-      $("importClipboardNotice").hidden = true;
+      oaActions.clipboardNotice = false;
       scheduleImportParse();
     });
-    events.handler($("pasteOAClipboard"), "onclick", async () => {
-      const button = $("pasteOAClipboard"),
-        input = $("pasteText"),
-        start = input.selectionStart,
-        end = input.selectionEnd;
-      if (button.disabled) return;
-      button.disabled = true;
+    events.handler($("commitImport"), "onclick", async () => {
+      if (importSaving || !preview?.rows.length) return;
+      const plan = preview;
+      const revision = inputRevision;
+      const processed = plan.rows.length;
+      const acceptedRecords = WorkTimeApp.services.imports.acceptedRecords(
+        plan,
+        (row, i) => view.choices[i] || "new",
+      );
+      importSaving = true;
+      $("commitImport").disabled = true;
       try {
-        const text = await clipboard.readText();
-        if (disposed || !$("importDialog").open) return;
-        if (!text.trim()) {
-          actions.toast(WorkTimeApp.i18n.t("copy.041c1e0625"));
+        const result = await commitOARecords(
+          acceptedRecords,
+          plan.year,
+          plan.sources,
+          processed,
+          plan.rows[0]?.record.date,
+        );
+        if (disposed) return;
+        const originalInput =
+          $("importDialog").open && revision === inputRevision;
+        if (result.duplicate) {
+          if (originalInput) resetImportInput();
+          actions.toast(WorkTimeApp.i18n.t("import.duplicateBatch"));
           return;
         }
-        if (!prepareClipboardText(text).rows.length) {
-          actions.toast(WorkTimeApp.i18n.t("copy.7a813c10de"), "error");
-          return;
-        }
-        input.setRangeText(text, start, end, "end");
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.focus({ preventScroll: true });
+        if (result.applied && originalInput) $("importDialog").close();
+        actions.saveFeedback(
+          result.persisted,
+          WorkTimeApp.i18n.t("copy.a3fdb05924") +
+            processed +
+            WorkTimeApp.i18n.t("copy.bed75b3651"),
+        );
       } catch (error) {
-        if (disposed || !$("importDialog").open) return;
-        actions.toast(WorkTimeApp.i18n.t("copy.a97d627f90"), "error");
-        input.focus({ preventScroll: true });
+        if (!disposed)
+          actions.toast(WorkTimeApp.i18n.message(error.message), "error");
       } finally {
-        button.disabled = false;
+        importSaving = false;
+        if (!disposed) $("commitImport").disabled = !preview?.rows.length;
       }
     });
-    events.handler($("commitImport"), "onclick", async () => {
-      if (!preview || !preview.rows.length || $("commitImport").disabled)
-        return;
-      const processed = preview.rows.length,
-        acceptedRecords = WorkTimeApp.services.imports.acceptedRecords(
-          preview,
-          (row, i) => view.choices[i] || "new",
-        );
-      const saved = await commitOARecords(
-        acceptedRecords,
-        preview.year,
-        preview.sources,
-        processed,
-        preview.rows[0]?.record.date,
-      );
-      $("importDialog").close();
-      actions.saveFeedback(
-        saved,
-        WorkTimeApp.i18n.t("copy.a3fdb05924") +
-          processed +
-          WorkTimeApp.i18n.t("copy.bed75b3651"),
-      );
-    });
-  }
-  function detailClick(event) {
-    if (!$("sourceDialog").classList.contains("import-detail-view")) return;
-    const step = event.target.closest("[data-detail-step]");
-    if (step && !step.disabled) {
-      const logs = importHistoryByTime(),
-        index = logs.findIndex((log) => log.id === detailId);
-      const next = logs[index + Number(step.dataset.detailStep)];
-      if (next) showImportDetail(next.id);
-    }
   }
   function dispose() {
     dialogs.close(removal);
     removal.onClose = removal.confirm = undefined;
     events.dispose();
     bound = false;
-    $("sourceDialog").removeEventListener("click", detailClick);
     disposed = true;
-    $("importDialog").removeEventListener("sidebar-open", renderImportHistory);
+    oaActions.clipboardNotice = false;
     clearTimeout(importParseTimer);
   }
   const hasDraft = () =>

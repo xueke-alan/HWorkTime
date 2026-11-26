@@ -125,7 +125,7 @@ WorkTimeApp.ui.autoBackupFolderText = (() => {
     // the button also forwards label hover outside the button's bounds.
     const control = document.createElement("div");
     control.className = "auto-backup-folder-control";
-    control.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(control);
     control.setAttribute("aria-labelledby", label.id);
     const status = document.createElement("p");
     status.id = "autoBackupFolderStatus";
@@ -192,7 +192,7 @@ WorkTimeApp.ui.autoBackupFolderText = (() => {
       status.textContent = message === "available" ? "" : t(message);
       status.hidden = !status.textContent;
       chosenName.textContent = state.name || t("defaultAddress");
-      controls.choose.title = state.name
+      controls.choose.dataset.hintText = state.name
         ? t("change") + " · " + state.name
         : t("choose");
       controls.choose.setAttribute(

@@ -4,6 +4,7 @@ interface Preferences {
   weatherDays?: number;
   language?: string;
   motionMode?: string;
+  showCalendarMascot?: boolean;
 }
 interface SaveResult {
   persisted: boolean;
@@ -13,16 +14,41 @@ interface SaveResult {
 declare global {
   const WorkBackupConversion: { convert: (input: unknown) => unknown };
   const WorkTimeApp: {
+    isDevelopmentEnabled(): boolean;
     games: {
       list(): import("./games/menu").MenuEntry[];
       createIcon(icon: string): Element;
     };
     ui: {
-      native: typeof import("@hworktime/ui").native;
+      selectWorkspaceView?: (
+        view: import("./workspace/WorkspaceMenubar").WorkspaceView,
+      ) => Promise<void>;
+      mountAeroplaneControls: typeof import("./games/AeroplaneControls").mountAeroplaneControls;
+      mountUnoDialog: typeof import("./games/UnoDialog").mountUnoDialog;
+      mountSessionCover: typeof import("./games/SessionCover").mountSessionCover;
+      mountPauseContent: typeof import("./games/Results").mountPauseContent;
+      mountRestartContent: typeof import("./games/Results").mountRestartContent;
+      mountGameResult: typeof import("./games/Results").mountGameResult;
+      mountBrushResult: typeof import("./games/Results").mountBrushResult;
+      createGameHelp: typeof import("./games/Help").createGameHelp;
+      mountReplayHistory: typeof import("./games/ReplayHistory").mountReplayHistory;
+      calendarCells: typeof import("./workspace/CalendarGrid").calendarCells;
+      mountTimetable: typeof import("./agenda/Timetable").mountTimetable;
+      mountMusicLibrary: typeof import("./media/MusicLibrary").mountMusicLibrary;
+      loadGameViews: () => Promise<void>;
+      fileWorkspace?: {
+        mountWorkspace: typeof import("./workspace-entry").mountWorkspace;
+        loadAgenda: () => Promise<typeof import("./agenda/mount")>;
+      };
+      renderWorkspaceTabs: typeof import("./workspace/tabs").renderWorkspaceTabs;
+      workspaceViews: typeof import("./workspace/views").workspaceViews;
+      native: typeof import("./dom");
       mountGameToolbar: typeof import("./games/menu").mountGameToolbar;
       mountMusicTransport: typeof import("./media/mount").mountMusicTransport;
       importRecords: typeof import("./imports/records").records;
-      archiveView: typeof import("./games/archive").archiveView;
+      loadTypingViews: () => Promise<void>;
+      loadMusicViews: () => Promise<void>;
+      loadVocabularyViews: () => Promise<void>;
       loadReaderToolbar: () => Promise<
         typeof import("./media/reader-entry").mountReaderToolbar
       >;
@@ -34,6 +60,7 @@ declare global {
       renderAnalysisMetrics: typeof import("./analysis/metrics").renderAnalysisMetrics;
       afterAnalysisRender: typeof import("./analysis/metrics").afterAnalysisRender;
       renderAnalysisSidebar: typeof import("./analysis/sidebar").renderAnalysisSidebar;
+      mountVocabularyPage: typeof import("./vocabulary/Pages").mountVocabularyPage;
       mountVocabularyNavigation: typeof import("./vocabulary/mount").mountVocabularyNavigation;
       createSelect: typeof import("./workspace/select").createWorkspaceSelect;
       mountPlayback: typeof import("./music/playback").mountPlayback;
@@ -71,6 +98,7 @@ declare global {
         page: {
           state: Preferences;
           saveMotionMode(mode: string): Promise<SaveResult>;
+          saveCalendarMascot(show: boolean): Promise<SaveResult>;
           saveLanguage(locale: string): Promise<SaveResult>;
           saveTheme(theme: string): Promise<SaveResult>;
           saveWeatherDays(days: number): Promise<SaveResult>;

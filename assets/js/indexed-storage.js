@@ -629,10 +629,19 @@ WorkTimeApp.services.indexedStorage = (() => {
                   module.id,
                 )
               ) {
-                if (module.id === A.ids.imports)
+                if (module.id === A.ids.imports) {
+                  const updated = new Set(records.map((row) => row.id));
                   for (const id of changes.imports)
-                    store.delete([stored.archive.id, module.id, id]);
-                else {
+                    if (!updated.has(id))
+                      store.delete([stored.archive.id, module.id, id]);
+                  // Updating a batch's timestamp must preserve its replay position.
+                  for (const row of records) {
+                    const previous = await request(
+                      store.get([stored.archive.id, module.id, row.id]),
+                    );
+                    if (previous) row.order = previous.order;
+                  }
+                } else {
                   for (const id of changes.imports) {
                     const keys = await request(
                       store

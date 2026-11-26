@@ -7,7 +7,7 @@ const http = require("node:http");
 require("../lib/browser-test-setup.cjs");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require("playwright");
-const { launchGame } = require("../game-test-helpers.cjs");
+const { launchGame } = require("../lib/game-test-helpers.cjs");
 const root = path.resolve(process.argv[2] || path.join(__dirname, "../.."));
 
 async function main() {

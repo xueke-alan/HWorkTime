@@ -1,4 +1,4 @@
-/* Official Material Symbols Rounded. Equal icon slots within each UI size group. */
+/* Phosphor Bold. Equal icon slots within each UI size group. */
 :root {
   --icon-size: 1.428571rem;
   --icon-size-small: 1.285714rem;
@@ -20,12 +20,12 @@ body .ui-icon {
 /* Back chevrons need less horizontal space than full-width action symbols.
    Reclaim their trailing whitespace so the label sits closer to the arrow,
    while keeping the glyph size and shared outside insets unchanged. */
-body button.ui-button > .ui-icon:has(> use[href="#ms-chevron-left"]):has(+ .button-label:last-child),
-body #importOpen .import-main > .ui-icon:has(> use[href="#ms-chevron-left"]) {
+body button.ui-button > .ui-icon:has(> use[href="#icon-chevron-left"]):has(+ .button-label:last-child),
+body #importOpen .import-main > .ui-icon:has(> use[href="#icon-chevron-left"]) {
   margin-inline-end: -0.285714rem;
 }
-body button.ui-button > .ui-icon:has(+ .button-label:last-child) > use[href="#ms-chevron-left"],
-body #importOpen .import-main > .ui-icon > use[href="#ms-chevron-left"] {
+body button.ui-button > .ui-icon:has(+ .button-label:last-child) > use[href="#icon-chevron-left"],
+body #importOpen .import-main > .ui-icon > use[href="#icon-chevron-left"] {
   transform-box: view-box;
   transform: translateX(-20%);
 }

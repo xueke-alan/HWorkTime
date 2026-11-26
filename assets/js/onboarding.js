@@ -287,7 +287,10 @@ WorkTimeApp.ui.onboarding = (() => {
     if (!folderOffered) recoveryError = "";
     if (!folderOffered && !clipboardOffered) {
       permissionsDialog?.close();
-      permissionsDialog?.remove();
+      if (permissionsDialog) {
+        WorkTimeApp.ui.workspaceViews.dispose(permissionsDialog);
+        permissionsDialog.remove();
+      }
       permissionsDialog = null;
       return;
     }
@@ -297,28 +300,7 @@ WorkTimeApp.ui.onboarding = (() => {
       const dialog = WorkTimeApp.ui.native.createElement("dialog");
       dialog.id = "startupPermissionsDialog";
       dialog.setAttribute("aria-labelledby", "startupPermissionsTitle");
-      dialog.innerHTML = `
-        <div class="dialog-head"><h2 id="startupPermissionsTitle"></h2></div>
-        <div class="dialog-body startup-permissions-grid">
-          <section id="startupFolderPermission" aria-labelledby="runtimeFolderRecoveryTitle" hidden>
-            <h3 id="runtimeFolderRecoveryTitle"></h3>
-            <div class="startup-permissions-copy">
-              <p data-recovery-status role="status"></p>
-              <p class="help" id="runtimeFolderRecoveryHelp"></p>
-            </div>
-            <div class="startup-permissions-actions">
-              <button data-ui="button" id="startupFolderAuthorize" type="button" class="ui-button primary"></button>
-            </div>
-          </section>
-          <section id="startupClipboardPermission" aria-labelledby="clipboardPermissionTitle" hidden>
-            <h3 id="clipboardPermissionTitle"></h3>
-            <div class="startup-permissions-copy"><p class="help" id="clipboardPermissionHelp"></p></div>
-            <div class="startup-permissions-actions">
-              <button data-ui="button" id="clipboardPermissionSkip" type="button" class="ui-button"></button>
-              <button data-ui="button" id="clipboardPermissionAllow" type="button" class="ui-button primary"></button>
-            </div>
-          </section>
-        </div>`;
+      WorkTimeApp.ui.workspaceViews.StartupPermissions(dialog);
       dialog.querySelector("#startupFolderAuthorize").onclick = authorizeFolder;
       dialog.querySelector("#clipboardPermissionAllow").onclick =
         authorizeClipboard;
@@ -333,6 +315,7 @@ WorkTimeApp.ui.onboarding = (() => {
       });
       dialog.addEventListener("close", () => {
         if (permissionsDialog !== dialog) return;
+        WorkTimeApp.ui.workspaceViews.dispose(dialog);
         dialog.remove();
         permissionsDialog = null;
         clipboardOffered = false;
@@ -459,46 +442,13 @@ WorkTimeApp.ui.onboarding = (() => {
     dialog.className = "onboarding-dialog";
     dialog.setAttribute("aria-labelledby", "onboardingTitle");
     dialog.setAttribute("closedby", "none");
-    dialog.innerHTML = `
-      <div class="dialog-head"><div><span class="onboarding-brand">HWorkTime</span><h2 id="onboardingTitle" tabindex="-1"></h2></div></div>
-      <div class="dialog-body">
-        <ol class="onboarding-timeline">
-        <li class="onboarding-item" data-stage="folder">
-          <span class="onboarding-node" aria-hidden="true"><span class="onboarding-node-text">01</span><svg class="ui-icon onboarding-node-check" aria-hidden="true" hidden><use href="#ms-check"/></svg></span>
-          <div class="onboarding-stage">
-          <h3 class="onboarding-stage-heading" data-onboarding-heading="folder"><span data-stage-title></span><span class="onboarding-stage-status"></span></h3>
-        <section id="onboardingFolder" data-onboarding-step="folder">
-          <h3 data-onboarding-title></h3><p data-onboarding-text></p>
-          <p class="help" data-onboarding-support></p><p class="warnings" data-onboarding-error role="alert"></p>
-        </section>
-          </div>
-        </li>
-        <li class="onboarding-item" data-stage="install">
-          <span class="onboarding-node" aria-hidden="true"><span class="onboarding-node-text">02</span><svg class="ui-icon onboarding-node-check" aria-hidden="true" hidden><use href="#ms-check"/></svg></span>
-          <div class="onboarding-stage">
-          <h3 class="onboarding-stage-heading" data-onboarding-heading="install"><span data-stage-title></span><span class="onboarding-stage-status"></span></h3>
-        <section id="onboardingInstall" data-onboarding-step="install">
-          <div class="onboarding-install-head"><h3 data-onboarding-title></h3><label class="onboarding-install-dismiss"><input data-ui="input" type="checkbox" data-onboarding-dismiss-install><span></span></label></div><p data-onboarding-text></p><button data-ui="button" class="ui-button onboarding-install-button" type="button" data-onboarding-install></button><p class="help" data-onboarding-manual role="status"></p>
-        </section>
-          </div>
-        </li>
-        </ol>
-      </div>
-      <div class="dialog-foot">
-        <p class="onboarding-folder-required" id="onboardingFolderRequired" role="status"></p>
-        <div class="onboarding-actions">
-        <button data-ui="button" class="ui-button primary" type="button" data-onboarding-next></button>
-        </div>
-      </div>`;
+    WorkTimeApp.ui.workspaceViews.OnboardingSteps(dialog);
     document.body.append(dialog);
     const service = WorkTimeApp.services.autoBackupFolder;
     const pwa = WorkTimeApp.services.pwaInstall;
     const folder = dialog.querySelector('[data-onboarding-step="folder"]');
     const install = dialog.querySelector('[data-onboarding-step="install"]');
-    const choose = WorkTimeApp.ui.native.createElement("button");
-    choose.type = "button";
-    choose.className = "ui-button primary onboarding-folder-button";
-    folder.querySelector("[data-onboarding-text]").after(choose);
+    const choose = folder.querySelector(".onboarding-folder-button");
     const error = folder.querySelector("[data-onboarding-error]");
     const next = dialog.querySelector("[data-onboarding-next]");
     const installButton = dialog.querySelector("[data-onboarding-install]");
@@ -652,6 +602,7 @@ WorkTimeApp.ui.onboarding = (() => {
         unsubscribeFolder();
         unsubscribePwa();
         document.removeEventListener("worktime:languagechange", render);
+        WorkTimeApp.ui.workspaceViews.dispose(dialog);
         dialog.remove();
       },
       { once: true },

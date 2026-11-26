@@ -110,7 +110,7 @@ WorkTimeApp.games.register({
           confirming = true;
           save();
           render();
-          cancel.focus();
+          resultView.focus("lights", "cancel");
         } else reset();
       },
       "restart-alt",
@@ -142,33 +142,22 @@ WorkTimeApp.games.register({
     const boardHost = node("div", "lights-board-host", playLayout);
     const board = node("div", "lights-board", boardHost);
     const cells = node("div", "lights-cells", board);
-    cells.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(cells);
     const cover = node("div", "lights-cover", board);
     cover.hidden = true;
-    cover.setAttribute("role", "group");
-    const coverTitle = node("h3", "", cover);
-    const result = node("p", "", cover);
-    const resultStats = node("div", "lights-result-stats", cover);
-    const resultMoves = node("div", "", resultStats);
-    const resultMovesLabel = node("span", "", resultMoves);
-    const resultMovesValue = node("strong", "", resultMoves);
-    const resultTime = node("div", "", resultStats);
-    const resultTimeLabel = node("span", "", resultTime);
-    const resultTimeValue = node("strong", "", resultTime);
-    const coverActions = node("div", "lights-cover-actions", cover);
-    const cancel = button(coverActions, "cancel", () => {
+    WorkTimeApp.ui.native.setGroup(cover);
+    const resultView = WorkTimeApp.ui.mountGameResult(cover, signal);
+    function cancelRestart() {
       confirming = false;
       stamp = performance.now();
       render();
       restart.focus();
-    });
-    const accept = button(coverActions, "accept", reset);
-    const next = button(coverActions, "next", () => {
+    }
+    function nextLevel() {
       const index = levels.findIndex((l) => l.id === data.current);
       if (index < levels.length - 1) openLevel(levels[index + 1].id);
       else showChooser();
-    });
-    const back = button(coverActions, "back", showChooser);
+    }
     const warning = node("p", "lights-warning", root);
     warning.setAttribute("role", "status");
     const status = node("p", "game-sr-only", root);
@@ -266,7 +255,7 @@ WorkTimeApp.games.register({
       }
       save();
       render();
-      if (solved) next.focus({ preventScroll: true });
+      if (solved) resultView.focus("lights", "next");
     }
     function renderStats() {
       const record = data.completed[data.current];
@@ -287,7 +276,7 @@ WorkTimeApp.games.register({
       ];
       for (const [entry, name, value] of values) {
         entry.label.textContent = t(name);
-        entry.label.title = t(name);
+        entry.label.dataset.hintText = t(name);
         entry.value.textContent = value;
       }
     }
@@ -320,7 +309,7 @@ WorkTimeApp.games.register({
         [restart, "restart"],
       ]) {
         el.setAttribute("aria-label", t(name));
-        el.title = t(name);
+        el.dataset.hintText = t(name);
       }
       choose.disabled = choosing || confirming;
       undo.disabled = choosing || confirming || !state()?.path.length;
@@ -394,25 +383,39 @@ WorkTimeApp.games.register({
         });
         const solved = rules.won(state().board);
         cover.hidden = !!history?.active || (!confirming && !solved);
-        coverTitle.hidden = !confirming;
-        coverTitle.textContent = confirming ? t("confirm") : "";
-        result.hidden = !confirming;
-        result.textContent = confirming ? t("confirmRestart") : "";
-        resultStats.hidden = confirming;
-        resultMovesLabel.textContent = t("moves");
-        resultMovesValue.textContent = String(state().path.length);
-        resultTimeLabel.textContent = t("time");
-        resultTimeValue.textContent = clock(state().elapsed);
-        cancel.hidden = !confirming;
-        next.hidden = confirming;
-        back.hidden = confirming;
-        cancel.textContent = t("cancel");
-        accept.textContent = t(confirming ? "accept" : "again");
-        next.textContent = t(
-          levels.at(-1).id === data.current ? "choose" : "next",
-        );
-        back.textContent = t("choose");
-        back.hidden ||= levels.at(-1).id === data.current;
+        if (!cover.hidden) {
+          const action = (id, label, run) => ({
+            id,
+            label: t(label),
+            run: () => {
+              if (!paused && !disposed) run();
+            },
+          });
+          const last = levels.at(-1).id === data.current;
+          const actions = confirming
+            ? [
+                action("cancel", "cancel", cancelRestart),
+                action("accept", "accept", reset),
+              ]
+            : [
+                action("accept", "again", reset),
+                action("next", last ? "choose" : "next", nextLevel),
+              ];
+          if (!confirming && !last)
+            actions.push(action("back", "choose", showChooser));
+          resultView.update({
+            game: "lights",
+            title: confirming ? t("confirm") : "",
+            detail: confirming ? t("confirmRestart") : undefined,
+            stats: confirming
+              ? undefined
+              : [
+                  { label: t("moves"), value: String(state().path.length) },
+                  { label: t("time"), value: clock(state().elapsed) },
+                ],
+            actions,
+          });
+        }
         cells.inert = !cover.hidden;
         status.textContent = solved && !history?.active ? t("won") : "";
       }

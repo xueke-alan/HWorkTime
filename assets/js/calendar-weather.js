@@ -10,13 +10,10 @@ WorkTimeApp.ui.createCalendarWeather = function ({
   const compat = WorkTimeApp.ui.animationCompat;
   const reducedMotion = compat.preference();
   const animations = new Map();
-  const decodes = new Map();
   const revisions = new WeakMap();
   function cancel(picture) {
     animations.get(picture)?.cancel();
     animations.delete(picture);
-    decodes.get(picture)?.cancel();
-    decodes.delete(picture);
     revisions.delete(picture);
     picture.style.opacity = "";
   }
@@ -60,10 +57,8 @@ WorkTimeApp.ui.createCalendarWeather = function ({
       return;
     const revision = {};
     revisions.set(picture, revision);
-    const decoding = compat.decode(picture.querySelector("img"));
-    decodes.set(picture, decoding);
     picture.style.opacity = "0";
-    Promise.all([decoding.finished, departure]).then(() => {
+    Promise.resolve(departure).then(() => {
       if (
         !picture.isConnected ||
         disposed ||
@@ -72,7 +67,6 @@ WorkTimeApp.ui.createCalendarWeather = function ({
         !picture.classList.contains("calendar-weather-icon")
       )
         return;
-      decodes.delete(picture);
       picture.style.opacity = "";
       if (reducedMotion.matches || document.hidden) return;
       const opacity = getComputedStyle(picture).opacity;
@@ -87,7 +81,7 @@ WorkTimeApp.ui.createCalendarWeather = function ({
   }
   function refresh() {
     if (disposed) return;
-    for (const picture of new Set([...animations.keys(), ...decodes.keys()]))
+    for (const picture of animations.keys())
       if (!picture.isConnected) cancel(picture);
     const value = weather.snapshot();
     const today = businessDate(now());
@@ -133,26 +127,14 @@ WorkTimeApp.ui.createCalendarWeather = function ({
       }
       const changed = !picture;
       if (!picture) {
-        picture = document.createElement("picture");
+        picture = document.createElement("span");
         picture.classList.add("calendar-weather-icon");
         picture.setAttribute("aria-hidden", "true");
-        const still = document.createElement("source");
-        still.dataset.motionSource = "";
-        still.media = WorkTimeApp.ui.animationCompat.sourceMedia();
-        const image = document.createElement("img");
-        image.alt = "";
-        image.draggable = false;
-        picture.append(still, image);
+        picture.append(weatherUI.createIcon(icon));
         cell.append(picture);
       }
-      picture.title = description;
+      picture.dataset.hintText = description;
       picture.dataset.weatherKey = key;
-      const root = "assets/icons/meteocons/";
-      const src = root + "svg/" + icon + ".svg";
-      if (picture.lastElementChild.getAttribute("src")?.split("?")[0] !== src) {
-        picture.firstElementChild.srcset = root + "svg-static/" + icon + ".svg";
-        picture.lastElementChild.src = src;
-      }
       cell.classList.add("has-weather");
       if (changed) reveal(picture, key, departure);
     }
@@ -169,7 +151,6 @@ WorkTimeApp.ui.createCalendarWeather = function ({
   function settle() {
     for (const picture of new Set([
       ...animations.keys(),
-      ...decodes.keys(),
       ...calendar.querySelectorAll(
         ".calendar-weather-icon, .calendar-weather-outgoing",
       ),
@@ -186,7 +167,6 @@ WorkTimeApp.ui.createCalendarWeather = function ({
     if (disposed) return;
     if (document.hidden) return settle();
     refresh();
-    weatherUI.resumeImages(calendar);
   }
   document.addEventListener("visibilitychange", visibilityChanged);
   weather.setDemand(

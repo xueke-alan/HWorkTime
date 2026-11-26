@@ -40,7 +40,7 @@ WorkTimeApp.ui.reader = (() => {
     } catch (error) {
       if (current === revision && enabled()) {
         const message = WorkTimeApp.ui.readerText("loadFailed");
-        entry?.setAttribute("title", message);
+        entry?.setAttribute("data-hint-text", message);
         const status = entry?.querySelector('[role="status"]');
         if (status) status.textContent = message;
         console.error(error);

@@ -9,9 +9,8 @@
     ".puzzle-overlay .game-button > .button-label",
     ".mine-cover-actions .game-button > .button-label",
     "#importOpen .import-main > span",
-    ".sidebar-year-month-number",
-    ".month-title-year",
-    ".month-title-month",
+    ".year-month-year",
+    ".year-month-month",
     ".month-title-week-label",
     ".calendar-today-number",
     ".calendar-today-weekday",
@@ -24,7 +23,6 @@
     ".summary-sidebar .card-label",
     metricSelector,
     ".summary-sidebar [data-number-ink]",
-    ".sidebar-brand h1",
     ".editor-day-header .editor-date",
     ".year-analysis-header .editor-date",
     ".batch-editor-header h2",
@@ -39,7 +37,7 @@
     "#gameTitle",
     "#musicTitle",
     "#readerTitle",
-    ".vocabulary-pronunciation-play > span",
+    ".vocabulary-pronunciation-play > .vocabulary-voice-label",
     ".vocabulary-phonetic",
     ".vocabulary-accent-switch > span",
     ".shared-select-options .button-label",
@@ -342,7 +340,7 @@
         metrics: cachedMetrics(style, text),
         // Mixed Latin/CJK legends also need hinted pixel bounds, not outline metrics.
         ink: element.matches(
-          ".day-date .daynum-text,.calendar .daykind,.agenda-chip-title-text,.agenda-chip-time,.calendar-footer .legend-label,.day-average-value,.button-label,#importOpen .import-main > span,.sidebar-year-month-number,.onboarding-node-text,.onboarding-install-dismiss span,.vocabulary-pronunciation-play > span,.vocabulary-phonetic",
+          ".day-date .daynum-text,.calendar .daykind,.agenda-chip-title-text,.agenda-chip-time,.calendar-footer .legend-label,.day-average-value,.button-label,#importOpen .import-main > span,.onboarding-node-text,.onboarding-install-dismiss span,.vocabulary-pronunciation-play > .vocabulary-voice-label,.vocabulary-phonetic",
         )
           ? inkRequest(style, text)
           : null,
@@ -468,28 +466,6 @@
       // Components declare text layers; alignment never changes their structure.
       targets.add(element);
     });
-    // Different font families can share a baseline while CJK ink still extends
-    // below the Latin wordmark. Match their visible bottoms at every font size.
-    for (const heading of targets) {
-      if (!heading.matches(".sidebar-brand h1")) continue;
-      const name = heading.querySelector(".sidebar-brand-name"),
-        subtitle = heading.querySelector(".sidebar-brand-subtitle");
-      if (!name || !subtitle) continue;
-      const descent = (element) => {
-        const style = readFont(element);
-        context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-        if ("fontStretch" in context)
-          context.fontStretch = canvasFontStretch(style.fontStretch);
-        const text =
-          element.querySelector(".summary-number-accessible")?.textContent ||
-          element.textContent.trim();
-        return cachedMetrics(style, text).actualBoundingBoxDescent;
-      };
-      heading.style.setProperty(
-        "--brand-subtitle-offset",
-        (descent(name) - descent(subtitle)).toFixed(3) + "px",
-      );
-    }
     alignTexts(targets);
     observe();
   }
@@ -588,6 +564,7 @@
     "batchselected",
     "selected",
     "agenda-week-leaving",
+    "year-calendar-detail",
   ]);
   function isMotionMetadata(record) {
     if (record.type !== "attributes") return false;
@@ -611,6 +588,9 @@
       return changed.every(
         (token) =>
           motionClasses.has(token) ||
+          (element.id === "yearWatermark" &&
+            (token === "is-mode-transition" || token === "is-visible")) ||
+          (element.id === "yearLegend" && token === "is-inactive") ||
           (token === "is-copying" &&
             element.matches("#dayShareTemplates,#batchShareTemplates")) ||
           (element.matches(".calendar,.calendar > .day") &&
@@ -625,6 +605,10 @@
     for (const property of ["--motion-delay", "--motion-direction"]) {
       before.removeProperty(property);
       after.removeProperty(property);
+    }
+    if (element.matches(".year-day-note-track")) {
+      before.removeProperty("--year-note-index");
+      after.removeProperty("--year-note-index");
     }
     // Calendar motion owns surface geometry. Font and line-height changes still
     // invalidate ink metrics; moving or clipping an already aligned surface does not.

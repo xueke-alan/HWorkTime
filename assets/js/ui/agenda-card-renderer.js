@@ -14,45 +14,7 @@ WorkTimeApp.ui.createAgendaCardRenderer = function ({
         )
       : null;
     const scrollTop = node.scrollTop;
-    if (node.id === "agendaList") {
-      const template = document.createElement("template");
-      template.innerHTML = html;
-      const previous = new Map(
-        [...node.querySelectorAll(":scope > .agenda-item")].map((entry) => [
-          entry.querySelector("[data-agenda-status]").dataset.agendaStatus,
-          entry,
-        ]),
-      );
-      const children = [...template.content.children].map((candidate) => {
-        const id = candidate.querySelector("[data-agenda-status]")?.dataset
-          .agendaStatus;
-        const old = previous.get(id);
-        if (
-          !old ||
-          old.querySelector(".agenda-item-copy").innerHTML !==
-            candidate.querySelector(".agenda-item-copy").innerHTML
-        )
-          return candidate;
-        old.className = candidate.className;
-        const oldButtons = [...old.querySelectorAll("button")];
-        [...candidate.querySelectorAll("button")].forEach((button, index) => {
-          const current = oldButtons[index];
-          for (const attribute of [...current.attributes])
-            if (!button.hasAttribute(attribute.name))
-              current.removeAttribute(attribute.name);
-          for (const attribute of button.attributes)
-            if (current.getAttribute(attribute.name) !== attribute.value)
-              current.setAttribute(attribute.name, attribute.value);
-        });
-        return old;
-      });
-      children.forEach((child, index) => {
-        if (node.children[index] !== child)
-          node.insertBefore(child, node.children[index] || null);
-      });
-      for (const child of [...node.children])
-        if (!children.includes(child)) child.remove();
-    } else if (node.classList.contains("agenda-card-items")) {
+    if (node.classList.contains("agenda-card-items")) {
       const template = document.createElement("template");
       template.innerHTML = html;
       const key = (button) =>
@@ -71,7 +33,8 @@ WorkTimeApp.ui.createAgendaCardRenderer = function ({
             ? old
             : candidate;
         chipSignatures.set(button, signature);
-        if (button === old) button.title = candidate.title;
+        if (button === old)
+          button.dataset.hintText = candidate.dataset.hintText ?? "";
         if (button === transferChips.get(key(candidate))) {
           for (const property of ["left", "top", "width"])
             button.style.removeProperty(property);
@@ -134,7 +97,7 @@ WorkTimeApp.ui.createAgendaCardRenderer = function ({
       candidate.getAttribute("aria-current"),
     );
     previous.dataset.status = candidate.dataset.status;
-    previous.title = candidate.title;
+    previous.dataset.hintText = candidate.dataset.hintText ?? "";
     status.dataset.status = nextStatus.dataset.status;
     previous.classList.toggle(
       "is-complete",

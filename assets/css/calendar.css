@@ -26,7 +26,7 @@
 .panel-head {
   --month-item-gap: 0.714286rem;
   padding: 20px 22px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--ui-stroke) solid var(--line);
 }
 body .panel-head > .row {
   display: grid;
@@ -85,7 +85,7 @@ body .editor .analysis-sidebar-header {
   background: currentColor;
 }
 @container calendar-panel (max-width: 849px) {
-  body .workspace > section.panel > .panel-head {
+  body .work-body > section.panel > .panel-head {
     height: auto;
     min-height: var(--column-header-height, 4.857143rem);
     padding-block: 10px;
@@ -156,7 +156,6 @@ body .editor .analysis-sidebar-header {
   border-color: var(--theme-border, #8295ce);
 }
 .day.today .daynum {
-  border-radius: 50%;
   width: 24px;
   height: 24px;
   text-align: center;
@@ -264,7 +263,7 @@ body .editor .analysis-sidebar-header {
   }
 }
 @media (min-width: 1151px) {
-  .workspace > section.panel > .panel-head {
+  .work-body > section.panel > .panel-head {
     flex: none;
   }
   .legend {
@@ -314,7 +313,7 @@ body .editor .analysis-sidebar-header {
 }
 .panel-head {
   background: linear-gradient(110deg, #fff, #fafcfb);
-  border-color: var(--theme-border-soft, #edf1ee);
+  border-color: var(--ui-border, var(--theme-border-soft, #edf1ee));
 }
 .month-title {
   font-weight: 700;
@@ -344,10 +343,9 @@ body .editor .analysis-sidebar-header {
   color: var(--theme-text-faint, #a3aea7);
 }
 .day {
-  --day-radius: 11px;
   border-color: var(--theme-border-soft, #e6ede8);
   background: #fff;
-  border-radius: var(--day-radius);
+  border-radius: 8px;
   transition:
     background-color 300ms var(--motion-ease),
     border-color 0.14s,
@@ -358,7 +356,8 @@ body .editor .analysis-sidebar-header {
   border-color: var(--theme-border, #bfd7c8);
 }
 .day.restday {
-  background: var(--theme-surface-soft, #f6f8f6);
+  --day-surface: color-mix(in srgb, var(--accent) 4%, var(--paper));
+  background: var(--day-surface);
   border-color: var(--theme-border-soft, #e6ede8);
 }
 .day.selected,
@@ -373,7 +372,7 @@ body .editor .analysis-sidebar-header {
   border-color: var(--theme-border, #91a6d8);
   box-shadow: inset 0 0 0 1px var(--theme-edge, #91a6d8);
 }
-.day:has(.dayhours):not(.selected):not(.batchselected) {
+.day:has(.dayhours):not(.selected):not(.batchselected):not(.restday) {
   background: #fcfefd;
 }
 .daynum {
@@ -430,6 +429,9 @@ body .editor .analysis-sidebar-header {
   box-shadow: none;
   z-index: 2;
 }
+.calendar .day > .day-select > .site-inset-wave {
+  color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
 .calendar .day > div {
   pointer-events: none;
 }
@@ -474,14 +476,6 @@ body .editor .analysis-sidebar-header {
 .calendar .day .source-toggle.oa > .oa,
 .calendar .day .source-toggle.manual > .manual {
   transform: translateX(0);
-}
-.calendar .day:has(> .day-select:focus-visible) {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-.calendar .day .source-toggle:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
 }
 .dayhours {
   color: var(--theme-text-strong, #255d49);
@@ -562,10 +556,10 @@ body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empt
   }
   .workspace .calendar {
     gap: 6px;
-    padding: 0 12px 11px;
+    padding: 0 var(--calendar-inline-gutter, 12px) 11px;
   }
   .weekdays {
-    padding: 9px 12px 7px;
+    padding: 9px var(--calendar-inline-gutter, 12px) 7px;
     font-size: 11px;
   }
   .workspace .day {
@@ -596,7 +590,7 @@ body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empt
   }
 }
 @media (min-width: 1151px) and (max-height: 720px) {
-  .workspace > section.panel > .panel-head {
+  .work-body > section.panel > .panel-head {
     padding: 10px 14px;
   }
 }
@@ -621,9 +615,6 @@ body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empt
   }
   .daykind {
     font-size: 8px;
-  }
-  .day {
-    --day-radius: 7px;
   }
   .daytime {
     font-size: 9px;
@@ -1013,14 +1004,14 @@ body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empt
   display: inline-block;
 }
 @media (min-width: 1151px) {
-  .workspace > section.panel > .panel-head {
+  .work-body > section.panel > .panel-head {
     --month-item-gap: 0.428571rem;
     height: var(--column-header-height);
     padding: 0 16px;
     display: flex;
     align-items: center;
   }
-  .workspace > section.panel > .panel-head > .row {
+  .work-body > section.panel > .panel-head > .row {
     width: 100%;
   }
 }
@@ -1126,7 +1117,7 @@ body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empt
   z-index: 1;
 }
 .panel-head .calendar-toolbar-actions button {
-  font-size: 12px;
+  font-size: var(--ui-font-size, 12px);
   font-weight: 500;
   line-height: 1.4;
   font-family: inherit;
@@ -1146,14 +1137,14 @@ body :is(.settings-button-group, .calendar-view-button-group) {
   gap: 0;
   overflow: visible;
   height: var(--control-height);
-  border: 1px solid var(--control-border);
-  border-radius: var(--control-radius);
-  background: white;
+  border: var(--ui-stroke) solid var(--ui-border, var(--control-border));
+  border-radius: var(--ui-button-radius);
+  background: var(--ui-surface, white);
   box-shadow: var(--control-shadow);
 }
 /* The shared frame follows the same hover color as standalone controls. */
 body :is(.settings-button-group, .calendar-view-button-group):has(button:hover:not(:disabled)) {
-  border-color: var(--theme-border, #aecdbf);
+  border-color: var(--ui-hover-border, var(--theme-border, #aecdbf));
 }
 body .panel-head :is(.settings-button-group, .calendar-view-button-group) button {
   /* Child controls stretch inside one shared border instead of ordinary fixed-height geometry. */
@@ -1166,13 +1157,13 @@ body .panel-head :is(.settings-button-group, .calendar-view-button-group) button
   box-shadow: none;
 }
 body .panel-head :is(.settings-button-group, .calendar-view-button-group) button + button {
-  border-left: 1px solid var(--control-border);
+  border-left: var(--ui-stroke) solid var(--ui-border, var(--control-border));
 }
 body .panel-head :is(.settings-button-group, .calendar-view-button-group) button:first-child {
-  border-radius: calc(var(--control-radius) - 1px) 0 0 calc(var(--control-radius) - 1px) !important;
+  border-radius: max(0px, calc(var(--ui-button-radius) - var(--ui-stroke))) 0 0 max(0px, calc(var(--ui-button-radius) - var(--ui-stroke))) !important;
 }
 body .panel-head :is(.settings-button-group, .calendar-view-button-group) button:last-child {
-  border-radius: 0 calc(var(--control-radius) - 1px) calc(var(--control-radius) - 1px) 0 !important;
+  border-radius: 0 max(0px, calc(var(--ui-button-radius) - var(--ui-stroke))) max(0px, calc(var(--ui-button-radius) - var(--ui-stroke))) 0 !important;
 }
 body :is(.settings-button-group, .calendar-view-button-group) button:focus-visible {
   outline: 0;
@@ -1184,17 +1175,17 @@ body :is(.settings-button-group, .calendar-view-button-group) button:focus-visib
   }
 }
 .panel-head .calendar-toolbar-actions button {
-  border: 1px solid var(--control-border);
+  border: var(--ui-stroke) solid var(--ui-border, var(--control-border));
   box-shadow: var(--control-shadow);
 }
 body .panel-head .calendar-toolbar-actions button.ui-button.primary {
-  background: var(--accent-light);
-  border-color: var(--control-border);
+  background: var(--ui-highlight, var(--accent-light));
+  border-color: var(--ui-border, var(--control-border));
   color: var(--toolbar-icon-color);
 }
 body .panel-head .calendar-toolbar-actions button.ui-button.primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--accent) 14%, white);
-  border-color: var(--control-border);
+  background: color-mix(in srgb, var(--ui-accent, var(--accent)) 14%, white);
+  border-color: var(--ui-border, var(--control-border));
   color: var(--toolbar-icon-color);
 }
 body .month-controls {
@@ -1229,7 +1220,7 @@ body .month-controls #nextMonth .ui-icon {
   shape-rendering: geometricPrecision;
 }
 body .panel-head .calendar-toolbar-actions button {
-  font-size: var(--text-small);
+  font-size: var(--ui-font-size, var(--text-small));
 }
 body .daynum {
   font-size: 1.142857rem;
@@ -1271,67 +1262,73 @@ body .calendar .daystatus:not(:empty) {
     min-width: 8.571429rem;
   }
 }
+.year-month-label {
+  --year-month-gap: 0.2em;
+  gap: var(--year-month-gap);
+  font-variant-numeric: tabular-nums;
+}
 body .month-controls .month-title {
+  --month-title-gap: min(var(--year-month-gap), var(--month-item-gap));
+  --month-title-padding: calc(0.428571rem + var(--month-item-gap) - var(--month-title-gap));
+  --month-title-width: calc(
+    4ch + var(--month-label-width, 2ch) + 0.5em + 2 * (var(--month-title-gap) + var(--month-title-padding))
+  );
   justify-content: flex-start;
   min-width: 0;
   flex: none;
-  gap: var(--month-item-gap);
-  padding-inline: 0.428571rem;
-  font-variant-numeric: tabular-nums;
+  gap: var(--month-title-gap);
+  padding-inline: var(--month-title-padding);
 }
-.month-title-year {
+.year-month-year {
   width: 4ch;
   text-align: center;
   flex: none;
 }
-.month-title-divider {
-  display: block;
-  width: 0.5em;
-  height: 1em;
-  flex: none;
-  shape-rendering: geometricPrecision;
-}
-.month-title-month {
+.year-month-month {
   width: var(--month-label-width, 2ch);
   display: flex;
-  justify-content: flex-start;
-  text-align: left;
-  flex: none;
-}
-.month-title-month > .summary-number {
-  flex: none;
-  width: 100%;
-}
-/* Both rolling words share the fixed month slot, including the outgoing word. */
-.month-title-month .summary-number-visual,
-.month-title-month .summary-number-column.summary-number-word {
-  width: 100%;
-}
-.month-title-month .summary-number-digit {
-  text-align: left;
-}
-/* Center numeric months in the fixed slot, including both rolling rows. */
-html:is([lang^="zh"], [lang="ja"], [lang="ko"]) .month-title-month .summary-number-digit {
   text-align: center;
+  flex: none;
+}
+.year-month-month > .summary-number {
+  flex: none;
+  width: 100%;
+}
+/* Keep the outgoing month inside the fixed slot when the label gets shorter. */
+.year-month-month .summary-number-visual,
+.year-month-month .summary-number-word {
+  width: 100%;
+}
+/* A one-digit month stays centered in the two-digit slot. */
+.year-month-month .summary-number-visual {
+  justify-content: center;
+}
+.year-month-label.has-word-month .year-month-month .summary-number-digit {
+  text-align: left;
 }
 /* Keep title nodes in place so toggling can reverse an in-flight transition. */
 body .month-controls .month-title {
   overflow: hidden;
 }
-body .month-controls .month-title > :is(.month-title-year, .month-title-divider, .month-title-month) {
+body .month-controls .month-title > :is(.month-title-year, .month-title-month) {
   transform: translateX(0);
   transition: transform 360ms var(--motion-ease);
 }
 /* Alignment temporarily resets ink offsets while measuring. Keep it off the
    moving layer so those measurements cannot cancel/restart title travel. */
-body .month-controls .month-title > :is(.month-title-year, .month-title-month) > .summary-number {
+.year-month-label > :is(.year-month-year, .year-month-month) > .summary-number {
   transform: translateY(var(--ui-ink-offset, 0px));
 }
 /* Lower the SVG slightly to match the rasterized digits' optical center. */
-body .month-controls .month-title > .month-title-divider {
-  transform: translateY(0.035em);
+.year-month-label > .calendar-date-divider {
+  transform: translate(var(--year-month-divider-x, 0px), 0.035em);
 }
-body .month-controls .month-title > :is(.month-title-divider, .month-title-month) {
+/* Center the slash in the extra space before a centered one-digit month. */
+.year-month-label.has-single-digit-month {
+  --year-month-divider-x: 0.25ch;
+}
+.year-month-label > .calendar-date-divider,
+body .month-controls .month-title > .month-title-month {
   opacity: 1;
   visibility: visible;
   transition:
@@ -1340,22 +1337,24 @@ body .month-controls .month-title > :is(.month-title-divider, .month-title-month
     opacity 360ms var(--motion-ease),
     visibility 0s;
 }
-body .month-controls .month-title.is-year-title > :is(.month-title-year, .month-title-divider, .month-title-month) {
-  transform: translateX(calc(var(--month-label-width, 2ch) / 2 + 0.25em + var(--month-item-gap)));
+body .month-controls .month-title:is([data-year-title-target="true"], .is-year-title:not([data-year-title-target])) {
+  --year-month-divider-x: calc(var(--month-label-width, 2ch) / 2 + 0.25em + var(--month-title-gap));
 }
-body .month-controls .month-title.is-year-title > .month-title-divider {
-  transform: translate(calc(var(--month-label-width, 2ch) / 2 + 0.25em + var(--month-item-gap)), 0.035em);
+body .month-controls .month-title:is([data-year-title-target="true"], .is-year-title:not([data-year-title-target])) >
+  :is(.month-title-year, .month-title-month) {
+  transform: translateX(var(--year-month-divider-x));
 }
-body .month-controls .month-title.is-year-title > :is(.month-title-divider, .month-title-month) {
+body .month-controls .month-title:is([data-year-title-target="true"], .is-year-title:not([data-year-title-target])) >
+  :is(.month-title-divider, .month-title-month) {
   opacity: 0;
   visibility: hidden;
   transition-delay: 0s, 0s, 0s, 360ms;
 }
-:where(html:where([data-reduced-motion="true"])) .month-title-year,
-  :where(html:where([data-reduced-motion="true"])) .month-title-divider,
-  :where(html:where([data-reduced-motion="true"])) .month-title-month {
-    transition: none;
-  }
+:where(html[data-reduced-motion="true"]) .year-month-label > .calendar-date-divider,
+:where(html[data-reduced-motion="true"]) body .month-controls .month-title >
+  :is(.month-title-year, .month-title-month) {
+  transition: none;
+}
 @media (min-width: 1921px) {
   body .calendar-footer .legend {
     font-size: clamp(10px, calc(0.625vw - 2px), 14px);
@@ -1368,7 +1367,6 @@ body .calendar-footer {
   background: var(--theme-surface-paper, #fbfdfb);
 }
 body .calendar .day.weekend {
-  --day-surface: #f3f3f3;
   --day-tone: #686868;
   --day-edge: #e0e0e0;
   --day-muted: #808080;
@@ -1412,7 +1410,6 @@ body
   background: color-mix(in srgb, var(--day-surface) 92%, var(--day-tone));
   border-color: var(--theme-border, #bfd7c8);
 }
-/* Rest weekends keep a quiet, theme-independent surface behind agenda cards. */
 body .calendar .day.weekend:not([data-holiday]):not(.full-leave):not(.selected):not(.batchselected) {
   border-color: var(--day-edge);
 }
@@ -1462,7 +1459,7 @@ body .calendar .day:is([data-holiday], .weekend, .full-leave) .dayhours {
   color: var(--ink);
 }
 body .calendar .daystatus .pill {
-  border: 1px solid color-mix(in srgb, currentColor 82%, #000);
+  border: var(--ui-stroke) solid color-mix(in srgb, currentColor 82%, #000);
 }
 body .calendar .day.today .daynum {
   display: inline-flex;
@@ -1475,7 +1472,7 @@ body .calendar .day.today .daynum {
 }
 body .calendar .daystatus .pill {
   display: inline-flex;
-  border-radius: calc(var(--day-radius) / 2);
+  border-radius: 5px;
   align-items: center;
   justify-content: center;
   text-align: center;
@@ -1552,7 +1549,7 @@ body .calendar-footer .legend {
 body .month-controls .month-title {
   cursor: pointer;
   transition: width 360ms var(--motion-ease), background 0.15s;
-  border-radius: 6px;
+  border-radius: var(--ui-button-radius);
 }
 body .month-controls .month-title:hover {
   background: var(--accent-light);
@@ -1597,16 +1594,11 @@ body .workspace .calendar.year-calendar {
   visibility: visible;
 }
 .year-watermark.is-mode-transition {
-  transition:
-    opacity 420ms ease,
-    transform 560ms var(--motion-ease),
-    visibility 0s linear 560ms;
+  transition: opacity 180ms ease-out, transform 180ms var(--motion-ease),
+    visibility 0s linear 180ms;
 }
 .year-watermark.is-mode-transition.is-visible {
-  transition:
-    opacity 420ms ease,
-    transform 560ms var(--motion-ease),
-    visibility 0s;
+  transition-delay: 0s;
 }
 .calendar.year-calendar {
   position: relative;
@@ -1630,49 +1622,20 @@ body .workspace .calendar.year-calendar {
   line-height: 24px;
   margin: 0 0 10px;
 }
-.year-month-switch {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  color: color-mix(in srgb, currentColor 65%, var(--theme-text-strong, var(--ink)));
-  font: inherit;
-  line-height: inherit;
-  text-align: start;
+.year-month-number {
+  padding: 7px 14px 5px;
+  border-radius: var(--ui-radius);
+  color: color-mix(in srgb, currentColor 65%, var(--theme-text-strong, var(--ui-text, var(--ink))));
   white-space: nowrap;
-  cursor: pointer;
+  transition: background-color 180ms ease-out;
 }
-.year-month-switch:hover:not(:disabled) {
-  border-color: transparent;
-  background: transparent;
-  color: var(--theme-text-strong, var(--ink));
+.year-month[aria-current="true"] .year-month-number {
+  background-color: var(--ui-highlight, var(--accent-light));
 }
-.year-month-switch:focus-visible {
-  outline: 2px solid var(--theme-edge, var(--accent));
-  outline-offset: 3px;
+.year-month:focus-visible .year-month-number {
+  outline: 2px solid var(--ui-focus, var(--accent));
+  outline-offset: 2px;
 }
-.year-month-number { position: relative; }
-.year-month-number::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: -7px;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--accent);
-  opacity: 0;
-  transform: scaleX(.65);
-  transition: opacity 180ms ease, transform 220ms var(--motion-ease);
-}
-.year-month-switch[aria-pressed="true"] .year-month-number::after {
-  opacity: 1;
-  transform: scaleX(1);
-}
-:where(html[data-reduced-motion="true"]) .year-month-number::after { transition: none; }
 .year-month-stats {
   display: flex;
   gap: 8px;
@@ -1685,32 +1648,29 @@ body .workspace .calendar.year-calendar {
   color: var(--theme-text-muted, #637f70);
   opacity: 1;
   visibility: visible;
-  transition:
-    opacity 260ms ease,
-    visibility 0s;
+  transition: opacity 180ms ease-out, visibility 0s;
 }
 .year-calendar-detail .year-month-stats {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition:
-    opacity 260ms ease,
-    visibility 0s 260ms;
+  transition-delay: 0s, 180ms;
 }
 .year-days {
+  --year-card-height: 34px;
+  --year-detail-stack: 26px;
+  --year-note-height: 10px;
+  position: relative;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-auto-rows: 34px;
+  grid-auto-rows: var(--year-card-height);
   align-content: start;
   gap: 3px;
   text-align: center;
 }
 
 body .year-day {
-  --year-card-height: 34px;
-  --year-detail-stack: 26px;
-  --year-detail-offset: 1px;
-  --year-card-background: var(--year-detail-bg, var(--theme-surface-soft, #edf4f0));
+  --year-card-background: var(--year-heat-bg);
   position: relative;
   display: block;
   min-width: 0;
@@ -1720,22 +1680,15 @@ body .year-day {
   max-height: var(--year-card-height);
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--ui-radius);
   overflow: hidden;
   font-size: 11px;
   line-height: 1.15;
-  color: var(--theme-text, #35453e);
-  background-color: var(--year-detail-bg, var(--theme-surface-soft, #edf4f0));
-  transition:
-    background-color 360ms ease,
-    color 360ms ease,
-    box-shadow 200ms ease;
+  background-clip: padding-box;
+  background-color: var(--year-heat-bg);
 }
-body .workspace .calendar.year-calendar .year-day {
-  transition:
-    background-color 360ms ease,
-    color 360ms ease,
-    box-shadow 240ms var(--motion-ease);
+.year-calendar-detail .year-day {
+  --year-card-background: var(--year-detail-bg, var(--theme-surface-soft, #edf4f0));
 }
 @property --year-legend-min {
   syntax: "<color>";
@@ -1770,9 +1723,7 @@ body .calendar-footer .year-legend {
   overflow-x: auto;
   overflow-y: hidden;
   transform: translateX(0);
-  transition:
-    opacity 260ms ease,
-    transform 360ms var(--motion-ease),
+  transition: opacity 180ms ease-out, transform 180ms var(--motion-ease),
     visibility 0s;
 }
 body .calendar-footer .year-legend.is-inactive {
@@ -1780,10 +1731,7 @@ body .calendar-footer .year-legend.is-inactive {
   visibility: hidden;
   pointer-events: none;
   transform: translateX(-20px);
-  transition:
-    opacity 260ms ease,
-    transform 360ms var(--motion-ease),
-    visibility 0s 360ms;
+  transition-delay: 0s, 0s, 180ms;
 }
 .year-legend span {
   display: inline-flex;
@@ -1804,13 +1752,9 @@ body .calendar-footer .year-legend.is-inactive {
     padding: 12px;
   }
   .year-days {
-    grid-auto-rows: 38px;
-  }
-  body .year-day {
     --year-card-height: 38px;
     --year-detail-stack: 30px;
-    min-height: 38px;
-    font-size: 12px;
+    --year-note-height: 11px;
   }
 }
 body button.year-day {
@@ -1818,12 +1762,15 @@ body button.year-day {
   height: var(--year-card-height);
   min-height: var(--year-card-height);
   max-height: var(--year-card-height);
-  border-radius: 4px;
+  border-radius: var(--ui-radius);
   gap: 0;
   box-shadow: none;
   padding: 0;
   border-color: transparent;
   line-height: 1.15;
+}
+.year-calendar:not(.year-calendar-detail) button.year-day:is(:hover, :active):not(:disabled) {
+  background: var(--year-heat-bg) padding-box;
 }
 body button.year-day:hover:not(:disabled) {
   border-color: color-mix(
@@ -1833,196 +1780,137 @@ body button.year-day:hover:not(:disabled) {
   );
   filter: none;
 }
-body .year-month .year-day[aria-current="date"] > .year-day-number {
+/* The decorative tracks line up with the live buttons. Movement and fading
+   composite once per month layer, including when a switch is reversed. */
+.year-day-layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: inherit;
+  grid-auto-rows: inherit;
+  gap: inherit;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 180ms ease-out, transform 180ms var(--motion-ease),
+    visibility 0s linear 180ms;
+}
+.year-day-layer > span { min-width: 0; }
+.year-calendar-detail .year-day-layer:not(.year-heat-numbers),
+.year-calendar:not(.year-calendar-detail) .year-heat-numbers {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  transition-delay: 0s;
+}
+.year-day-surfaces > span[class] {
+  margin: 1px;
+  border-radius: max(0px, calc(var(--ui-radius) - 1px));
+  background-color: var(--year-detail-bg, var(--theme-surface-soft, #edf4f0));
+}
+.year-days :is(.year-day, .year-day-surfaces > span).is-weekend:not(.is-holiday) {
+  --year-detail-bg: color-mix(in srgb, var(--day-surface) 74%, white);
+}
+.year-days :is(.year-day, .year-day-surfaces > span).is-holiday {
+  --year-detail-bg: color-mix(in srgb, #f4e7d6 68%, white);
+}
+.year-days :is(.year-day, .year-day-surfaces > span).is-makeup {
+  --year-detail-bg: color-mix(in srgb, #dfece4 74%, white);
+}
+.year-heat-numbers { transform: translateY(-4px); }
+.year-detail-numbers, .year-day-notes { transform: translateY(4px); }
+.year-day-badges { transform: translateY(-2px); }
+:is(.year-heat-numbers, .year-detail-numbers) > span {
+  font-weight: 600;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.year-heat-numbers > span {
+  padding-top: calc((var(--year-card-height) - 12px) / 2);
+  font-size: 12px;
+  opacity: 0.28;
+}
+.year-month:is(:hover, :focus-within) .year-heat-numbers > span,
+.year-heat-numbers > .is-today {
   opacity: 1;
 }
-body button.year-day[aria-current="date"]::after {
+.year-heat-numbers > .is-today {
+  position: relative;
+}
+.year-heat-numbers > .is-today::after {
   content: "";
   position: absolute;
-  bottom: 4px;
+  bottom: 5px;
   left: 50%;
   width: 10px;
   max-width: calc(100% - 6px);
   height: 2px;
-  border-radius: 1px;
+  border-radius: var(--ui-radius);
   background: currentColor;
   transform: translateX(-50%);
-  pointer-events: none;
 }
-/* One fixed year-card grid serves both display modes. Switching modes only
-   changes surfaces and text layers, so date cards never change position. */
-body .year-day.is-weekend:not(.is-holiday) {
-  --year-detail-bg: color-mix(in srgb, var(--day-surface) 74%, white);
-}
-body .year-day.is-holiday {
-  --year-detail-bg: color-mix(in srgb, #f4e7d6 68%, white);
-}
-body .year-day.is-makeup {
-  --year-detail-bg: color-mix(in srgb, #dfece4 74%, white);
-}
-body .workspace .calendar.year-calendar:not(.year-calendar-detail) .year-day {
-  --year-card-background: var(--year-heat-bg);
-  background-color: var(--year-card-background);
-  color: var(--year-heat-text);
-}
-body .year-day-number {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translate(-50%, calc((var(--year-card-height) - 15px) / 2));
+.year-detail-numbers > span {
+  padding-top: calc((var(--year-card-height) - var(--year-detail-stack)) / 2 + 2px);
+  color: var(--theme-text, #35453e);
   font-size: 14px;
-  font-weight: 600;
-  line-height: 1.05;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.28;
-  transition:
-    transform 280ms cubic-bezier(0.2, 0.7, 0.3, 1),
-    opacity 240ms ease;
 }
-body .year-day-number > span {
-  display: block;
-  transform: scale(0.857142);
-  transform-origin: center;
-  transition: transform 280ms cubic-bezier(0.2, 0.7, 0.3, 1);
+.year-detail-numbers > .is-today {
+  color: var(--red);
+  font-weight: 700;
 }
-body .year-calendar-detail .year-day-number {
-  transform: translate(
-    -50%,
-    calc(
-      (var(--year-card-height) - var(--year-detail-stack, 26px)) / 2 +
-        var(--year-detail-offset, 1px)
-    )
-  );
-  opacity: 1;
-}
-body .year-calendar-detail .year-day-number > span {
-  transform: scale(1);
-}
-body .year-day-note {
+:is(.year-day-note-slot, .year-day-badge-slot) { position: relative; }
+.year-day-note {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 10px;
+  inset-inline: 1px;
+  bottom: calc((var(--year-card-height) - var(--year-detail-stack)) / 2);
+  height: var(--year-note-height);
   overflow: hidden;
   font-size: 9px;
-  line-height: 10px;
+  line-height: var(--year-note-height);
   text-align: center;
   color: var(--theme-text-muted, #7c8f86);
-  opacity: 0;
-  transform: translateY(2px);
-  pointer-events: none;
-  transition:
-    opacity 300ms ease,
-    transform 360ms ease;
 }
-body .year-calendar-detail .year-day-note {
-  opacity: 1;
-  transform: translateY(
-    calc(
-      -1 *
-        (
-          (var(--year-card-height) - var(--year-detail-stack, 26px)) / 2 -
-            var(--year-detail-offset, 1px)
-        )
-    )
-  );
-}
-body .year-day-note-track {
-  --year-note-height: 10px;
+.year-day-note-track {
   display: flex;
   flex-direction: column;
   transform: translateY(
-    calc(var(--year-note-index, 0) * var(--year-note-height, 10px) * -1)
+    calc(var(--year-note-index, 0) * var(--year-note-height) * -1)
   );
   transition: transform 360ms ease;
 }
-body .year-day-note-track > span {
+.year-day-note-track > span {
   display: block;
-  height: 10px;
-  line-height: 10px;
+  height: var(--year-note-height);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-body .year-day-badge {
+.year-day-badge {
   position: absolute;
-  top: 1px;
-  right: 2px;
-  z-index: 1;
+  top: 2px;
+  right: 3px;
   padding: 0 1px;
-  border-radius: 3px;
+  border-radius: var(--ui-radius);
   font-size: 7.5px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: 0;
-  opacity: 0;
-  transform: translateY(-2px);
-  pointer-events: none;
-  transition:
-    opacity 260ms ease,
-    transform 320ms ease;
 }
-body .year-calendar-detail .year-day-badge {
-  opacity: 1;
-  transform: none;
-}
-body .year-day-badge.is-rest {
+.year-day-badge.is-rest {
   color: #a1443d;
   background: #f7dfda;
 }
-body .year-day-badge.is-work {
+.year-day-badge.is-work {
   color: #1f6f56;
   background: #dbeee5;
 }
-body .year-calendar-detail button.year-day[aria-current="date"]::after {
-  display: none;
-}
-body .year-calendar-detail .year-day[aria-current="date"] .year-day-number {
-  color: var(--accent);
-  font-weight: 700;
-}
-body .calendar.year-calendar:not(.year-calendar-detail) .year-day[aria-current="date"] .year-day-number {
-  transform: translate(
-    -50%,
-    calc((var(--year-card-height) - 14px) / 2 - 2px)
-  );
-}
-body .calendar.year-calendar:not(.year-calendar-detail) .year-month:hover .year-day-number,
-body .calendar.year-calendar:not(.year-calendar-detail) .year-month:focus-within .year-day-number {
-  opacity: 1;
+:root[data-reduced-motion="true"] :is(.year-month-stats, .year-day-layer, .year-day-note-track) {
+  transition: none;
 }
 @media (max-width: 540px) {
-  body .year-day-number {
-    font-size: 15px;
-  }
-  body .year-day-number > span {
-    transform: scale(0.8);
-  }
-  body .year-calendar-detail .year-day-number {
-    transform: translate(
-      -50%,
-      calc(
-        (var(--year-card-height) - var(--year-detail-stack, 30px)) / 2 +
-          var(--year-detail-offset, 1px)
-      )
-    );
-  }
-  body .year-day-note {
-    height: 11px;
-    font-size: 10px;
-    line-height: 11px;
-  }
-  body .year-day-note-track {
-    --year-note-height: 11px;
-  }
-  body .year-day-note-track > span {
-    height: 11px;
-    line-height: 11px;
-  }
-  body .year-day-badge {
-    font-size: 8px;
-  }
+  .year-detail-numbers > span { font-size: 15px; }
+  .year-day-note { font-size: 10px; }
+  .year-day-badge { font-size: 8px; }
 }
 
 body .calendar-footer .year-legend > span {
@@ -2047,7 +1935,7 @@ body .calendar-footer .year-gradient {
   width: auto;
   min-width: 0;
   height: 8px;
-  border-radius: 4px;
+  border-radius: var(--ui-radius);
   background-image: linear-gradient(
     to right,
     var(--year-legend-min) 0%,
@@ -2077,9 +1965,7 @@ body .calendar-footer .year-scale > .year-max {
   justify-content: flex-start;
 }
 body .month-controls .month-title {
-  width: calc(
-    4ch + var(--month-label-width, 2ch) + 0.5em + var(--month-item-gap) + var(--month-item-gap) + 0.857142rem
-  );
+  width: var(--month-title-width);
 }
 body .calendar .day-date {
   display: inline-flex;
@@ -2197,17 +2083,18 @@ body .calendar .worktime-corner {
   position: absolute;
   right: 4px;
   bottom: 4px;
-  width: 12px;
-  height: 12px;
-  /* Include the card's 1px border when keeping the two arcs concentric. */
-  border-bottom-right-radius: max(0px, calc(var(--day-radius) - 5px));
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
-  background: currentColor;
+  width: 16px;
+  height: 16px;
   opacity: 0.65;
   filter: opacity(1);
   transition: filter 180ms var(--motion-ease);
   z-index: 0;
   pointer-events: none;
+}
+body .calendar .worktime-corner > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 body .calendar.is-batch-editing .worktime-corner {
   filter: opacity(0);
@@ -2239,8 +2126,12 @@ body .calendar .day-date .daynum {
   padding: 0;
   line-height: 1;
   letter-spacing: 0;
-  border-radius: 50%;
   font-variant-numeric: normal;
+}
+body .calendar .day.today .day-date .daynum {
+  width: calc(var(--date-circle-size) + 3px);
+  padding-right: 1px;
+  border-radius: 5px;
 }
 body .calendar .day-date .daynum-text {
   display: inline-block;
@@ -2281,6 +2172,12 @@ body .calendar .day-date .daynum-text .summary-number-column {
     --date-circle-size: 1.625rem;
   }
 }
+@media (1800px <= width < 2100px) and (min-height: 900px) {
+  body .calendar .day.today .day-date .daynum {
+    width: calc(var(--date-circle-size) + 4px);
+    padding-right: 0;
+  }
+}
 @media (max-width: 540px) {
   body .calendar {
     --date-circle-size: 18px;
@@ -2313,7 +2210,7 @@ body .calendar .day-date .daynum-text .summary-number-column {
   filter: opacity(1);
   transition: filter 180ms var(--motion-ease);
 }
-:is(.calendar-weather-icon, .calendar-weather-outgoing) img { display: block; width: 100%; height: 100%; }
+:is(.calendar-weather-icon, .calendar-weather-outgoing) svg { display: block; width: 100%; height: 100%; }
 .calendar.is-batch-editing .day > :is(.calendar-weather-icon, .calendar-weather-outgoing) {
   filter: opacity(0);
 }
@@ -2337,7 +2234,6 @@ body .calendar .day-date .daynum-text .summary-number-column {
   max-width: calc(100% - clamp(32px, 3.5vw, 56px) - 1.5rem);
 }
 body .calendar .day:is(.planned-overtime-day, .rest-overtime):not(.full-leave) {
-  --day-surface: color-mix(in srgb, var(--paper) 96%, #aaa);
   background-color: var(--day-surface);
 }
 /* Planned and recorded rest-day overtime share a faint laptop silhouette. */
@@ -2378,7 +2274,7 @@ body .calendar .employment-icon {
   }
 }
 
-body .workspace > section.panel {
+body .work-body > section.panel {
   container-type: inline-size;
   container-name: calendar-panel;
 }
@@ -2477,10 +2373,6 @@ body .calendar .date-markers {
   flex: none;
   overflow: hidden;
   border-radius: 50%;
-}
-body .calendar .date-markers:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 body .calendar .date-markers > .payday-icon {
   pointer-events: none;
@@ -2634,7 +2526,7 @@ body .calendar-footer .site-footer-status {
   align-self: end;
   flex-wrap: nowrap;
   justify-content: safe flex-end;
-  color: var(--muted);
+  color: var(--ui-muted, var(--muted));
   font-size: inherit;
   line-height: 1.5;
   min-width: 0;
@@ -2666,10 +2558,13 @@ body .calendar-footer:has(.year-legend:not(.hidden)) .site-footer-status {
 }
 body .calendar-footer:has(.year-legend:not(.hidden)) .calendar-foot {
   transform: translateX(0);
-  transition: transform 360ms var(--motion-ease);
+  transition: transform 180ms var(--motion-ease);
 }
 body .calendar-footer:has(.year-legend.is-inactive) .calendar-foot {
   transform: translateX(calc(var(--year-footer-shift, 0px) * -1));
+}
+:root[data-reduced-motion="true"] body .calendar-footer :is(.year-legend, .calendar-foot) {
+  transition: none;
 }
 @media (max-width: 699px) {
   body .calendar-footer .site-footer-status {
@@ -2752,16 +2647,16 @@ body .editor .year-analysis-header > h2 {
   padding: 16px 14px;
 }
 .year-analysis-cards > .card:first-child { grid-column: 1 / -1; }
-.year-analysis-cards .card-label { display: block; min-width: 0; font-size: 15px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+.year-analysis-cards .card-label { display: block; min-width: 0; font-size: var(--ui-font-size, 15px); font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
 .year-analysis-cards .metric { margin: 0; line-height: 1.2; font-size: clamp(20px, 2.1vw, 27px); overflow-wrap: anywhere; }
 .year-analysis-cards > .card.average-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
-  color: var(--ink);
-  background: var(--theme-surface-subtle, color-mix(in srgb, var(--accent) 4%, white));
-  border-color: var(--theme-border-soft, var(--line));
+  color: var(--ui-text, var(--ink));
+  background: var(--theme-surface-subtle, color-mix(in srgb, var(--ui-accent, var(--accent)) 4%, white));
+  border-color: var(--ui-border, var(--theme-border-soft, var(--line)));
   box-shadow: none;
 }
 .year-analysis-cards > .card.average-card::after { display: none; }
-.year-analysis-cards > .card.average-card .card-label { align-self: start; color: var(--muted); }
+.year-analysis-cards > .card.average-card .card-label { align-self: start; color: var(--ui-muted, var(--muted)); }
 .year-analysis-cards > .card.average-card .metric { align-self: end; min-width: 0; font-size: clamp(34px, 3vw, 42px); text-align: right; }

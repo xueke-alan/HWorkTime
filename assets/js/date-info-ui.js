@@ -1,7 +1,6 @@
 (function (g) {
   "use strict";
-  const events = WorkTimeApp.ui.createEventScope(),
-    tabEvents = WorkTimeApp.ui.createEventScope();
+  const events = WorkTimeApp.ui.createEventScope();
   const icons = {
     clock: "clock",
     notifications: "notifications",
@@ -18,7 +17,7 @@
   } catch {}
   const toolIds = ["reader", "typing", "vocabulary"];
   const developmentIds = ["reader", "typing"];
-  const isDevelopmentEnabled = () => g.location.hash === "#dev";
+  const { isDevelopmentEnabled } = WorkTimeApp;
   const appIds = [...toolIds, "games", "music"];
   if (toolIds.includes(active)) active = "tools";
   function rememberTab() {
@@ -33,7 +32,6 @@
     bar = document.querySelector(".editor>.notification-tabs"),
     area = document.querySelector(".date-info-area"),
     panel = document.getElementById("dateInfoPanel");
-  bar.replaceChildren();
   bar.setAttribute("role", "tablist");
   bar.setAttribute("aria-label", WorkTimeApp.i18n.t("copy.b0f0d53b40"));
   WorkTimeApp.services.dateInfo.register({
@@ -414,7 +412,7 @@
     const label = countdownFocus
       ? WorkTimeApp.i18n.t("copy.f4489cd631")
       : WorkTimeApp.i18n.t("copy.a34e15168a");
-    focusButton.title = label;
+    focusButton.dataset.hintText = label;
     focusButton.setAttribute("aria-label", label);
     focusButton.setAttribute("aria-pressed", String(!!countdownFocus));
     focusButton.innerHTML = WorkTimeApp.ui
@@ -665,7 +663,11 @@
     panel.classList.toggle("almanac-panel", active === "almanac");
     panel.classList.toggle("festivals-panel", active === "festivals");
     panel.classList.toggle("weather-panel", active === "weather");
-    const needsLunar = ["almanac", "festivals"].includes(active) && !g.Solar;
+    const needsLunar =
+      ["almanac", "festivals"].includes(active) &&
+      (!g.Solar ||
+        !WorkTimeApp.data.dateInfo.festivals.length ||
+        !WorkTimeApp.data.dateInfo.internationalByDate);
     if (
       needsLunar ||
       (active === "history" &&
@@ -912,23 +914,12 @@
       beijingDate(Date.parse(record.validAt)) === today
     )
       code = record.current.weatherCode ?? code;
-    const symbols = {
-      "clear-day": "sun",
-      "partly-cloudy-day": "cloud",
-      cloudy: "cloud",
-      rain: "weather-rain",
-      snow: "weather-snow",
-      fog: "weather-fog",
-      thunderstorms: "weather-thunder",
-    };
-    const icon = symbols[WorkTimeApp.ui.weather?.iconFor(code)] || "cloud";
-    use.setAttribute("href", "#ms-" + icon);
+    const icon = WorkTimeApp.ui.weather?.iconFor(code) || "cloud";
+    use.setAttribute("href", "#icon-" + icon);
   }
   function refreshTabs() {
     if (disposed) return;
-    tabEvents.dispose();
     const current = active;
-    bar.replaceChildren();
     const providers = WorkTimeApp.services.dateInfo.list() || [
       {
         id: "notifications",
@@ -952,95 +943,50 @@
     };
     providers.sort((a, b) => tabOrder(a) - tabOrder(b));
     let firstDateTab = true;
+    const tabs = [];
     for (const p of providers) {
       if (p.id === "festivals" || p.id === "almanac") continue;
-      const b = node("button", undefined, "notification-tab");
-      b.type = "button";
-      b.id = "date-tab-" + p.id;
-      b.dataset.tab = p.id;
-      if (!independentTabs.includes(p.id) && firstDateTab) {
-        b.classList.add("date-tab-group-start");
-        firstDateTab = false;
-      }
-      b.title =
-        p.id === "history" ? WorkTimeApp.i18n.t("copy.45eecb5cfb") : p.label;
-      if (p.id === "history" && !WorkTimeApp.i18n.config.almanac)
-        b.title = WorkTimeApp.i18n.t("date.tabs");
-      b.setAttribute("aria-label", b.title);
-      b.setAttribute("role", "tab");
-      b.setAttribute(
-        "aria-controls",
-        p.id === "notifications"
-          ? "editorInfo"
-          : p.id === "tools"
-            ? "toolsPanel"
-            : p.id === "games"
-              ? "gamesPanel"
-              : "dateInfoPanel",
-      );
-      b.innerHTML =
-        '<svg class="ui-icon" aria-hidden="true"><use href="#ms-' +
-        (p.id === "history" ? "event-note" : icons[p.icon] || icons.calendar) +
-        '"></use></svg>';
+      const divider = firstDateTab && !independentTabs.includes(p.id);
+      if (divider) firstDateTab = false;
+      tabs.push({
+        id: p.id,
+        divider,
+        label:
+          p.id === "history"
+            ? WorkTimeApp.i18n.t(
+                WorkTimeApp.i18n.config.almanac
+                  ? "copy.45eecb5cfb"
+                  : "date.tabs",
+              )
+            : p.label,
+        controls:
+          {
+            notifications: "editorInfo",
+            tools: "toolsPanel",
+            games: "gamesPanel",
+          }[p.id] || "dateInfoPanel",
+        icon:
+          { history: "event-note", tools: "apps" }[p.id] ||
+          icons[p.icon] ||
+          icons.calendar,
+      });
       if (p.id === "games")
-        b.replaceChildren(WorkTimeApp.games.createIcon("joystick"));
-      if (p.id === "tools")
-        b.innerHTML =
-          '<svg class="ui-icon" aria-hidden="true"><use href="#ms-apps"/></svg>';
-      tabEvents.handler(b, "onclick", () => {
-        active = p.id === "history" ? selectedDateView : p.id;
-        rememberTab();
-        render();
-      });
-      tabEvents.handler(b, "onkeydown", (e) => {
-        const buttons = [...bar.children],
-          i = buttons.indexOf(b);
-        let next;
-        if (e.key === "ArrowRight") next = (i + 1) % buttons.length;
-        if (e.key === "ArrowLeft")
-          next = (i - 1 + buttons.length) % buttons.length;
-        if (e.key === "Home") next = 0;
-        if (e.key === "End") next = buttons.length - 1;
-        if (next !== undefined) {
-          e.preventDefault();
-          buttons[next].click();
-          buttons[next].focus();
-        }
-      });
-      bar.append(b);
-      if (p.id === "games") {
-        const music = node("button", undefined, "notification-tab");
-        music.type = "button";
-        music.id = "musicOpen";
-        music.dataset.tab = "music";
-        music.title = WorkTimeApp.ui.musicText("title");
-        music.setAttribute("aria-label", music.title);
-        music.setAttribute("aria-haspopup", "dialog");
-        music.setAttribute("aria-controls", "musicDialog");
-        music.setAttribute("aria-expanded", "false");
-        music.innerHTML =
-          '<svg class="ui-icon music-entry-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="headphones-icon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 14v-2a9 9 0 0 1 18 0v2M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm18 0h-3a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-5Z"/><g class="music-equalizer"><rect x="3" y="8" width="2" height="8" rx="1"/><rect x="7" y="5" width="2" height="14" rx="1"/><rect x="11" y="2" width="2" height="20" rx="1"/><rect x="15" y="5" width="2" height="14" rx="1"/><rect x="19" y="8" width="2" height="8" rx="1"/></g></svg>';
-        tabEvents.handler(music, "onclick", () => WorkTimeApp.ui.music.open());
-        tabEvents.handler(music, "onkeydown", (event) => {
-          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
-            return;
-          event.preventDefault();
-          const buttons = [...bar.children],
-            position = buttons.indexOf(music);
-          const next =
-            event.key === "Home"
-              ? 0
-              : event.key === "End"
-                ? buttons.length - 1
-                : (position +
-                    (event.key === "ArrowRight" ? 1 : -1) +
-                    buttons.length) %
-                  buttons.length;
-          buttons[next].focus();
+        tabs.push({
+          id: "music",
+          label: WorkTimeApp.ui.musicText("title"),
+          controls: "musicDialog",
+          icon: "music",
         });
-        bar.append(music);
-      }
     }
+    WorkTimeApp.ui.renderWorkspaceTabs(bar, tabs, (id) => {
+      if (id === "music") {
+        WorkTimeApp.ui.music.open();
+        return;
+      }
+      active = id === "history" ? selectedDateView : id;
+      rememberTab();
+      render();
+    });
     WorkTimeApp.ui.music.refresh();
     WorkTimeApp.ui.reader.refresh();
     WorkTimeApp.ui.typing.refresh();
@@ -1080,7 +1026,7 @@
     disposed = true;
     directory.dispose();
     events.dispose();
-    tabEvents.dispose();
+    WorkTimeApp.ui.renderWorkspaceTabs(bar, null);
     synchronizeTimer();
     badgeObserver.disconnect();
     almanacResize.disconnect();

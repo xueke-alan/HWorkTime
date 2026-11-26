@@ -170,7 +170,7 @@ WorkTimeApp.games.register({
         "aria-label",
         t("score", { name: name(player), n: value }),
       );
-      score.title = score.getAttribute("aria-label");
+      score.dataset.hintText = score.getAttribute("aria-label");
     }
     const crownArt =
       '<svg viewBox="0 0 40 28" aria-hidden="true"><path d="M5 21L3 7L13 13L20 2L27 13L37 7L34 22Q20 26 5 21Z"/><path d="M7 25Q20 28 33 25M10 18L9 15M20 17V12M30 18L31 15"/></svg>';
@@ -187,12 +187,12 @@ WorkTimeApp.games.register({
         const crown = node(face, "span", "uno-dealer");
         crown.setAttribute("role", "img");
         crown.setAttribute("aria-label", t("dealer", { name: name(player) }));
-        crown.title = crown.getAttribute("aria-label");
+        crown.dataset.hintText = crown.getAttribute("aria-label");
         setArt(crown, crownArt);
       }
       const labels = node(info, "div", "uno-seat-labels");
       const nameLine = node(labels, "div", "uno-name-line");
-      node(nameLine, "strong", "", label).title = label;
+      node(nameLine, "strong", "", label).dataset.hintText = label;
       if (state.hands[player].length === 1 && state.status === "playing")
         oneMark(nameLine, "uno-call");
       const stats = node(labels, "div", "uno-player-stats");
@@ -211,6 +211,7 @@ WorkTimeApp.games.register({
       visualDelays = new Map();
     const root = document.createElement("section");
     root.className = "game-uno game-session";
+    let dialogView;
     container.append(root);
     try {
       const raw = storage.getItem(archive.keys["game-uno"]);
@@ -313,7 +314,7 @@ WorkTimeApp.games.register({
       const label = t(labelKey);
       action.classList.add("uno-hand-action");
       action.setAttribute("aria-label", label);
-      action.title = label;
+      action.dataset.hintText = label;
       action.textContent = "";
       setArt(
         action,
@@ -2497,7 +2498,7 @@ WorkTimeApp.games.register({
             // Touch reveals the swatches; the card itself never commits a play.
             el.onclick = (event) => openWildMenu(event.currentTarget);
             el.onkeydown = (event) => {
-              if (event.key === "Enter" || event.key === " ") {
+              if (event.key === "Enter") {
                 event.preventDefault();
                 openWildMenu(event.currentTarget);
                 wildMenu?.querySelector("button")?.focus();
@@ -2545,7 +2546,7 @@ WorkTimeApp.games.register({
       const menu = node(root, "div", "uno-color-swatches");
       menu.dataset.card = card.dataset.card;
       wildMenu = menu;
-      menu.setAttribute("role", "group");
+      WorkTimeApp.ui.native.setGroup(menu);
       menu.setAttribute("aria-label", t("chooseColor"));
       const keepMenu = () => {
         clearTimeout(wildTimer);
@@ -2573,7 +2574,7 @@ WorkTimeApp.games.register({
         choice.type = "button";
         choice.dataset.unoColor = color;
         choice.setAttribute("aria-label", t(color));
-        choice.title = t(color);
+        choice.dataset.hintText = t(color);
         choice.innerHTML = `<svg viewBox="0 0 30 30" aria-hidden="true"><path d="${shapes[index]}"/><path class="uno-swatch-highlight" d="M8 9Q13 5 20 8"/></svg>`;
         choice.onclick = () =>
           commit({ type: "play", card: Number(card.dataset.card), color });
@@ -2627,7 +2628,7 @@ WorkTimeApp.games.register({
       if (label) {
         badge.setAttribute("role", "img");
         badge.setAttribute("aria-label", label);
-        badge.title = label;
+        badge.dataset.hintText = label;
       } else {
         badge.setAttribute("aria-hidden", "true");
       }
@@ -2951,7 +2952,7 @@ WorkTimeApp.games.register({
             backs.classList.toggle("uno-revealed", ended);
             if (ended) {
               backs.removeAttribute("aria-hidden");
-              backs.setAttribute("role", "group");
+              WorkTimeApp.ui.native.setGroup(backs);
               backs.setAttribute(
                 "aria-label",
                 name(i) + " · " + t("cards", { n: hand.length }),
@@ -3018,7 +3019,7 @@ WorkTimeApp.games.register({
             "aria-label",
             t(state.direction === 1 ? "clockwise" : "counterclockwise"),
           );
-          direction.title = direction.getAttribute("aria-label");
+          direction.dataset.hintText = direction.getAttribute("aria-label");
           const pointer = node(table, "div", "uno-player-pointer");
 
           pointer.setAttribute("aria-hidden", "true");
@@ -3206,66 +3207,72 @@ WorkTimeApp.games.register({
               note.setAttribute("role", "status");
             }
           }
-          if (!confirmation && localPause) {
-            const cover = overlay("uno-pause", "paused");
-            button(cover, "resume", () => {
-              localPause = false;
-              render();
-              schedule();
-            });
-            button(cover, "exit", requestExit);
-          }
           const controls = node(root, "nav", "uno-corner-controls");
           if (match?.mode !== "ranked") {
             const restart = button(controls, "restart", requestStart);
             restart.textContent = "";
             restart.append(G.createIcon("restart-alt"));
-            restart.title = t("restart");
+            restart.dataset.hintText = t("restart");
             restart.setAttribute("aria-label", t("restart"));
           }
           const exit = button(controls, "exit", requestExit);
           exit.textContent = "";
           exit.append(G.createIcon("logout"));
-          exit.title = t("exit");
+          exit.dataset.hintText = t("exit");
           exit.setAttribute("aria-label", t("exit"));
         }
 
-        if (confirmation) {
-          const exiting = confirmation === exitToSetup;
-          const confirm = overlay(
-            "uno-confirm",
-            exiting
-              ? match?.mode === "ranked"
-                ? "confirmExitRanked"
-                : "confirmExit"
-              : unfinishedRanked()
+        if (confirmation || (!setup && state && localPause)) {
+          const exiting = !!confirmation && confirmation === exitToSetup;
+          const kind = exiting ? "exit" : confirmation ? "confirm" : "pause";
+          const title = exiting
+            ? match?.mode === "ranked"
+              ? "confirmExitRanked"
+              : "confirmExit"
+            : confirmation
+              ? unfinishedRanked()
                 ? "confirmAbandonRanked"
-                : "confirm",
-          );
+                : "confirm"
+              : "paused";
           const cancel = () => {
             confirmation = null;
             render();
             schedule();
           };
-          if (exiting) {
-            confirm.parentElement.classList.add("uno-ranked-exit-overlay");
-            confirm.classList.add("uno-ranked-exit");
-            const emblem = node(confirm, "div", "uno-exit-emblem");
-            emblem.setAttribute("aria-hidden", "true");
-            setArt(emblem, unoWordArt);
-            const actions = node(confirm, "div", "uno-exit-actions");
-            handAction(actions, "cancel", cancel);
-            handAction(actions, "leaveTemporarily", leaveTemporarily);
-            handAction(
-              actions,
-              "exit",
-              () => confirmation(),
-              rankedExitPenalty() ? "exitWithPenalty" : "exitWithoutPenalty",
-            );
-          } else {
-            button(confirm, "restart", () => confirmation());
-            button(confirm, "cancel", cancel);
-          }
+          const resume = () => {
+            localPause = false;
+            render();
+            schedule();
+          };
+          const accept = () => confirmation?.();
+          const action = (id, run, label = id) => ({
+            id,
+            run,
+            label: t(label),
+          });
+          const actions = exiting
+            ? [
+                action("cancel", cancel),
+                action("leaveTemporarily", leaveTemporarily),
+                action(
+                  "exit",
+                  accept,
+                  rankedExitPenalty()
+                    ? "exitWithPenalty"
+                    : "exitWithoutPenalty",
+                ),
+              ]
+            : confirmation
+              ? [action("restart", accept), action("cancel", cancel)]
+              : [action("resume", resume), action("exit", requestExit)];
+          dialogView ??= WorkTimeApp.ui.mountUnoDialog(signal);
+          dialogView.show({
+            kind,
+            title: t(title),
+            actions,
+            emblem: unoWordArt,
+          });
+          referenceView(fresh, dialogView.host);
         }
       } finally {
         renderHost = null;
@@ -3514,15 +3521,6 @@ WorkTimeApp.games.register({
           nativePointerUnavailable = true;
         }
       }
-    }
-    function overlay(className, title, params) {
-      const cover = node(root, "div", "uno-overlay");
-      const panel = node(cover, "section", className + " uno-dialog");
-      panel.setAttribute("role", "dialog");
-      panel.setAttribute("aria-modal", "true");
-      panel.setAttribute("aria-label", t(title, params));
-      node(panel, "h3", "", t(title, params));
-      return panel;
     }
     root.addEventListener(
       "keydown",

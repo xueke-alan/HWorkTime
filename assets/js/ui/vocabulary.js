@@ -3,10 +3,6 @@ WorkTimeApp.ui.vocabulary = (() => {
   const S = WorkTimeApp.services.vocabularyStorage;
   const E = WorkTimeApp.services.vocabularyEngine;
   const speech = WorkTimeApp.services.vocabularySpeech;
-  const speakerIcon =
-    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4zM16 8a6 6 0 0 1 0 8M19 5a10 10 0 0 1 0 14"/></svg>';
-  const synthesisIcon =
-    '<svg class="site-audio-spinner" fill="currentColor" aria-hidden="true"><use href="#ms-progress-activity"/></svg>';
   const idle = WorkTimeApp.services.vocabularyIdle;
   const models = WorkTimeApp.services.vocabularyModels;
   const entries = WorkTimeApp.data.vocabularyCatalog.entries;
@@ -29,16 +25,14 @@ WorkTimeApp.ui.vocabulary = (() => {
     viewedBook = null,
     viewedEntry = null,
     bookScroll = 0,
-    studyActions = null,
     revealAnimation = false,
     previousReview = null,
     correction = null,
     advanceTimer,
     miniMode = false,
     advancePending = false,
-    savedScroll = 0,
-    settingsController;
-  let closeCacheConfirmation = () => {};
+    savedScroll = 0;
+  let pageView = null;
   let modelImportStatus = "";
   let audioReady = false,
     view = "home",
@@ -76,20 +70,7 @@ WorkTimeApp.ui.vocabulary = (() => {
   const mini = node("div", undefined, "vocabulary-mini vocabulary-content");
   mini.dataset.page = "study";
   mini.hidden = true;
-  const miniBack = node(
-    "button",
-    undefined,
-    "ui-button icon-only vocabulary-mini-back",
-  );
-  miniBack.type = "button";
-  miniBack.innerHTML =
-    '<svg class="ui-icon" aria-hidden="true"><use href="#ms-arrow-back"/></svg>';
-  miniBack.onclick = () => WorkTimeApp.ui.dateInfo.showToolsPanel("vocabulary");
-  const miniExpand = node("button", undefined, "vocabulary-mini-expand");
-  miniExpand.type = "button";
-  miniExpand.onclick = () => setMini(false);
-  const miniHeader = node("div", undefined, "vocabulary-study-header");
-  mini.append(miniBack, miniExpand, miniHeader);
+  let miniView = null;
   host.append(mini);
   panel = content;
   const visible = () =>
@@ -244,6 +225,9 @@ WorkTimeApp.ui.vocabulary = (() => {
       (["wordOrder", "mode"].includes(key) && view === "books")
         ? panel
         : null;
+    const focused = settingsPanel?.contains(document.activeElement)
+      ? document.activeElement
+      : null;
     if (settingsPanel) settingsPanel.inert = true;
     return persist(
       next,
@@ -254,12 +238,18 @@ WorkTimeApp.ui.vocabulary = (() => {
           previousReview = correction = null;
         }
         audioReady = false;
-        if (key === "mode" && view === "books") refreshBookSelection();
+
         after?.();
       },
       !settingsPanel,
     ).finally(() => {
       if (settingsPanel) settingsPanel.inert = false;
+      if (
+        !failed &&
+        focused?.isConnected &&
+        document.activeElement === document.body
+      )
+        focused.focus({ preventScroll: true });
       if (
         key === "mode" &&
         settingsPanel?.isConnected &&
@@ -267,7 +257,7 @@ WorkTimeApp.ui.vocabulary = (() => {
         document.activeElement === document.body
       )
         settingsPanel
-          .querySelector('[data-setting-field="mode"] .shared-select-trigger')
+          .querySelector('[data-setting-field="mode"] [role="combobox"]')
           ?.focus({ preventScroll: true });
     });
   }
@@ -279,22 +269,6 @@ WorkTimeApp.ui.vocabulary = (() => {
     return ipa ? "/" + ipa + "/" : "";
   }
 
-  function select(key, values) {
-    const label = node("label", t(key), "vocabulary-field");
-    const control = node("select");
-    control.setAttribute("aria-label", t(key));
-    label.dataset.settingField = key;
-    control.disabled = busy || !!failed;
-    for (const value of values) {
-      const option = node("option", t(value));
-      option.value = value;
-      control.append(option);
-    }
-    control.value = data.settings[key];
-    control.onchange = () => updateSettings(key, control.value);
-    label.append(control);
-    return label;
-  }
   function refreshStatus() {
     const status = panel?.querySelector(".vocabulary-speech-status");
     if (status) {
@@ -308,24 +282,11 @@ WorkTimeApp.ui.vocabulary = (() => {
     speechStatus = speech.status;
     refreshStatus();
   });
-  function refreshCache() {
-    const toggle = panel?.querySelector('[data-setting="autoCache"]');
-    if (toggle) toggle.checked = idle.settings.enabled && !idle.settings.paused;
+  function refreshPreferences() {
+    if (pageView && view === "preferences") preferences();
   }
-  const unsubscribeCache = idle.subscribe(refreshCache);
-  function refreshModels() {
-    const status = content.querySelector(".vocabulary-model-status");
-    const state = models.state;
-    if (status)
-      status.textContent = modelImportStatus ? t(modelImportStatus) : "";
-    for (const control of content.querySelectorAll(
-      '[data-model-action="import"]',
-    ))
-      control.disabled =
-        modelImportStatus === "models_importing" ||
-        ["downloading", "importing"].includes(state.phase);
-  }
-  const unsubscribeModels = models.subscribe(refreshModels);
+  const unsubscribeCache = idle.subscribe(refreshPreferences);
+  const unsubscribeModels = models.subscribe(refreshPreferences);
   const unsubscribeStorage = S.subscribe((changes, reset) => {
     if (!reset || disposed) return;
     speech.stop();
@@ -339,23 +300,6 @@ WorkTimeApp.ui.vocabulary = (() => {
     failed = null;
     render();
   });
-  function playbackButton(entry, className, label, miniPlayback = false) {
-    const control = button(
-      "",
-      () =>
-        play(entry, miniPlayback, (synthesizing) => {
-          control.firstElementChild.outerHTML = synthesizing
-            ? synthesisIcon
-            : speakerIcon;
-          if (synthesizing) control.setAttribute("aria-busy", "true");
-          else control.removeAttribute("aria-busy");
-        }),
-      className,
-    );
-    control.setAttribute("aria-label", label);
-    control.innerHTML = speakerIcon;
-    return control;
-  }
   async function play(entry = current, miniPlayback = false, onSynthesis) {
     if (
       !entry ||
@@ -384,41 +328,14 @@ WorkTimeApp.ui.vocabulary = (() => {
         entry.id === id
       ) {
         audioReady = true;
-        const input = content.querySelector(".vocabulary-answer");
-        if (input) {
-          input.disabled = busy || !!failed;
-          input.focus();
+        if (!disposed && visible() && !data.draft?.revealed) {
+          render();
+          content.querySelector(".vocabulary-answer")?.focus();
         }
-        const check = content.querySelector("[data-action=check]");
-        if (check) check.disabled = busy || !!failed;
       }
     } catch {
       /* Speech status exposes a retryable failure; no online fallback. */
     }
-  }
-  function controls() {
-    const row = node("div", undefined, "vocabulary-controls is-compact");
-    const label = node(
-        "label",
-        undefined,
-        "vocabulary-field vocabulary-plan-control",
-      ),
-      count = node("input");
-    label.append(node("span", t("dailyTotal")));
-    label.dataset.settingField = "dailyTotal";
-    count.setAttribute("aria-label", t("dailyTotal"));
-    count.type = "number";
-    count.min = "1";
-    count.value = data.settings.dailyTotal;
-    count.disabled = busy || !!failed;
-    count.onchange = () => {
-      const n = Number(count.value);
-      if (Number.isSafeInteger(n) && n >= 1) updateSettings("dailyTotal", n);
-      else count.value = data.settings.dailyTotal;
-    };
-    label.append(count);
-    row.append(label, select("mode", ["recall", "spelling", "dictation"]));
-    return row;
   }
   function start() {
     if (busy || failed) return;
@@ -584,7 +501,6 @@ WorkTimeApp.ui.vocabulary = (() => {
     )
       return;
     const recognized = [
-      " ",
       "ArrowLeft",
       "ArrowDown",
       "ArrowRight",
@@ -592,9 +508,6 @@ WorkTimeApp.ui.vocabulary = (() => {
     ].includes(event.key);
     if (
       !recognized ||
-      (event.key === " " &&
-        target instanceof Element &&
-        target.closest(".vocabulary-word-copy")) ||
       (view !== "study" && !(event.key === "ArrowUp" && previousReview))
     )
       return;
@@ -604,723 +517,159 @@ WorkTimeApp.ui.vocabulary = (() => {
       undoReview();
       return;
     }
-    if (event.key === " ") {
-      if (data.settings.mode === "recall") reveal();
-      return;
-    }
     const rating = { ArrowLeft: 3, ArrowDown: 2, ArrowRight: 1 }[event.key];
     const choice = content.querySelector(`[data-grade="${rating}"]`);
     if (choice && !choice.disabled) choice.click();
   }
   document.addEventListener("keydown", keyboard);
-  function library(book = data.settings.book) {
-    const globalSearch = book === null;
-    let searchQuery = globalSearch ? booksQuery : query;
-    let displayLimit = globalSearch ? booksShown : shown;
-    const box = node("section", undefined, "vocabulary-library");
-    const search = node("input");
-    search.type = "search";
-    search.placeholder = t("search");
-    search.setAttribute("aria-label", t("search"));
-    search.value = searchQuery;
-    if (globalSearch) box.classList.add("vocabulary-global-search");
-    const searchField = node("div", undefined, "vocabulary-search-field");
-    searchField.innerHTML =
-      '<svg class="ui-icon" aria-hidden="true"><use href="#ms-search"/></svg>';
-    searchField.append(search);
-    const results = node("div", undefined, "vocabulary-list");
-    function fill() {
-      results.replaceChildren();
-      results.hidden = globalSearch && !searchQuery.trim();
-      if (results.hidden) return;
-      const matching = entries.filter(
-        (e) =>
-          (globalSearch || e.books.includes(book)) &&
-          (!searchQuery.trim() ||
-            (e.word + " " + e.zh)
-              .toLowerCase()
-              .includes(searchQuery.trim().toLowerCase())),
-      );
-      for (const entry of matching.slice(0, displayLimit)) {
-        const row = node("div", undefined, "vocabulary-row"),
-          text = node("div");
-        const open = () => {
-          if (busy || failed) return;
-          bookScroll = globalSearch ? panel.scrollTop : results.scrollTop;
-          wordReturn = globalSearch ? "books" : "book";
-          viewedEntry = entry;
-          changePage("word");
-          content
-            .querySelector(".vocabulary-word-back")
-            ?.focus({ preventScroll: true });
-        };
-        const word = button("", open, "vocabulary-word-open");
-        word.dataset.word = entry.id;
-        word.append(node("strong", entry.word));
-        const pronunciation = node(
-          "div",
-          undefined,
-          "vocabulary-list-pronunciation",
-        );
-        const playButton = playbackButton(
-          entry,
-          "vocabulary-list-play",
-          t("play") + ": " + entry.word,
-        );
-        pronunciation.append(
-          node("small", phoneticText(entry), "vocabulary-phonetic"),
-          playButton,
-        );
-        const heading = node("div", undefined, "vocabulary-list-heading");
-        heading.append(word, pronunciation);
-        text.append(heading);
-        row.append(text);
-        row.onclick = (event) => {
-          if (
-            !event.target.closest("button") &&
-            !window.getSelection()?.toString()
-          )
-            open();
-        };
-        results.append(row);
-      }
-      if (!matching.length) results.append(node("p", t("empty")));
-      if (matching.length > displayLimit)
-        results.append(
-          button(t("more"), () => {
-            displayLimit += 40;
-            if (globalSearch) booksShown = displayLimit;
-            else shown = displayLimit;
-            fill();
-          }),
-        );
-    }
-    search.oninput = () => {
-      searchQuery = search.value;
-      if (globalSearch) booksQuery = searchQuery;
-      else query = searchQuery;
-      displayLimit = 40;
-      if (globalSearch) booksShown = 40;
-      else shown = 40;
-      fill();
-      results.scrollTop = 0;
-      if (globalSearch)
-        panel.querySelector(".vocabulary-books-overview").hidden =
-          !!searchQuery.trim();
-    };
-    box.append(searchField, results);
-    fill();
-    return box;
-  }
-  function streakHero(streak) {
-    const hero = node("section", undefined, "vocabulary-hero");
-    hero.append(
-      node("span", t("streak"), "vocabulary-eyebrow"),
-      node("strong", String(streak).padStart(2, "0"), "vocabulary-streak"),
-    );
-    return hero;
-  }
   function home() {
     const stats = E.statistics(data);
-    const summary = node("div", undefined, "vocabulary-summary");
-    summary.append(
-      streakHero(stats.streak),
-      metrics({
-        newLearned: stats.newLearned,
-        reviewCount: stats.reviewCount,
-        today: stats.today,
-        pendingPractice: E.queue(data, entries).practice.length,
-      }),
-    );
-    panel.append(summary);
-  }
-  function metrics(values) {
-    const row = node("div", undefined, "vocabulary-stats");
-    for (const [key, value] of Object.entries(values)) {
-      const item = node("div");
-      item.append(node("strong", String(value)), node("span", t(key)));
-      row.append(item);
-    }
-    return row;
+    pageView.home(stats.streak, {
+      newLearned: stats.newLearned,
+      reviewCount: stats.reviewCount,
+      today: stats.today,
+      pendingPractice: E.queue(data, entries).practice.length,
+    });
   }
   function bookSummary(book) {
     const words = entries.filter((e) => e.books.includes(book)),
       known = new Set(data.logs.map((l) => l.id));
     return words.filter((e) => known.has(e.id)).length + " / " + words.length;
   }
-  function bookCover(id) {
-    const index = ["daily", "cet6", "kaoyan", "toefl", "ielts"].indexOf(id);
-    const cover = node("span", undefined, "vocabulary-book-cover");
-    cover.dataset.color = String(index);
-    cover.setAttribute("aria-hidden", "true");
-    cover.append(
-      node("small", "ENGLISH"),
-      node("strong", id === "daily" ? "Aa" : id.toUpperCase()),
-      node("span", String(index + 1).padStart(2, "0")),
-    );
-    return cover;
-  }
-  function refreshBookSelection() {
-    const queue = E.queue(data, entries);
-    const values = [
-      queue.due.length + " / " + queue.allDue,
-      String(queue.fresh.length),
-      String(queue.practice.length),
-    ];
-    panel
-      .querySelectorAll(".vocabulary-plan-counts strong")
-      .forEach((element, index) => {
-        element.textContent = values[index];
-      });
-    const distribution = E.bookDistribution(data, entries);
-    const total = Object.values(distribution).reduce(
-      (sum, count) => sum + count,
-      0,
-    );
-    for (const [state, count] of Object.entries(distribution)) {
-      panel.querySelector(
-        `.vocabulary-distribution-bar [data-state="${state}"]`,
-      ).style.width = (total ? (count / total) * 100 : 0) + "%";
-      panel.querySelector(
-        `.vocabulary-distribution-legend [data-state="${state}"]`,
-      ).textContent = t(state) + " " + count;
-    }
-    panel.querySelector(".vocabulary-book-progress-line > span").textContent =
-      total - distribution.unlearned + "/" + total;
-    const days = E.estimateLearningDays(data, entries);
-    panel.querySelector(".vocabulary-learning-estimate").textContent = days
-      ? t("estimatedDays", { days })
-      : t("estimateComplete");
-    const badge = drawerBody.querySelector(".vocabulary-review-badge");
-    if (badge) {
-      badge.textContent = String(queue.items.length);
-      badge.setAttribute(
-        "aria-label",
-        t("remaining") + ": " + queue.items.length,
-      );
-    }
-  }
   function books() {
-    panel.classList.add("vocabulary-book-selection");
-    const search = library(null);
-    const overview = node("div", undefined, "vocabulary-books-overview");
-    overview.hidden = !!booksQuery.trim();
-    const settings = controls();
+    const global = view === "books";
+    const book = global ? null : viewedBook || data.settings.book;
+    panel.classList.toggle("vocabulary-book-selection", global);
     const queue = E.queue(data, entries);
-    const counts = node("div", undefined, "vocabulary-plan-counts");
-    for (const [name, value] of [
-      ["pendingReviewShort", queue.due.length + " / " + queue.allDue],
-      ["pendingNew", String(queue.fresh.length)],
-      ["pendingPractice", String(queue.practice.length)],
-    ]) {
-      const item = node("div");
-      item.append(node("span", t(name)), node("strong", value));
-      counts.append(item);
-    }
-    counts.firstChild.title = t("pendingReview");
-    const openCurrent = () => {
-      if (busy || failed) return;
-      viewedBook = data.settings.book;
-      query = "";
-      shown = 40;
-      changePage("book");
-    };
-    const current = node("section", undefined, "vocabulary-current-book");
-    current.onclick = (event) => {
-      if (!event.target.closest("button")) openCurrent();
-    };
-    const distribution = E.bookDistribution(data, entries);
-    const total = Object.values(distribution).reduce(
-      (sum, count) => sum + count,
-      0,
-    );
-    const bar = node("span", undefined, "vocabulary-distribution-bar");
-    bar.setAttribute("aria-hidden", "true");
-    const legend = node("span", undefined, "vocabulary-distribution-legend");
-    for (const [state, count] of Object.entries(distribution)) {
-      const segment = node("span");
-      segment.dataset.state = state;
-      segment.style.width = (total ? (count / total) * 100 : 0) + "%";
-      bar.append(segment);
-      const label = node("span", t(state) + " " + count);
-      label.dataset.state = state;
-      legend.append(label);
-    }
-    const currentInfo = node("span", undefined, "vocabulary-current-book-info");
-    const currentTitle = node("strong");
-    currentTitle.append(
-      button(
-        t(data.settings.book),
-        openCurrent,
-        "vocabulary-current-book-open",
-      ),
-    );
-    currentInfo.append(
-      node("small", t("currentBook")),
-      currentTitle,
-      bar,
-      legend,
-    );
     const days = E.estimateLearningDays(data, entries);
-    const estimate = node(
-      "small",
-      days ? t("estimatedDays", { days }) : t("estimateComplete"),
-      "vocabulary-learning-estimate",
-    );
-    estimate.title = t("estimateHint");
-    const progress = node("small", undefined, "vocabulary-book-progress-line");
-    progress.append(
-      node("span", total - distribution.unlearned + "/" + total),
-      estimate,
-    );
-    currentInfo.append(progress);
-    const tools = node("span", undefined, "vocabulary-book-tools");
-    const order = button(
-      "",
-      () => {
-        if (busy || failed) return;
-        void updateSettings(
-          "wordOrder",
-          data.settings.wordOrder === "random" ? "ordered" : "random",
-          () => {
-            order.setAttribute(
-              "aria-checked",
-              String(data.settings.wordOrder === "random"),
+    pageView.books({
+      book,
+      current: data.settings.book,
+      entries,
+      disabled: busy || !!failed,
+      initialQuery: global ? booksQuery : query,
+      initialLimit: global ? booksShown : shown,
+      summaries: Object.fromEntries(
+        ["daily", "cet6", "kaoyan", "toefl", "ielts"].map((id) => [
+          id,
+          bookSummary(id),
+        ]),
+      ),
+      distribution: E.bookDistribution(data, entries),
+      counts: {
+        pendingReviewShort: queue.due.length + " / " + queue.allDue,
+        pendingNew: String(queue.fresh.length),
+        pendingPractice: String(queue.practice.length),
+      },
+      estimate: days ? t("estimatedDays", { days }) : t("estimateComplete"),
+      dailyTotal: data.settings.dailyTotal,
+      mode: data.settings.mode,
+      random: data.settings.wordOrder === "random",
+      update: (key, value) =>
+        updateSettings(key, value).finally(() => {
+          if (!disposed && pageView && view === "books") {
+            books();
+            navView.update(
+              "books",
+              new Set(E.queue(data, entries).items.map((item) => item.id)).size,
             );
-            const remaining = E.queue(data, entries).items.length;
-            const badge = drawerBody.querySelector(".vocabulary-review-badge");
-            if (badge) {
-              badge.textContent = String(remaining);
-              badge.setAttribute(
-                "aria-label",
-                t("remaining") + ": " + remaining,
-              );
-            }
-          },
-        ).then(() => {
-          if (
-            order.isConnected &&
-            view === "books" &&
-            (document.activeElement === document.body ||
-              document.activeElement === order)
-          )
-            order.focus({ preventScroll: true });
-        });
-      },
-      "vocabulary-order-switch",
-    );
-    order.setAttribute("role", "switch");
-    order.setAttribute("aria-label", t("wordOrder"));
-    order.setAttribute(
-      "aria-checked",
-      String(data.settings.wordOrder === "random"),
-    );
-    order.title = t("wordOrderHint");
-    order.disabled = busy || !!failed;
-    order.append(node("span", t("ordered")), node("span", t("randomOrder")));
-    tools.append(order, bookCover(data.settings.book));
-    current.append(tools, currentInfo);
-    current.title = t("familiarityHint");
-    const list = node("div", undefined, "vocabulary-books");
-    for (const id of ["daily", "cet6", "kaoyan", "toefl", "ielts"]) {
-      const book = button(
-        "",
-        () => {
-          viewedBook = id;
-          query = "";
-          shown = 40;
-          changePage("book");
-        },
-        "vocabulary-book",
-      );
-      book.dataset.book = id;
-      book.classList.toggle("is-current", id === data.settings.book);
-      const info = node("span", undefined, "vocabulary-book-info");
-      info.append(node("strong", t(id)), node("small", bookSummary(id)));
-      if (id === data.settings.book)
-        info.append(node("span", t("currentBook")));
-      book.append(bookCover(id), info);
-      list.append(book);
-    }
-    overview.append(settings, counts, current, node("h3", t("allBooks")), list);
-    panel.append(search, overview);
-    settingsController = new AbortController();
-    enhanceSettingsSelects();
-    settings
-      .querySelector(".shared-select-trigger")
-      .classList.add("vocabulary-plan-control");
-  }
-  function bookDetail() {
-    const id = viewedBook || data.settings.book;
-    const heading = node("div", undefined, "vocabulary-book-heading");
-    const back = button("", () => changePage("books"), "vocabulary-book-back");
-    back.setAttribute("aria-label", t("backToSelection"));
-    back.innerHTML =
-      '<svg class="ui-icon" aria-hidden="true"><use href="#ms-arrow-back"/></svg>';
-    const title = node("div", undefined, "vocabulary-book-title");
-    title.append(
-      node("h3", t(id)),
-      node("p", bookSummary(id), "vocabulary-muted"),
-    );
-    const use = button(
-      t(id === data.settings.book ? "currentBook" : "useBook"),
-      () => {
-        if (id === data.settings.book) {
-          enterReview();
-          return;
+          }
+        }),
+      remember: (text, limit) => {
+        if (global) {
+          booksQuery = text;
+          booksShown = limit;
+        } else {
+          query = text;
+          shown = limit;
         }
-        updateSettings("book", id, () => {
-          view = "home";
-        });
       },
-      "ui-button vocabulary-use-book",
-    );
-    use.dataset.action = "use-book";
-    heading.append(back, title, use);
-    panel.append(heading, library(id));
+      phonetic: phoneticText,
+      play: (entry, synthesis) => play(entry, false, synthesis),
+      openWord: (entry, scroll) => {
+        if (busy || failed) return;
+        bookScroll = scroll;
+        wordReturn = global ? "books" : "book";
+        viewedEntry = entry;
+        changePage("word");
+        content
+          .querySelector(".vocabulary-word-back")
+          ?.focus({ preventScroll: true });
+      },
+      openBook: (id) => {
+        viewedBook = id;
+        query = "";
+        shown = 40;
+        changePage("book");
+      },
+      back: () => changePage("books"),
+      useBook: (id) => {
+        if (id === data.settings.book) enterReview();
+        else
+          updateSettings("book", id, () => {
+            view = "home";
+          });
+      },
+    });
   }
   function analysis() {
-    const stats = E.statistics(data),
-      report = E.analysis(data);
-    panel.append(
-      metrics({
+    const stats = E.statistics(data);
+    const report = E.analysis(data);
+    pageView.analysis(
+      {
         learned: stats.learned,
         totalReviews: report.total,
         streak: stats.streak,
-      }),
+      },
+      report,
     );
-    panel.append(node("h3", t("recentActivity")));
-    const chart = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    chart.setAttribute("viewBox", "0 0 280 114");
-    chart.setAttribute("role", "img");
-    chart.setAttribute("aria-label", t("recentActivity"));
-    chart.classList.add("vocabulary-chart");
-    const days = report.days.slice(-30),
-      max = Math.max(1, ...days.map((d) => d.fresh + d.reviews));
-    for (const [i, day] of days.entries()) {
-      for (const [j, name] of ["fresh", "reviews"].entries()) {
-        const bar = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "rect",
-        );
-        const height = (day[name] / max) * 85;
-        bar.setAttribute("x", String(i * 9 + 6));
-        bar.setAttribute(
-          "y",
-          String(94 - height - (j ? (day.fresh / max) * 85 : 0)),
-        );
-        bar.setAttribute("width", "5");
-        bar.setAttribute("height", String(height));
-        bar.setAttribute("rx", "1");
-        bar.classList.add("vocabulary-bar-" + name);
-        const title = document.createElementNS(
-          "http://www.w3.org/2000/svg",
-          "title",
-        );
-        title.textContent = `${day.day} · ${t(j ? "reviewCount" : "newLearned")} ${day[name]}`;
-        bar.append(title);
-        chart.append(bar);
-      }
+  }
+  async function installModel(file) {
+    if (modelImportStatus === "models_importing") return;
+    modelImportStatus = "models_importing";
+    refreshPreferences();
+    try {
+      await models.install(file);
+      modelImportStatus = "models_installed";
+    } catch {
+      modelImportStatus = "models_failed";
+    } finally {
+      refreshPreferences();
     }
-    panel.append(chart);
-    const legend = node("div", undefined, "vocabulary-chart-legend");
-    legend.append(
-      node("span", t("newLearned"), "vocabulary-legend-new"),
-      node("span", t("reviewCount"), "vocabulary-legend-review"),
-    );
-    panel.append(legend);
-    if (!report.total)
-      panel.append(node("p", t("noActivity"), "vocabulary-muted"));
-    panel.append(node("h3", t("activityCalendar")));
-    const calendar = node("div", undefined, "vocabulary-heatmap");
-    calendar.setAttribute("aria-label", t("activityCalendar"));
-    for (const day of report.days) {
-      const cell = node("span", day.day.slice(-2));
-      const count = day.fresh + day.reviews;
-      cell.dataset.level = String(
-        count === 0 ? 0 : count < 10 ? 1 : count < 30 ? 2 : 3,
-      );
-      cell.title = `${day.day} · ${t("today")} ${count}`;
-      calendar.append(cell);
-    }
-    panel.append(calendar, node("h3", t("latestFeedback")));
-    const feedback = node("div", undefined, "vocabulary-feedback");
-    const total = Math.max(1, report.learned);
-    ["again", "hard", "good", "easy"].forEach((key, i) => {
-      const row = node("div");
-      const bar = node("progress");
-      bar.max = total;
-      bar.value = report.feedback[i];
-      bar.setAttribute("aria-label", t(key));
-      row.append(
-        node("span", t(key)),
-        bar,
-        node("strong", String(report.feedback[i])),
-      );
-      feedback.append(row);
-    });
-    panel.append(feedback, node("p", t("feedbackHint"), "vocabulary-muted"));
   }
   function preferences() {
     panel.classList.add("vocabulary-preferences");
-    function toggle(key, checked, change) {
-      const label = node("label", undefined, "vocabulary-switch-row");
-      const input = node("input", undefined, "vocabulary-switch");
-      input.type = "checkbox";
-      input.setAttribute("role", "switch");
-      input.dataset.setting = key;
-      input.checked = checked;
-      input.disabled = busy || !!failed;
-      input.onchange = () => change(input.checked);
-      label.append(node("span", t(key)), input);
-      return label;
-    }
-    panel.append(
-      (() => {
-        const row = node("div", undefined, "vocabulary-switch-row");
-        const accent = node("button", undefined, "vocabulary-accent-switch");
-        accent.type = "button";
-        accent.setAttribute("role", "switch");
-        accent.setAttribute(
-          "aria-label",
-          t("accent") + ": " + t(data.settings.accent),
-        );
-        accent.setAttribute(
-          "aria-checked",
-          String(data.settings.accent === "us"),
-        );
-        accent.dataset.setting = "accent";
-        accent.disabled = busy || !!failed;
-        accent.append(node("span", t("shortUK")), node("span", t("shortUS")));
-        accent.onclick = () => {
-          const value = data.settings.accent === "us" ? "uk" : "us";
-          accent.setAttribute("aria-checked", String(value === "us"));
-          accent.setAttribute("aria-label", t("accent") + ": " + t(value));
-          updateSettings("accent", value);
-        };
-        const accentLabel = node("span", t("accent"));
-        accentLabel.append(
-          node("small", t("accentCaution"), "vocabulary-accent-caution"),
-        );
-        row.append(accentLabel, accent);
-        return row;
-      })(),
-      toggle("autoRead", data.settings.autoRead !== false, (checked) =>
-        updateSettings("autoRead", checked),
-      ),
-      toggle(
-        "autoCache",
-        idle.settings.enabled && !idle.settings.paused,
-        (checked) => idle.configure({ enabled: checked, paused: false }),
-      ),
-    );
-    const capacity = node(
-      "label",
-      t("cacheCapacity"),
-      "vocabulary-field vocabulary-capacity",
-    );
-    const size = node("select");
-    size.setAttribute("aria-label", t("cacheCapacity"));
-    size.disabled = busy || !!failed;
-    for (const limit of idle.limits) {
-      const option = node(
-        "option",
-        limit === Number.MAX_SAFE_INTEGER
-          ? t("cacheUnlimited")
-          : limit / 1024 ** 3 + " GiB",
-      );
-      option.value = String(limit);
-      size.append(option);
-    }
-    size.value = String(idle.settings.limit);
-    size.onchange = () => idle.configure({ limit: Number(size.value) });
-    capacity.append(size);
-    const confirmation = node(
-      "div",
-      undefined,
-      "vocabulary-cache-confirmation",
-    );
-    confirmation.id = "vocabularyCacheConfirmation";
-    confirmation.setAttribute("popover", "auto");
-    confirmation.setAttribute("role", "dialog");
-    confirmation.setAttribute(
-      "aria-describedby",
-      "vocabularyCacheConfirmationText",
-    );
-    confirmation.setAttribute("aria-label", t("clear"));
-    const prompt = node(
-      "p",
-      t("clearCacheConfirm").replace(/([?？])\s*/, "$1\n"),
-    );
-    prompt.id = "vocabularyCacheConfirmationText";
-    const actions = node("div", undefined, "vocabulary-confirm-actions");
-    const cancel = button(t("cancel"), () => closeCacheConfirmation());
-    const accept = button(
-      t("confirm"),
-      async () => {
-        closeCacheConfirmation();
-        clear.disabled = true;
+    pageView.preferences({
+      disabled: busy || !!failed,
+      accent: data.settings.accent,
+      autoRead: data.settings.autoRead !== false,
+      autoCache: idle.settings.enabled && !idle.settings.paused,
+      limit: idle.settings.limit,
+      limits: idle.limits,
+      poolSize: idle.settings.poolSize,
+      poolSizes: idle.poolSizes,
+      modelStatus: modelImportStatus,
+      importing:
+        modelImportStatus === "models_importing" ||
+        ["downloading", "importing"].includes(models.state.phase),
+      setAccent: (value) =>
+        updateSettings("accent", value).finally(refreshPreferences),
+      setAutoRead: (value) =>
+        updateSettings("autoRead", value).finally(refreshPreferences),
+      setAutoCache: (enabled) => idle.configure({ enabled, paused: false }),
+      setPool: (poolSize) => idle.configure({ poolSize }),
+      setLimit: (limit) => idle.configure({ limit }),
+      clear: async () => {
         try {
           await speech.clear();
         } catch {
           speechStatus = "cacheWarning";
-        } finally {
-          clear.disabled = busy || !!failed;
-          refreshCache();
+          refreshStatus();
         }
       },
-      "ui-button vocabulary-primary",
-    );
-    actions.append(cancel, accept);
-    confirmation.append(prompt, actions);
-    panel.append(confirmation);
-    const clear = button(t("clear"), () => {
-      if (popover.isOpen()) return closeCacheConfirmation();
-      popover.show();
-      positionConfirmation();
-      cancel.focus({ preventScroll: true });
+      install: installModel,
     });
-    clear.setAttribute("aria-controls", confirmation.id);
-    clear.setAttribute("aria-haspopup", "dialog");
-    clear.setAttribute("aria-expanded", "false");
-    const popover = WorkTimeApp.ui.popover.create(confirmation, {
-      trigger: () => clear,
-    });
-    closeCacheConfirmation = () => popover.hide({ restoreFocus: true });
-    function positionConfirmation() {
-      if (!popover.isOpen()) return;
-      if (!visible() || !clear.isConnected) return closeCacheConfirmation();
-      const anchor = clear.getBoundingClientRect();
-      const box = confirmation.getBoundingClientRect();
-      const gap = 10;
-      const left = Math.max(
-        gap,
-        Math.min(anchor.right - box.width, innerWidth - box.width - gap),
-      );
-      const below = anchor.bottom + gap;
-      const top =
-        below + box.height <= innerHeight - gap
-          ? below
-          : Math.max(gap, anchor.top - box.height - gap);
-      confirmation.style.left = left + "px";
-      confirmation.style.top = top + "px";
-      WorkTimeApp.ui.popover.point(confirmation, clear);
-    }
-    confirmation.addEventListener("toggle", () => {
-      clear.setAttribute("aria-expanded", String(popover.isOpen()));
-    });
-    clear.classList.add("vocabulary-clear-cache");
-    const pool = node("label", t("workerPool"), "vocabulary-field");
-    const poolSize = node("select");
-    poolSize.setAttribute("aria-label", t("workerPool"));
-    poolSize.disabled = busy || !!failed;
-    for (const value of idle.poolSizes) {
-      const option = node(
-        "option",
-        value === "auto" ? t("workerAuto") : String(value),
-      );
-      option.value = String(value);
-      poolSize.append(option);
-    }
-    poolSize.value = String(idle.settings.poolSize);
-    poolSize.onchange = () =>
-      idle.configure({
-        poolSize: poolSize.value === "auto" ? "auto" : Number(poolSize.value),
-      });
-    pool.append(poolSize);
-    const resources = node("div", undefined, "vocabulary-resource-settings");
-    resources.append(pool, capacity);
-    panel.append(resources);
-    const modelSection = node(
-      "section",
-      undefined,
-      "vocabulary-model-settings",
-    );
-    const modelStatus = node("p", "", "vocabulary-model-status");
-    modelStatus.setAttribute("role", "status");
-    const modelActions = node("div", undefined, "vocabulary-cache-actions");
-    async function importModels(file) {
-      if (modelImportStatus === "models_importing") return;
-      modelImportStatus = "models_importing";
-      refreshModels();
-      try {
-        await models.install(file);
-        modelImportStatus = "models_installed";
-      } catch {
-        modelImportStatus = "models_failed";
-      } finally {
-        refreshModels();
-      }
-    }
-    const download = button(t("modelDownload"), () => {
-      window.open(
-        "https://github.com/xueke-alan/WorkTime/releases",
-        "_blank",
-        "noopener,noreferrer",
-      );
-    });
-    download.dataset.modelAction = "download";
-    const upload = node("input");
-    upload.type = "file";
-    upload.accept = ".wtmodels";
-    upload.hidden = true;
-    upload.onchange = () => {
-      const file = upload.files[0];
-      upload.value = "";
-      if (file) void importModels(file);
-    };
-    const importModel = button(t("modelImport"), () => upload.click());
-    importModel.dataset.modelAction = "import";
-    download.textContent = t("modelDownloadShort");
-    importModel.textContent = t("modelImportShort");
-    clear.textContent = t("cacheClearShort");
-    modelActions.append(download, importModel, clear);
-    modelSection.append(node("h4", t("modelGroup")), modelActions);
-    const groups = node("div", undefined, "vocabulary-management-groups");
-    groups.append(modelSection);
-    panel.append(groups, upload, modelStatus);
-    refreshModels();
-    settingsController = new AbortController();
-    settingsController.signal.addEventListener(
-      "abort",
-      () => {
-        popover.destroy();
-        confirmation.remove();
-        closeCacheConfirmation = () => {};
-      },
-      { once: true },
-    );
-    window.addEventListener("resize", positionConfirmation, {
-      signal: settingsController.signal,
-    });
-    document.addEventListener("scroll", positionConfirmation, {
-      capture: true,
-      passive: true,
-      signal: settingsController.signal,
-    });
-    enhanceSettingsSelects();
   }
-  function enhanceSettingsSelects() {
-    for (const [index, native] of [
-      ...panel.querySelectorAll("select"),
-    ].entries()) {
-      const old = native.closest(".vocabulary-field");
-      const field = node("div", undefined, old.className);
-      Object.assign(field.dataset, old.dataset);
-      const label = node("label", old.firstChild.textContent);
-      native.id = "vocabularySetting" + index;
-      label.id = native.id + "Label";
-      old.replaceWith(field);
-      field.append(label, native);
-      WorkTimeApp.ui.createSelect({
-        host: field,
-        select: native,
-        label,
-        signal: settingsController.signal,
-      });
-    }
-  }
-
   function enterReview() {
     if (busy || failed) return;
     if (session && !correction) {
@@ -1339,184 +688,46 @@ WorkTimeApp.ui.vocabulary = (() => {
     view = next;
     render();
   }
-  function createWordHeader(entry, miniPlayback = false, showAnswer = false) {
-    const wordHeader = node("div", undefined, "vocabulary-word-header");
-    const mode = showAnswer ? "recall" : data.settings.mode;
-    const draft = showAnswer
-      ? { revealed: true }
-      : data.draft || { revealed: false };
-    if (mode === "recall" || draft.revealed) {
-      const heading = node("h3");
-      const status = node("span", undefined, "vocabulary-word-copy-status");
-      status.setAttribute("role", "status");
-      let feedbackTimer;
-      let copyAttempt = 0;
-      const copy = button(
-        entry.word,
-        async () => {
-          const attempt = ++copyAttempt;
-          clearTimeout(feedbackTimer);
-          status.textContent = "";
-          status.classList.remove("is-error");
-          let result = "wordCopied";
-          try {
-            await navigator.clipboard.writeText(entry.word);
-          } catch {
-            result = "wordCopyFailed";
-          }
-          if (attempt !== copyAttempt || !status.isConnected) return;
-          status.classList.toggle("is-error", result === "wordCopyFailed");
-          status.textContent = t(result);
-          feedbackTimer = setTimeout(() => {
-            status.textContent = "";
-            status.classList.remove("is-error");
-          }, 1800);
-        },
-        "vocabulary-word-copy",
-      );
-      copy.title = t("copyWord", { word: entry.word });
-      copy.setAttribute("aria-label", copy.title);
-      heading.append(copy);
-      wordHeader.append(heading, status);
-    }
-    const voiceLabel = t(data.settings.accent === "uk" ? "shortUK" : "shortUS");
-    const phonetic = phoneticText(entry);
-    if (mode !== "spelling" || draft.revealed) {
-      const pronunciation = node("div", undefined, "vocabulary-pronunciation");
-      if ((draft.revealed || mode === "recall") && phonetic)
-        pronunciation.append(node("span", phonetic, "vocabulary-phonetic"));
-      const playButton = playbackButton(
-        entry,
-        "vocabulary-pronunciation-play",
-        t("play") + " · " + voiceLabel,
-        miniPlayback,
-      );
-      playButton.append(node("span", voiceLabel));
-      pronunciation.append(playButton);
-      wordHeader.append(pronunciation);
-    }
-    return wordHeader;
+  function headerProps(entry, miniPlayback, detail) {
+    return {
+      word: entry.word,
+      mode: detail ? "recall" : data.settings.mode,
+      revealed: detail || !!data.draft?.revealed,
+      disabled: busy || !!failed,
+      accent: data.settings.accent,
+      phonetic: phoneticText(entry),
+      play: (synthesis) => play(entry, miniPlayback, synthesis),
+    };
   }
-  function study() {
-    if (!current) {
-      panel.append(node("p", t("complete"), "vocabulary-complete"));
+  function study(detail = false) {
+    const entry = detail ? viewedEntry : current;
+    if (!entry) {
+      pageView.complete();
       return;
     }
-    const draft = data.draft || { answer: "", revealed: false, correct: null };
-    const card = node("section", undefined, "vocabulary-card"),
-      mode = data.settings.mode;
-    studyActions = node("div", undefined, "vocabulary-study-actions");
-    card.append(createWordHeader(current));
-    if (mode === "spelling" || draft.revealed)
-      card.append(node("p", current.zh, "vocabulary-meaning"));
-    if (!draft.revealed && mode !== "recall")
-      card.append(
-        node(
-          "p",
-          t(mode === "recall" ? "tapReveal" : mode + "Prompt"),
-          "vocabulary-muted vocabulary-study-prompt",
-        ),
-      );
-    if (mode !== "recall" && !draft.revealed) {
-      const input = node("input", undefined, "vocabulary-answer");
-      input.type = "text";
-      input.placeholder = t("answer");
-      input.setAttribute("aria-label", t("answer"));
-      input.autocomplete = "off";
-      input.spellcheck = false;
-      input.autocapitalize = "off";
-      input.value =
-        inputDraft?.id === current.id ? inputDraft.answer : draft.answer;
-      input.disabled =
-        busy || !!failed || (mode === "dictation" && !audioReady);
-      input.oninput = () => {
-        inputDraft = { id: current.id, answer: input.value };
-        clearTimeout(draftTimer);
-        draftTimer = setTimeout(flushInput, 500);
-      };
-      input.onkeydown = (event) => {
-        if (event.key === "Enter" && !event.isComposing && !input.disabled)
-          reveal();
-      };
-      card.append(input);
-    }
-    if (!draft.revealed && mode !== "recall") {
-      const check = button(t("check"), reveal, "ui-button vocabulary-primary");
-      check.dataset.action = "check";
-      if (mode === "dictation" && !audioReady) check.disabled = true;
-      studyActions.append(check);
-    } else if (draft.revealed) {
-      if (draft.correct !== null)
-        card.append(
-          node(
-            "p",
-            t(draft.correct ? "right" : "wrong") +
-              (draft.answer ? " · " + draft.answer : ""),
-            draft.correct ? "vocabulary-right" : "vocabulary-wrong",
-          ),
-        );
-      const ratings = node("div", undefined, "vocabulary-ratings");
-      const now = Date.now();
-      const today = Date.parse(E.day(now));
-      [
-        ["recognized", 3],
-        ["uncertain", 2],
-        ["forgotten", 1],
-      ].forEach(([key, rating]) => {
-        const b = button("", () => grade(rating), "vocabulary-rating");
-        b.dataset.grade = String(rating);
-        b.setAttribute(
-          "aria-keyshortcuts",
-          { 3: "ArrowLeft", 2: "ArrowDown", 1: "ArrowRight" }[rating],
-        );
-        if (correction?.id === current.id) {
-          const selected = correction.grade === rating;
-          b.classList.toggle("is-previous-choice", selected);
-          b.setAttribute("aria-pressed", String(selected));
-        }
-        const result = E.preview(data, current, mode, rating, now);
-        const delay = result.gap
-          ? t("reviewToday")
-          : t("reviewDays", {
-              n: Math.max(
-                1,
-                (Date.parse(E.day(result.card.due)) - today) / 86400000,
-              ),
-            });
-        b.append(node("strong", t(key)), node("small", delay));
-        if (draft.correct === false && rating !== 1) b.disabled = true;
-        ratings.append(b);
-      });
-      studyActions.append(ratings);
-    }
-    if (
-      data.reinforcement?.[E.key(current.id, mode)] &&
-      E.queue(data, entries).early
-    ) {
-      card.append(node("p", t("practiceEarly"), "vocabulary-muted"));
-    }
-    const studyHeader = node("div", undefined, "vocabulary-study-header");
-    studyHeader.append(card);
-    drawerBody.insertBefore(studyHeader, panel);
-    if (!draft.revealed && mode === "recall") {
-      studyActions = null;
+    const header = headerProps(entry, false, detail);
+    const draft = detail
+      ? { answer: "", correct: null }
+      : data.draft || { answer: "", correct: null };
+    const headerHost = node("div", undefined, "vocabulary-study-header");
+    drawerBody.insertBefore(headerHost, panel);
+    const recall = !header.revealed && header.mode === "recall";
+    const actionsHost =
+      detail || recall
+        ? undefined
+        : node("div", undefined, "vocabulary-study-actions");
+    if (actionsHost) drawerBody.insertBefore(actionsHost, navigation);
+    if (recall) {
       panel.classList.add("vocabulary-recall");
-      const prompt = node("div", undefined, "vocabulary-recall-prompt");
-      prompt.append(
-        node("h4", t("recallPrompt")),
-        node("p", t("tapReveal"), "vocabulary-muted"),
-      );
-      panel.append(prompt);
       panel.dataset.action = "reveal";
       panel.tabIndex = 0;
       panel.setAttribute("aria-label", t("tapReveal"));
-      panel.onclick = (event) => {
+      panel.onclick = headerHost.onclick = (event) => {
         if (
-          event.target.closest("button, input, a, select, textarea, label") ||
-          window.getSelection()?.toString()
+          !event.target.closest("button,input,a,select,textarea,label") &&
+          !window.getSelection()?.toString()
         )
-          return;
-        reveal();
+          reveal();
       };
       panel.onkeydown = (event) => {
         if (event.target === panel && event.key === "Enter") {
@@ -1524,54 +735,86 @@ WorkTimeApp.ui.vocabulary = (() => {
           reveal();
         }
       };
-      studyHeader.onclick = panel.onclick;
     }
-    if (draft.revealed) {
-      studyDetails();
-      if (revealAnimation) {
-        studyHeader.classList.add("vocabulary-revealing");
-        panel.classList.add("vocabulary-revealing");
-        revealAnimation = false;
+    const ratings = [];
+    if (header.revealed && !detail) {
+      const now = Date.now(),
+        today = Date.parse(E.day(now));
+      for (const [label, value, shortcut] of [
+        ["recognized", 3, "ArrowLeft"],
+        ["uncertain", 2, "ArrowDown"],
+        ["forgotten", 1, "ArrowRight"],
+      ]) {
+        const result = E.preview(data, entry, header.mode, value, now);
+        ratings.push({
+          label,
+          value,
+          shortcut,
+          previous:
+            correction?.id === entry.id
+              ? correction.grade === value
+              : undefined,
+          delay: result.gap
+            ? t("reviewToday")
+            : t("reviewDays", {
+                n: Math.max(
+                  1,
+                  (Date.parse(E.day(result.card.due)) - today) / 86400000,
+                ),
+              }),
+        });
       }
     }
-  }
-  function wordDetail() {
-    if (!viewedEntry) {
-      bookDetail();
-      return;
-    }
-    const studyHeader = node("div", undefined, "vocabulary-study-header");
-    const back = button(
-      "",
-      () => {
-        const id = viewedEntry.id;
-        changePage(wordReturn);
-        (wordReturn === "books"
-          ? panel
-          : panel.querySelector(".vocabulary-list")
-        ).scrollTop = bookScroll;
-        [...panel.querySelectorAll(".vocabulary-word-open")]
-          .find((button) => button.dataset.word === id)
-          ?.focus({ preventScroll: true });
+    pageView.study({
+      header,
+      headerHost,
+      actionsHost,
+      meaning: entry.zh,
+      draft,
+      initialAnswer:
+        inputDraft?.id === entry.id ? inputDraft.answer : draft.answer,
+      audioReady,
+      ratings,
+      early:
+        !detail &&
+        data.reinforcement?.[E.key(entry.id, header.mode)] &&
+        E.queue(data, entries).early,
+      details: header.revealed
+        ? {
+            entry,
+            disabled: header.disabled,
+            speak: (word, synthesis) =>
+              play({ word, kind: "example" }, false, synthesis),
+          }
+        : undefined,
+      history: detail ? memoryHistory(entry) : undefined,
+      back: detail
+        ? () => {
+            changePage(wordReturn);
+            (wordReturn === "books"
+              ? panel
+              : panel.querySelector(".vocabulary-list")
+            ).scrollTop = bookScroll;
+            [...panel.querySelectorAll(".vocabulary-word-open")]
+              .find((button) => button.dataset.word === entry.id)
+              ?.focus({ preventScroll: true });
+          }
+        : undefined,
+      input: (answer) => {
+        inputDraft = { id: entry.id, answer };
+        clearTimeout(draftTimer);
+        draftTimer = setTimeout(flushInput, 500);
       },
-      "vocabulary-word-back",
-    );
-    back.setAttribute("aria-label", t("back"));
-    back.innerHTML =
-      '<svg class="ui-icon" aria-hidden="true"><use href="#ms-arrow-back"/></svg>';
-    const card = node("section", undefined, "vocabulary-card");
-    card.append(
-      createWordHeader(viewedEntry, false, true),
-      node("p", viewedEntry.zh, "vocabulary-meaning"),
-    );
-    studyHeader.append(back, card);
-    drawerBody.insertBefore(studyHeader, panel);
-    studyDetails(viewedEntry);
-    memoryHistory(viewedEntry);
+      reveal,
+      grade,
+    });
+    if (!detail && header.revealed && revealAnimation) {
+      headerHost.classList.add("vocabulary-revealing");
+      panel.classList.add("vocabulary-revealing");
+      revealAnimation = false;
+    }
   }
   function memoryHistory(entry) {
-    const section = node("section", undefined, "vocabulary-detail-section");
-    const results = node("div", undefined, "vocabulary-memory-history");
     const logs = data.logs
       .filter((log) => log.id === entry.id)
       .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
@@ -1581,51 +824,18 @@ WorkTimeApp.ui.vocabulary = (() => {
     const calendarDay = (at) => Date.parse(E.day(at));
     const daysBetween = (later, earlier) =>
       (calendarDay(later) - calendarDay(earlier)) / 86400000;
-    const ratings = ["forgotten", "uncertain", "recognized", "easy"];
-    const batchSize = 24;
-
-    if (logs.length) {
-      const first = logs[0].at;
+    const dateTitle = (at) => date.format(new Date(at));
+    const first = logs[0]?.at;
+    let summary = "";
+    if (first) {
       const last = logs.at(-1).at;
-      const start = date.format(new Date(first));
-      const end = date.format(new Date(last));
-      const range = E.day(first) === E.day(last) ? start : `${start} → ${end}`;
-      results.append(
-        node("p", t("memoryHistorySummary", { range, n: logs.length })),
-      );
-      const showMode = new Set(logs.map((log) => log.mode)).size > 1;
-      const list = node("ol", undefined, "vocabulary-memory-events");
-      list.setAttribute("role", "list");
-      let from = logs.length;
-      const more = button(t("memoryHistoryEarlier"), () => {
-        prependEvents();
-        if (more.hidden) list.focus();
-      });
-      more.classList.add("vocabulary-memory-earlier");
-      list.tabIndex = -1;
-      function prependEvents() {
-        const start = Math.max(0, from - batchSize);
-        const items = logs.slice(start, from).map(({ at, grade, mode }) => {
-          const item = node("li");
-          const rating = ratings[grade - 1];
-          item.dataset.rating = rating;
-          const time = node("time", `D${daysBetween(at, first) + 1}`);
-          time.dateTime = at;
-          time.title = date.format(new Date(at));
-          item.append(time, " · ", t(rating));
-          if (showMode) item.append(" · ", t(mode));
-          return item;
-        });
-        list.prepend(...items);
-        from = start;
-        more.hidden = from === 0;
-      }
-      prependEvents();
-      results.append(more, list);
-    } else {
-      results.append(node("p", t("memoryHistoryEmpty"), "vocabulary-muted"));
+      const range =
+        E.day(first) === E.day(last)
+          ? dateTitle(first)
+          : dateTitle(first) + " → " + dateTitle(last);
+      summary = t("memoryHistorySummary", { range, n: logs.length });
     }
-
+    const upcoming = [];
     const now = Date.now();
     for (const mode of ["recall", "spelling", "dictation"]) {
       const key = E.key(entry.id, mode);
@@ -1643,58 +853,15 @@ WorkTimeApp.ui.vocabulary = (() => {
             ? t("memoryHistoryDueToday")
             : t("memoryHistoryNext", { date: date.format(new Date(due)) });
       }
-      const line = node(
-        "p",
-        `${t(mode)} · ${status}`,
-        "vocabulary-muted vocabulary-memory-due",
-      );
-      if (overdue) line.dataset.overdue = "true";
-      results.append(line);
+      upcoming.push({ mode, status, overdue });
     }
-    section.append(node("h4", t("memoryHistory")), results);
-    panel.append(section);
-  }
-  function studyDetails(entry = current) {
-    function section(key) {
-      const block = node("section", undefined, "vocabulary-detail-section");
-      block.append(node("h4", t(key)));
-      panel.append(block);
-      return block;
-    }
-    const examples = section("examples");
-    if (!entry.examples?.length)
-      examples.append(node("p", t("noExamples"), "vocabulary-muted"));
-    for (const example of entry.examples || []) {
-      const item = node("div", undefined, "vocabulary-example");
-      const english = node("p");
-      const text = example.en,
-        needle = entry.word.toLowerCase();
-      const index = text.toLowerCase().indexOf(needle);
-      if (index < 0) english.textContent = text;
-      else
-        english.append(
-          document.createTextNode(text.slice(0, index)),
-          node("mark", text.slice(index, index + needle.length)),
-          document.createTextNode(text.slice(index + needle.length)),
-        );
-      const playButton = playbackButton(
-        { word: example.en, kind: "example" },
-        "vocabulary-example-play",
-        t("play") + ": " + example.en,
-      );
-      english.prepend(playButton);
-      item.append(
-        english,
-        node("p", example.zh, "vocabulary-example-translation"),
-      );
-      examples.append(item);
-    }
-
-    if (entry.mnemonic) section("mnemonic").append(node("p", entry.mnemonic));
-    const forms = section("forms");
-    if (entry.forms?.length)
-      for (const form of entry.forms) forms.append(node("p", form));
-    else forms.append(node("p", t("noForms"), "vocabulary-muted"));
+    return {
+      logs,
+      summary,
+      due: upcoming,
+      dateTitle,
+      dayNumber: (at) => daysBetween(at, first) + 1,
+    };
   }
   function render() {
     if (miniMode) {
@@ -1702,15 +869,15 @@ WorkTimeApp.ui.vocabulary = (() => {
       return;
     }
     if (disposed || !panel || !visible() || !data) return;
+    if (view === "word" && !viewedEntry) view = "book";
     if (view === "home" && session === null && !busy && !failed) {
       start();
       return;
     }
-    settingsController?.abort();
-    settingsController = null;
-    renderCount++;
-    studyActions = null;
     const scroll = (panel.querySelector(".vocabulary-list") || panel).scrollTop;
+    pageView?.dispose();
+    pageView = null;
+    renderCount++;
     const existingNav = navigation;
 
     for (const child of [...drawerBody.children]) {
@@ -1732,10 +899,14 @@ WorkTimeApp.ui.vocabulary = (() => {
     panel = node("div", undefined, "vocabulary-page");
     panel.id = "vocabularyPage";
     drawerBody.insertBefore(panel, existingNav);
+    {
+      const host = node("div", undefined, "vocabulary-react-content");
+      panel.append(host);
+      pageView = WorkTimeApp.ui.mountVocabularyPage(host);
+    }
     if (view === "study") study();
-    else if (view === "books") books();
-    else if (view === "book") bookDetail();
-    else if (view === "word") wordDetail();
+    else if (view === "book" || view === "books") books();
+    else if (view === "word") study(true);
     else if (view === "analysis") analysis();
     else if (view === "preferences") preferences();
     else home();
@@ -1763,7 +934,6 @@ WorkTimeApp.ui.vocabulary = (() => {
       E.queue(data, entries).items.map((entry) => entry.id),
     );
     navView.update(activePage, planned.size);
-    if (studyActions) drawerBody.insertBefore(studyActions, navigation);
     (panel.querySelector(".vocabulary-list") || panel).scrollTop = scroll;
   }
   function flushInput() {
@@ -1796,7 +966,8 @@ WorkTimeApp.ui.vocabulary = (() => {
       stopModeAnimation();
     const next = !visible();
     if (next && !suspended) {
-      closeCacheConfirmation();
+      pageView?.dispose();
+      pageView = null;
       speech.stop();
       flushInput();
     }
@@ -1808,22 +979,13 @@ WorkTimeApp.ui.vocabulary = (() => {
   observer.observe(editor, { attributes: true, attributeFilter: ["class"] });
   function renderMini() {
     const entry = current || lookup.get(data.draft?.id);
-    miniBack.setAttribute("aria-label", WorkTimeApp.i18n.t("tools.back"));
-    miniBack.title = WorkTimeApp.i18n.t("tools.back");
-    miniExpand.setAttribute("aria-label", t("expand"));
-    miniHeader.replaceChildren();
-    if (!entry) {
-      miniHeader.append(streakHero(E.statistics(data).streak));
-      return;
-    }
-    const card = node("section", undefined, "vocabulary-card");
-    const wordHeader = createWordHeader(entry, true);
-    wordHeader.querySelector("h3")?.classList.add("vocabulary-mini-word");
-    wordHeader
-      .querySelector(".vocabulary-phonetic")
-      ?.classList.add("vocabulary-mini-phonetic");
-    card.append(wordHeader);
-    miniHeader.append(card);
+    miniView ??= WorkTimeApp.ui.mountVocabularyPage(mini);
+    miniView.mini({
+      header: entry ? headerProps(entry, true, false) : null,
+      streak: entry ? 0 : E.statistics(data).streak,
+      back: () => WorkTimeApp.ui.dateInfo.showToolsPanel("vocabulary"),
+      expand: () => setMini(false),
+    });
   }
   function setMini(value) {
     if (disposed) return;
@@ -1866,7 +1028,10 @@ WorkTimeApp.ui.vocabulary = (() => {
     content.hidden = value;
     content.inert = value;
     mini.hidden = !value;
-    if (!value) miniHeader.replaceChildren();
+    if (!value) {
+      miniView?.dispose();
+      miniView = null;
+    }
     host.classList.toggle("is-mini", value);
     (value ? editor.querySelector(".date-info-area") : fullHost).append(host);
     if (value) renderMini();
@@ -2024,9 +1189,7 @@ WorkTimeApp.ui.vocabulary = (() => {
       miniMode ||
       !visible() ||
       !(event.target instanceof Element) ||
-      !event.target.closest(
-        ".workspace > .summary-sidebar, .workspace > section.panel",
-      )
+      !event.target.closest(".workspace > .work-main")
     )
       return;
     setMini(true);
@@ -2059,14 +1222,16 @@ WorkTimeApp.ui.vocabulary = (() => {
       document.removeEventListener("keydown", keyboard);
       document.removeEventListener("click", collapseOnClick, true);
       observer.disconnect();
-      settingsController?.abort();
       unsubscribe();
       unsubscribeStorage();
       unsubscribeCache();
       unsubscribeModels();
       speech.dispose();
+      pageView?.dispose();
+      pageView = null;
       navView.dispose();
       content.remove();
+      miniView?.dispose();
       mini.remove();
     },
   };

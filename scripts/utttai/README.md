@@ -38,7 +38,7 @@ upstream standard rules, so these results are specific to this adaptation.
 
 ## Verification
 
-- `node scripts/verify-ultimate-ttt.cjs` — rules, six locales, responsive UI,
+- `node scripts/verify/games/verify-ultimate-ttt.cjs` — rules, six locales, responsive UI,
   persistence, real offline NMCTS2 at all levels, tactics, cancellation,
   failure/retry and human-vs-AI undo. Add `--unit` for referee-only tests;
   pass `_site` to validate the published artifact.

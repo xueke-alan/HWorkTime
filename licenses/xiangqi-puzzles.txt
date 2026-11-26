@@ -4,23 +4,23 @@ All 120 classic puzzles carry the original Shi Qing Ya Qu titles.
 Stable IDs are independent of the displayed 01–80 basic puzzle numbers.
 The positions were selected from the collections below, converted to
 WorkTime's board notation, and solved with WorkTime's own rules.
-The 544-position candidate snapshot is scripts/xiangqi-classics-source.json.
+The 544-position candidate snapshot is scripts/xiangqi/xiangqi-classics-source.json.
 Upstream Git blob SHA: 9fb5c169d8aa4b0bb6365ad263b68de4760907ce.
-Exact offline search certificates are scripts/xiangqi-classics-solutions.json;
+Exact offline search certificates are scripts/xiangqi/xiangqi-classics-solutions.json;
 these cover every legal black defense, with shortest distances independently
 checked by scripts/xiangqi-solver/Program.cs. No search engine is loaded in
 the browser. Development requires .NET 10 only for rebuilding certificates:
 
 dotnet build scripts/xiangqi-solver/xiangqi-solver.csproj -c Release -o .cache/xiangqi-solver -p:BaseIntermediateOutputPath=<absolute-workspace>/.cache/xiangqi-obj/
-node scripts/solve-xiangqi.cjs
-node scripts/solve-xiangqi.cjs --select
-node scripts/build-xiangqi.cjs
-node scripts/solve-xiangqi.cjs --inspect
-node scripts/solve-xiangqi.cjs --verify
+node scripts/xiangqi/solve-xiangqi.cjs
+node scripts/xiangqi/solve-xiangqi.cjs --select
+node scripts/xiangqi/build-xiangqi.cjs
+node scripts/xiangqi/solve-xiangqi.cjs --inspect
+node scripts/xiangqi/solve-xiangqi.cjs --verify
 
 Discovery uses a 200,000-node per-position budget and searches up to 16 red
 moves. To complete the advanced category, increase the budget with:
-node scripts/solve-xiangqi.cjs 1000000 16 --advanced
+node scripts/xiangqi/solve-xiangqi.cjs 1000000 16 --advanced
 Positions exceeding a budget are not labeled as solved. Selection preserves
 the ten original classics and existing choices where possible, then fills
 45 easy (4–5 moves), 60 medium (6–8), and 15 advanced (9+) places with unique

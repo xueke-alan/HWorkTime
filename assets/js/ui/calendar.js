@@ -27,70 +27,60 @@ WorkTimeApp.ui.createCalendar = function (options) {
   let renderedMode = null,
     renderedSelection = null,
     renderedYearMode = null;
-  let lunarLoading = null,
-    lunarUnavailable = false;
-
-  function updateSidebarYearMonth(yearMode, month) {
-    const actions = document.querySelector(".sidebar-actions"),
-      label = actions.querySelector(".sidebar-year-month"),
-      text = $("sidebarYearMonthText"),
-      nextText = month.slice(0, 4) + " / " + month.slice(5),
-      changed = text.dataset.month !== month;
-    if (changed) {
-      text.dataset.month = month;
-      text.setAttribute("aria-label", nextText);
-      for (const [selector, value] of [
-        [".sidebar-year-number", month.slice(0, 4)],
-        [".sidebar-month-number", month.slice(5)],
-      ])
-        numbers.set(text.querySelector(selector), value, {
-          animateInitial: false,
-          motion: yearMode && renderedYearMode === true,
-        });
-    }
-    actions.classList.toggle("is-year-mode", yearMode);
-    label.setAttribute("aria-hidden", String(!yearMode));
-    const importButton = $("importOpen"),
-      secondaryActions = actions.querySelector(".import-secondary-actions");
-    importButton.inert = yearMode;
-    const secondaryHidden =
-      yearMode ||
-      document
-        .querySelector(".summary-sidebar")
-        .classList.contains("is-oa-open");
-    secondaryActions.inert = secondaryHidden;
-    importButton.setAttribute("aria-hidden", String(yearMode));
-    secondaryActions.setAttribute("aria-hidden", String(secondaryHidden));
+  const oaRecordActions = $("oaRecordActions"),
+    sidebarMonthText = $("sidebarYearMonthText"),
+    sidebarMonthSlot = sidebarMonthText.parentElement;
+  function renderYearMonth(
+    label,
+    year,
+    month,
+    { wordMonth = false, animateInitial = true, motion = true } = {},
+  ) {
+    label.classList.toggle("has-word-month", wordMonth);
+    label.classList.toggle(
+      "has-single-digit-month",
+      !wordMonth && month.length === 1,
+    );
+    numbers.set(label.querySelector(".year-month-year"), String(year), {
+      animateInitial,
+      motion,
+    });
+    numbers.set(label.querySelector(".year-month-month"), month, {
+      animateInitial: animateInitial && !wordMonth,
+      animateWhole: wordMonth,
+      animateWholeOnLengthChange: !wordMonth,
+      motion,
+    });
   }
-
-  function ensureLunar() {
-    if (window.Solar) return true;
-    if (lunarUnavailable || lunarLoading) return false;
-    const settle = () => {
-      lunarLoading = null;
-      const view = getView();
-      // Populate whichever calendar is now visible without closing an open editor.
-      if (!view.analysisMode) renderCalendar(true);
-    };
-    lunarLoading = WorkTimeApp.services.dateInfo
-      .loadLunar()
-      .then(settle, () => {
-        lunarUnavailable = true;
-        settle();
+  function updateSidebarYearMonth(showMonth, month) {
+    if (showMonth && sidebarMonthText.dataset.month !== month) {
+      const year = month.slice(0, 4),
+        monthNumber = String(Number(month.slice(5)));
+      sidebarMonthText.dataset.month = month;
+      sidebarMonthText.setAttribute("aria-label", `${year} / ${monthNumber}`);
+      renderYearMonth(sidebarMonthText, year, monthNumber, {
+        animateInitial: false,
+        motion: renderedYearMode === true,
       });
-    return false;
+    }
+    if (showMonth && oaRecordActions.contains(document.activeElement))
+      $("monthTitle").focus({ preventScroll: true });
+    oaRecordActions.parentElement.classList.toggle("is-year-mode", showMonth);
+    oaRecordActions.inert = showMonth;
+    oaRecordActions.setAttribute("aria-hidden", String(showMonth));
+    sidebarMonthSlot.setAttribute("aria-hidden", String(!showMonth));
   }
   let noteTicker = null,
     noteTracks = [];
   const noteIndexes = new Map();
   function collectNoteTracks() {
-    noteTracks = [...$("calendar").querySelectorAll(".year-day-note-track")]
-      .map((track) => {
-        const date = track.closest(".year-day")?.dataset.yearDate || "",
-          count = track.children.length;
-        return count > 1 ? { track, date, count } : null;
-      })
-      .filter(Boolean);
+    noteTracks = [
+      ...$("calendar").querySelectorAll("[data-year-note-date]"),
+    ].map((track) => ({
+      track,
+      date: track.dataset.yearNoteDate,
+      count: track.children.length,
+    }));
     for (const item of noteTracks) {
       const index = (noteIndexes.get(item.date) || 0) % item.count;
       item.track.style.setProperty("--year-note-index", String(index));
@@ -219,7 +209,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
           priority +
           '" data-source-date="' +
           day.oa.date +
-          '" title="' +
+          '" data-hint-text="' +
           esc(hint) +
           '" aria-label="' +
           esc(hint) +
@@ -230,14 +220,14 @@ WorkTimeApp.ui.createCalendar = function (options) {
           '><span class="record-source-dot oa" aria-hidden="true"></span><span class="record-source-dot manual" aria-hidden="true"></span></button>'
       : '<span class="record-source-dot ' +
           priority +
-          '" title="' +
+          '" data-hint-text="' +
           esc(hint) +
           '" aria-label="' +
           esc(hint) +
           '"></span>';
   }
   const dateDivider =
-    '<svg class="month-title-divider" viewBox="0 0 12 24" aria-hidden="true" focusable="false"><path d="M9 4 3 20" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>';
+    '<svg class="calendar-date-divider month-title-divider" viewBox="0 0 12 24" aria-hidden="true" focusable="false"><use href="#icon-calendar-date-divider"/></svg>';
 
   function dateMarkers(date, payday, paydayHint) {
     const start = getState().personal.employmentDate,
@@ -258,7 +248,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
         label,
         hint: label + WorkTimeApp.i18n.t("copy.3a2fd0b35a") + start,
         className: " employment-icon",
-        icon: '<g transform="translate(11 11) scale(3.25)" fill="currentColor"><circle cx="12" cy="7" r="4"/><path d="M5 21v-2.5c0-3.6 3.1-6 7-6s7 2.4 7 6V21Z"/></g>',
+        icon: '<use href="#icon-user" x="11" y="11" width="78" height="78" fill="currentColor"/>',
       });
     }
     if (date === payday.date)
@@ -266,7 +256,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
         label: WorkTimeApp.i18n.t("copy.85b0268523"),
         hint: paydayHint,
         className: "",
-        icon: '<use href="#ms-currency-yen" x="11" y="11" width="78" height="78" fill="currentColor"/>',
+        icon: '<use href="#icon-currency-yen" x="11" y="11" width="78" height="78" fill="currentColor"/>',
       });
     return {
       label: markers.map((marker) => " " + marker.label).join(""),
@@ -296,9 +286,9 @@ WorkTimeApp.ui.createCalendar = function (options) {
     const wordMonth = !WorkTimeApp.i18n.config.cjk;
     if (!title.querySelector(".month-title-divider")) {
       title.innerHTML =
-        '<span id="monthTitleYear" class="month-title-year" data-number-motion></span>' +
+        '<span id="monthTitleYear" class="month-title-year year-month-year" data-number-motion></span>' +
         dateDivider +
-        '<span id="monthTitleMonth" class="month-title-month" data-number-motion></span>';
+        '<span id="monthTitleMonth" class="month-title-month year-month-month" data-number-motion></span>';
     }
     if (wordMonth) {
       const style = getComputedStyle(title.querySelector(".month-title-month"));
@@ -333,23 +323,12 @@ WorkTimeApp.ui.createCalendar = function (options) {
         monthSlotWidths.get(key) || "2.4em",
       );
     } else title.style.setProperty("--month-label-width", "2ch");
-    for (const [selector, value] of [
-      [".month-title-year", String(year)],
-      [
-        ".month-title-month",
-        wordMonth
-          ? WorkTimeApp.i18n.monthName(
-              year + "-" + String(month).padStart(2, "0") + "-01",
-            )
-          : String(month),
-      ],
-    ]) {
-      const number = title.querySelector(selector);
-      numbers.set(number, value, {
-        animateInitial: !(wordMonth && selector === ".month-title-month"),
-        animateWhole: selector === ".month-title-month",
-      });
-    }
+    const monthLabel = wordMonth
+      ? WorkTimeApp.i18n.monthName(
+          year + "-" + String(month).padStart(2, "0") + "-01",
+        )
+      : String(month);
+    renderYearMonth(title, year, monthLabel, { wordMonth });
     title.classList.toggle("is-year-title", yearMode);
     title
       .querySelector(".month-title-month")
@@ -402,14 +381,14 @@ WorkTimeApp.ui.createCalendar = function (options) {
   function dayLunar(date) {
     const lunar = WorkYear.lunarLabel(
       date,
-      window.Solar ? WorkTimeApp.services.dateInfo.lunar : null,
+      WorkTimeApp.services.dateInfo.calendarLunar,
     );
     return '<span class="day-lunar">' + esc(lunar) + "</span>";
   }
   function worktimeCorner(calc, standardMinutes) {
     if (!calc.work || calc.minutes === null || calc.minutes >= standardMinutes)
       return "";
-    return '<span class="worktime-corner is-short" aria-hidden="true"></span>';
+    return '<span class="worktime-corner is-short" aria-hidden="true"><svg viewBox="0 0 256 256" focusable="false"><use href="#icon-person-simple-run"/></svg></span>';
   }
   function belowOvertimeTarget(minutes, targetMinutes, displayedHours) {
     if (
@@ -511,7 +490,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
       yearMode,
       analysisMode,
     } = getView();
-    updateSidebarYearMonth(yearMode, month);
+    updateSidebarYearMonth(yearMode && !analysisMode, month);
     const yearWatermark = $("yearWatermark");
     if (yearMode) yearWatermark.textContent = String(getView().viewYear);
     else {
@@ -561,12 +540,12 @@ WorkTimeApp.ui.createCalendar = function (options) {
     const analysisLabel = analysisMode
       ? "analysis.calendar"
       : "analysis.toggle";
-    for (const attribute of ["title", "aria-label"])
+    for (const attribute of ["data-hint-text", "aria-label"])
       $("analysisToggle").setAttribute(
         attribute,
         WorkTimeApp.i18n.t(analysisLabel),
       );
-    $("analysisToggle").setAttribute("data-i18n-title", analysisLabel);
+    $("analysisToggle").setAttribute("data-i18n-hint-text", analysisLabel);
     $("analysisToggle").setAttribute("data-i18n-aria-label", analysisLabel);
     $("analysisToggle").dataset.actionHint = analysisMode
       ? "agenda.monthView"
@@ -639,8 +618,6 @@ WorkTimeApp.ui.createCalendar = function (options) {
         renderedSelection !== null && renderedSelection !== calendarSelected;
     const monthViewYear = month.slice(0, 4),
       yearNotice = $("yearNotice");
-    if (Number(monthViewYear) >= 1900 && Number(monthViewYear) <= 2100)
-      ensureLunar();
     updateMonthTitle(Number(monthViewYear), Number(month.slice(5)), false);
     updateText(
       yearNotice.querySelector(".notification-body"),
@@ -888,7 +865,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
             : "") +
         '</div><div class="day-footer"><div class="day-average' +
         (averageAffected && averageText ? " batch-average-affected" : "") +
-        '" title="' +
+        '" data-hint-text="' +
         esc(
           WorkTimeApp.i18n.t("copy.1e6a453ebc") +
             (dailyAverages[k].pending
@@ -1031,21 +1008,27 @@ WorkTimeApp.ui.createCalendar = function (options) {
     if (modeChanged) {
       WorkTimeApp.ui.motion?.refreshEditorTitle();
     }
-    $("batchToggle").setAttribute("aria-pressed", String(batchMode));
-    $("batchToggle").title = batchMode
+    const batchToggle = $("batchToggle"),
+      pressed = String(batchMode);
+    if (batchToggle.getAttribute("aria-pressed") !== pressed)
+      batchToggle.setAttribute("aria-pressed", pressed);
+    batchToggle.dataset.hintText = batchMode
       ? WorkTimeApp.i18n.t("copy.03b15bbfb8")
       : WorkTimeApp.i18n.t("copy.3f712eac83");
-    $("batchToggle")
-      .querySelector("use")
-      .setAttribute("href", batchMode ? "#ms-close" : "#ms-stacks");
-    $("batchToggle").setAttribute(
+    WorkTimeApp.ui.motion.setToggleIcon(
+      batchToggle,
+      batchMode,
+      "#icon-stacks",
+      modeChanged,
+    );
+    batchToggle.setAttribute(
       "aria-label",
       batchMode
         ? WorkTimeApp.i18n.t("copy.03b15bbfb8")
         : WorkTimeApp.i18n.t("copy.3f712eac83"),
     );
     $("batchSave").disabled = !batchDraft?.canConfirm || !!batchSaving;
-    $("batchCancel").disabled = $("batchToggle").disabled = !!batchSaving;
+    $("batchCancel").disabled = batchToggle.disabled = !!batchSaving;
     $("batchAutoSelect").disabled = !!batchSaving;
     $("batchReset").disabled = !!batchSaving || !batchDays.size;
     $("batchClearSelection").disabled = !!batchSaving || !batchDays.size;
@@ -1057,7 +1040,6 @@ WorkTimeApp.ui.createCalendar = function (options) {
       $("batchSave").querySelector(".button-label"),
       WorkTimeApp.i18n.t("batch.saveShort"),
     );
-    $("batchToggle").classList.toggle("primary", batchMode);
     $("cards").classList.toggle("is-batch-preview", batchMode);
     // Dragging owns the visual feedback. Saving a move or resize is not a day click.
     if (
@@ -1080,9 +1062,6 @@ WorkTimeApp.ui.createCalendar = function (options) {
     const detail = yearViewMode === "calendar";
     $("yearWatermark").textContent = String(viewYear);
     $("yearWatermark").classList.toggle("is-visible", detail);
-    // Both display modes share one card structure. Lunar data is prepared while
-    // the year view is open so switching modes only changes presentation.
-    if (viewYear >= 1900 && viewYear <= 2100) ensureLunar();
 
     updateMonthTitle(viewYear, Number(getView().month.slice(5)), true);
     const notice = $("yearNotice");
@@ -1092,8 +1071,8 @@ WorkTimeApp.ui.createCalendar = function (options) {
     );
     notice.classList.toggle("hidden", C.calendarKnown(viewYear + "-01-01"));
     const lunarFor =
-      window.Solar && viewYear >= 1900 && viewYear <= 2100
-        ? (date) => WorkTimeApp.services.dateInfo.lunar(date)
+      viewYear >= 1900 && viewYear <= 2100
+        ? WorkTimeApp.services.dateInfo.calendarLunar
         : null;
     const months = WorkYear.calendarMonths(state, viewYear, today, lunarFor);
     renderYearAnalysis(viewYear, months);
@@ -1111,19 +1090,14 @@ WorkTimeApp.ui.createCalendar = function (options) {
       );
     const isChinese = WorkTimeApp.i18n.language.startsWith("zh-");
     const heading = (m) => {
-      const monthKey = viewYear + "-" + C.pad(m.month),
-        active = monthKey === month;
+      const monthKey = viewYear + "-" + C.pad(m.month);
       const label = isChinese
         ? chineseMonths[m.month - 1]
         : WorkTimeApp.i18n.monthName(monthKey + "-01");
       return (
-        '<h3><button data-ui="button" class="year-month-switch" type="button" data-year-month-switch="' +
-        monthKey +
-        '" aria-pressed="' +
-        active +
-        '"><span class="year-month-number">' +
+        '<h3><span class="year-month-number">' +
         esc(label) +
-        "</span></button>" +
+        "</span>" +
         statsMarkup +
         WorkTimeApp.i18n.number(
           (m.summary.workOvertime + m.summary.restOvertime) / 60,
@@ -1140,71 +1114,65 @@ WorkTimeApp.ui.createCalendar = function (options) {
         "h/d</span></span></h3>"
       );
     };
-    const yearDay = (d) => {
-      const badge = d.badge
-          ? '<span class="year-day-badge is-' +
-            d.badge +
-            '" aria-hidden="true">' +
-            esc(
-              WorkTimeApp.i18n.t(
+    const dayClasses = (d) =>
+      [
+        d.holiday && "is-holiday",
+        d.makeup && "is-makeup",
+        d.weekend && "is-weekend",
+      ]
+        .filter(Boolean)
+        .join(" ");
+    const yearDay = (d) =>
+      `<button data-ui="button" type="button" class="year-day ${dayClasses(d)}" data-year-date="${d.date}" style="--year-heat-bg:${d.color.background}" aria-label="${esc(d.description)}"${d.today ? ' aria-current="date"' : ""}></button>`;
+    // Each decorative layer shares the button grid's tracks. Animate it once
+    // per month so all visible cards move together and their buttons stay put.
+    const yearLayers = {
+      "day-surfaces": (d) => `<span class="${dayClasses(d)}"></span>`,
+      "heat-numbers": (d) =>
+        `<span${d.today ? ' class="is-today"' : ""} style="color:${d.color.text}">${d.number}</span>`,
+      "detail-numbers": (d) =>
+        `<span${d.today ? ' class="is-today"' : ""}>${d.number}</span>`,
+      "day-notes": (d) => {
+        const notes = [d.lunar, ...d.festivals].filter(Boolean);
+        if (!notes.length) return "<span></span>";
+        const ticker =
+          notes.length > 1 ? ` data-year-note-date="${d.date}"` : "";
+        return (
+          `<span class="year-day-note-slot"><span class="year-day-note"><span class="year-day-note-track"${ticker}>` +
+          notes.map((note) => `<span>${esc(note)}</span>`).join("") +
+          "</span></span></span>"
+        );
+      },
+      "day-badges": (d) =>
+        d.badge
+          ? '<span class="year-day-badge-slot">' +
+            WorkTimeApp.ui.native.createBadge({
+              className: "year-day-badge is-" + d.badge,
+              hiddenLabel: true,
+              text: WorkTimeApp.i18n.t(
                 d.badge === "rest"
                   ? "yearView.restBadge"
                   : "yearView.workBadge",
               ),
-            ) +
+            }).outerHTML +
             "</span>"
-          : "",
-        notes = [d.lunar, ...d.festivals].filter(Boolean),
-        classes = [
-          "year-day",
-          d.today ? "is-today" : "",
-          d.holiday ? "is-holiday" : "",
-          d.makeup ? "is-makeup" : "",
-          d.weekend ? "is-weekend" : "",
-        ]
-          .filter(Boolean)
-          .join(" ");
-      return (
-        '<button data-ui="button" type="button" class="' +
-        classes +
-        '" data-year-date="' +
-        d.date +
-        '" style="--year-heat-bg:' +
-        d.color.background +
-        ";--year-heat-text:" +
-        d.color.text +
-        '" aria-label="' +
-        esc(d.description) +
-        '"' +
-        (d.today ? ' aria-current="date"' : "") +
-        ">" +
-        badge +
-        '<span class="year-day-number"><span>' +
-        d.number +
-        '</span></span><span class="year-day-note" aria-hidden="true"><span class="year-day-note-track">' +
-        notes.map((note) => "<span>" + esc(note) + "</span>").join("") +
-        "</span></span></button>"
-      );
+          : "<span></span>",
     };
     updateCalendar(
       months
-        .map(
-          (m) =>
-            '<section class="year-month" data-year-month="' +
-            viewYear +
-            "-" +
-            C.pad(m.month) +
-            '" aria-label="' +
-            WorkTimeApp.i18n.month(
-              viewYear + "-" + String(m.month).padStart(2, "0"),
-            ) +
-            '">' +
+        .map((m) => {
+          const key = `${viewYear}-${C.pad(m.month)}`;
+          const blanks = '<span aria-hidden="true"></span>'.repeat(m.offset);
+          const layers = Object.entries(yearLayers).map(
+            ([className, day]) =>
+              `<div class="year-day-layer year-${className}" aria-hidden="true">${blanks}${m.days.map(day).join("")}</div>`,
+          );
+          return (
+            `<section class="year-month" data-year-month="${key}" tabindex="0" aria-label="${esc(WorkTimeApp.i18n.month(key))}"${key === month ? ' aria-current="true"' : ""}>` +
             heading(m) +
-            '<div class="year-days">' +
-            '<span aria-hidden="true"></span>'.repeat(m.offset) +
-            m.days.map(yearDay).join("") +
-            "</div></section>",
-        )
+            `<div class="year-days">${blanks}${m.days.map(yearDay).join("")}${layers.join("")}</div></section>`
+          );
+        })
         .join(""),
     );
     updateText(
@@ -1241,14 +1209,14 @@ WorkTimeApp.ui.createCalendar = function (options) {
     updateYearFooterShift();
     $("batchBar").classList.add("hidden");
     $("dayEditor").classList.remove("hidden");
-    $("batchToggle").setAttribute("aria-pressed", "false");
-    $("batchToggle").classList.remove("primary");
-    $("batchToggle").title = WorkTimeApp.i18n.t("copy.3f712eac83");
-    $("batchToggle").setAttribute(
+    const batchToggle = $("batchToggle");
+    batchToggle.setAttribute("aria-pressed", "false");
+    batchToggle.dataset.hintText = WorkTimeApp.i18n.t("copy.3f712eac83");
+    batchToggle.setAttribute(
       "aria-label",
       WorkTimeApp.i18n.t("copy.3f712eac83"),
     );
-    $("batchToggle").querySelector("use").setAttribute("href", "#ms-stacks");
+    WorkTimeApp.ui.motion.setToggleIcon(batchToggle, false, "#icon-stacks");
     renderedMode = false;
     renderedSelection = selected;
     updateNotificationEmptyState();
@@ -1315,15 +1283,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
         { unit: " d" },
       ],
     ];
-    let cards = [...$("yearAnalysisCards").children];
-    if (cards.length !== data.length) {
-      cards = data.map(([label, , , featured]) => {
-        const card = WorkTimeApp.ui.native.createMetricCard(label);
-        card.classList.toggle("average-card", !!featured);
-        return card;
-      });
-      $("yearAnalysisCards").replaceChildren(...cards);
-    }
+    const cards = $("yearAnalysisCards").children;
     data.forEach(([label, value, format], index) => {
       cards[index].querySelector(".card-label").textContent = label;
       numbers.set(cards[index].querySelector(".metric"), value, {

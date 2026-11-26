@@ -147,12 +147,7 @@ WorkTimeApp.games.register({
     const feedback = node("div", "mine-feedback", arrangement);
     const result = node("div", "mine-result", feedback);
     result.setAttribute("role", "status");
-    const resultIcon = node("span", "mine-result-icon", result);
-    resultIcon.setAttribute("aria-hidden", "true");
-    const resultCopy = node("div", "mine-result-copy", result);
-    const resultTitle = node("strong", "", resultCopy);
-    const resultText = node("span", "", resultCopy);
-    const again = button(result, "again", () => newGame(state.difficulty));
+    const resultView = WorkTimeApp.ui.mountGameResult(result, signal);
     const footer = node("div", "mine-footer", root);
     const status = node("p", "mine-status game-sr-only", footer);
     status.setAttribute("role", "status");
@@ -412,8 +407,8 @@ WorkTimeApp.games.register({
       WorkTimeApp.games.paintCounter(time.value, formatTime(currentElapsed()));
       best.label.textContent = t("bestLabel");
       wins.label.textContent = t("winsLabel");
-      best.label.title = t("bestLabel");
-      wins.label.title = t("winsLabel");
+      best.label.dataset.hintText = t("bestLabel");
+      wins.label.dataset.hintText = t("winsLabel");
       levelText.textContent = t("difficulty");
       options.forEach((option) => {
         const level = rules.levels[option.value];
@@ -426,13 +421,13 @@ WorkTimeApp.games.register({
         pauseButton,
         manualPaused ? "play-arrow" : "pause",
       );
-      pauseButton.title = t(manualPaused ? "resume" : "pause");
-      pauseButton.setAttribute("aria-label", pauseButton.title);
+      pauseButton.dataset.hintText = t(manualPaused ? "resume" : "pause");
+      pauseButton.setAttribute("aria-label", pauseButton.dataset.hintText);
       pauseButton.disabled =
         state.status !== "playing" || confirmation !== null;
       pauseButton.setAttribute("aria-pressed", String(manualPaused));
       WorkTimeApp.games.setIcon(restart, "restart-alt");
-      restart.title = t("restart");
+      restart.dataset.hintText = t("restart");
       restart.setAttribute("aria-label", t("restart"));
       restart.disabled = confirmation !== null;
       const covered = manualPaused || suspended || confirmation !== null;
@@ -516,18 +511,27 @@ WorkTimeApp.games.register({
       });
       result.hidden = !ended();
       root.dataset.record = String(newRecord);
-      WorkTimeApp.games.setIcon(
-        resultIcon,
-        state.status === "won" ? "check" : "bomb",
-      );
-      resultTitle.textContent = t(
-        state.status === "won" ? (newRecord ? "newRecord" : "won") : "lost",
-      );
-      resultText.textContent = t(
-        state.status === "won" ? "wonHint" : "lostHint",
-        { time: formatTime(currentElapsed()) },
-      );
-      again.textContent = t("again");
+      if (!result.hidden)
+        resultView.update({
+          game: "mine",
+          won: state.status === "won",
+          title: t(
+            state.status === "won" ? (newRecord ? "newRecord" : "won") : "lost",
+          ),
+          detail: t(state.status === "won" ? "wonHint" : "lostHint", {
+            time: formatTime(currentElapsed()),
+          }),
+          actions: [
+            {
+              id: "again",
+              label: t("again"),
+              run: () => {
+                if (!disposed && !suspended && !signal.aborted)
+                  newGame(state.difficulty);
+              },
+            },
+          ],
+        });
       WorkTimeApp.games.paintCounter(
         best.value,
         stats[state.difficulty].best === null
@@ -683,8 +687,7 @@ WorkTimeApp.games.register({
       else if (event.key === "ArrowUp") target -= y > 0 ? columns : 0;
       else if (event.key === "ArrowDown") target += y < rows - 1 ? columns : 0;
       else if (event.key.toLowerCase() === "f") play(target, "flag");
-      else if (event.key === "Enter" || event.key === " ")
-        play(target, "reveal");
+      else if (event.key === "Enter") play(target, "reveal");
       else return;
       event.preventDefault();
       if (target !== focusIndex) {

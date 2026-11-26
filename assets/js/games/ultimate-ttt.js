@@ -75,8 +75,6 @@ WorkTimeApp.games.register({
       svg.setAttribute("viewBox", "0 0 100 100");
       svg.setAttribute("aria-hidden", "true");
       svg.setAttribute("focusable", "false");
-      const title = document.createElementNS(svg.namespaceURI, "title");
-      title.textContent = mark;
       const shape = document.createElementNS(
         svg.namespaceURI,
         mark === "O" ? "circle" : "path",
@@ -86,7 +84,7 @@ WorkTimeApp.games.register({
         shape.setAttribute("cy", "50");
         shape.setAttribute("r", "35");
       } else shape.setAttribute("d", "M20 20 80 80M80 20 20 80");
-      svg.append(title, shape);
+      svg.append(shape);
       element.append(svg);
     }
     const root = node(container, "section", "game-ultimate-ttt game-session");
@@ -187,7 +185,7 @@ WorkTimeApp.games.register({
     const play = node(root, "div", "uttt-play");
     const stage = node(play, "div", "uttt-stage");
     const board = node(stage, "div", "uttt-board");
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const regions = Array.from({ length: 9 }, (_, r) => {
       const el = node(board, "div", "uttt-region");
       el.dataset.region = r;
@@ -278,27 +276,42 @@ WorkTimeApp.games.register({
     });
     const resultLayer = node(board, "div", "uttt-result-layer");
     resultLayer.hidden = true;
-    const resultCard = node(resultLayer, "div", "uttt-result-card");
-    resultCard.setAttribute("role", "group");
-    resultCard.setAttribute("aria-labelledby", "uttt-result-label");
-    const resultSymbol = node(resultCard, "span", "uttt-result-symbol");
-    resultSymbol.setAttribute("aria-hidden", "true");
-    const resultLabel = node(resultCard, "strong");
-    resultLabel.id = "uttt-result-label";
-    const resultActions = node(resultCard, "div", "uttt-result-actions");
-    const resultBack = button(
-      resultActions,
-      "result-back",
-      "resultBack",
-      () => {
-        resultLayer.hidden = true;
-        cells[focus].focus({ preventScroll: true });
-      },
-    );
-    button(resultActions, "result-restart", "restart", () => {
-      restartMatch();
-      cells[focus].focus({ preventScroll: true });
-    });
+    const resultView = WorkTimeApp.ui.mountGameResult(resultLayer, signal);
+    function renderOutcome(mark) {
+      const key =
+        state.status === "draw"
+          ? "resultDraw"
+          : options.mode === "local"
+            ? "resultSide"
+            : state.winner === options.human
+              ? "resultWin"
+              : "resultLoss";
+      resultView.update({
+        game: "uttt",
+        mark,
+        title: t(key, { side: mark }),
+        actions: [
+          {
+            id: "result-back",
+            label: t("resultBack"),
+            run: () => {
+              if (paused || disposed) return;
+              resultLayer.hidden = true;
+              cells[focus].focus({ preventScroll: true });
+            },
+          },
+          {
+            id: "result-restart",
+            label: t("restart"),
+            run: () => {
+              if (paused || disposed) return;
+              restartMatch();
+              cells[focus].focus({ preventScroll: true });
+            },
+          },
+        ],
+      });
+    }
     const controls = node(play, "aside", "uttt-controls");
     const objective = node(controls, "header", "uttt-objective");
     const matchTitle = node(objective, "h3"),
@@ -318,10 +331,8 @@ WorkTimeApp.games.register({
     const previewNote = node(controls, "p", "uttt-preview-note");
     const thinkingIndicator = node(controls, "div", "uttt-thinking");
     thinkingIndicator.setAttribute("aria-hidden", "true");
-    // Material Symbols Rounded Psychology, Apache-2.0; Google revision 737e3324305806514d7909874fa1818ae1808232.
-    thinkingIndicator.innerHTML = `<svg class="uttt-thinking-icon" viewBox="0 -960 960 960" focusable="false">
-      <path d="M240-252q-57-52-88.5-121.5T120-520q0-150 105-255t255-105q125 0 221.5 73.5T827-615l52 205q5 19-7 34.5T840-360h-80v120q0 33-23.5 56.5T680-160h-80v40q0 17-11.5 28.5T560-80q-17 0-28.5-11.5T520-120v-80q0-17 11.5-28.5T560-240h120v-160q0-17 11.5-28.5T720-440h68l-38-155q-23-91-98-148t-172-57q-116 0-198 81t-82 197q0 60 24.5 114t69.5 96l26 24v168q0 17-11.5 28.5T280-80q-17 0-28.5-11.5T240-120v-132Zm254-188Z" />
-      <path class="uttt-thinking-gear" d="m434-410 4 32q1 8 6.5 13t13.5 5h44q8 0 13.5-5t6.5-13l4-32q8-3 14.5-7t11.5-9l30 13q7 3 14 1t11-9l22-38q4-7 2.5-14t-7.5-12l-26-19q2-8 2-16t-2-16l26-19q6-5 7.5-12t-2.5-14l-22-38q-4-7-11-9t-14 1l-30 13q-5-5-11.5-9t-14.5-7l-4-32q-1-8-6.5-13t-13.5-5h-44q-8 0-13.5 5t-6.5 13l-4 32q-8 3-14.5 7t-11.5 9l-30-13q-7-3-14-1t-11 9l-22 38q-4 7-2.5 14t7.5 12l26 19q-2 8-2 16t2 16l-26 19q-6 5-7.5 12t2.5 14l22 38q4 7 11 9t14-1l30-13q5 5 11.5 9t14.5 7Zm46-50q-25 0-42.5-17.5T420-520q0-25 17.5-42.5T480-580q25 0 42.5 17.5T540-520q0 25-17.5 42.5T480-460Z" />
+    thinkingIndicator.innerHTML = `<svg class="uttt-thinking-icon" viewBox="0 0 256 256" focusable="false">
+      <use class="uttt-thinking-gear" href="#icon-thinking-gear" />
     </svg>`;
     const error = node(controls, "section", "uttt-engine-error");
     const errorText = node(error, "p");
@@ -438,7 +449,7 @@ WorkTimeApp.games.register({
     function showResult() {
       const mark = state.winner === 1 ? "X" : state.winner === -1 ? "O" : "=";
       resultLayer.dataset.mark = mark;
-      paintMark(resultSymbol, mark);
+      renderOutcome(mark);
       resultLayer.hidden = false;
     }
     function cancel({ keepEngine = false } = {}) {
@@ -492,7 +503,7 @@ WorkTimeApp.games.register({
       persist();
       render();
       if (!resultLayer.hidden && board.contains(document.activeElement))
-        resultBack.focus({ preventScroll: true });
+        resultView.focus("uttt", "result-back");
       if (!compat.preference().matches)
         for (const { p, mark } of erased) {
           const ghost = node(cells[p], "span", "uttt-ghost");
@@ -630,19 +641,7 @@ WorkTimeApp.games.register({
                 ? t("thinking")
                 : t("turn", { side: state.turn === 1 ? "X" : "O" });
       status.dataset.thinking = String(thinking);
-      if (!resultLayer.hidden) {
-        const resultKey =
-          state.status === "draw"
-            ? "resultDraw"
-            : options.mode === "local"
-              ? "resultSide"
-              : state.winner === options.human
-                ? "resultWin"
-                : "resultLoss";
-        resultLabel.textContent = t(resultKey, {
-          side: resultLayer.dataset.mark,
-        });
-      }
+      if (!resultLayer.hidden) renderOutcome(resultLayer.dataset.mark);
       thinkingIndicator.toggleAttribute(
         "data-active",
         thinking &&

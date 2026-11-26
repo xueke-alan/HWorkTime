@@ -161,7 +161,7 @@ WorkTimeApp.games.register({
       celebration.stop();
       syncClock();
       render();
-      cancel.focus();
+      coverView.focus("cancel");
     });
     const menuReplay = button(sessionMeta, "menu-replay", () =>
       openReplay(menuReplay),
@@ -174,7 +174,7 @@ WorkTimeApp.games.register({
     catalog.page.classList.add("sudoku-catalog");
     const categoryList = catalog.categories;
     categoryList.classList.add("sudoku-categories");
-    categoryList.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(categoryList);
     const difficulties = node("div", "sudoku-difficulties", categoryList);
     const variants = node("div", "sudoku-variants", categoryList);
     const multiVariants = node(
@@ -229,7 +229,7 @@ WorkTimeApp.games.register({
     const stage = node("div", "sudoku-stage", play);
     const field = node("div", "sudoku-field", stage);
     const board = node("div", "sudoku-board", field);
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const clueStrips = ["top", "left", "bottom", "right"].map((side) =>
       node("div", "sudoku-sky-clues sudoku-sky-" + side, field),
     );
@@ -327,40 +327,39 @@ WorkTimeApp.games.register({
     }
     const cover = node("div", "sudoku-cover", stage);
     const paintPauseCover = WorkTimeApp.games.createPauseCover(cover, signal);
-    const coverTitle = node("h3", "", cover);
-    const coverDescription = node("p", "", cover);
-    const coverActions = node("div", "sudoku-cover-actions", cover);
-    const cancel = button(coverActions, "cancel", () => {
-      confirming = false;
-      syncClock();
-      render();
-      restart.focus();
-    });
-    const accept = button(coverActions, "accept", () => {
-      if (confirming) {
-        state = fresh(current);
-        drafts[current.id] = state;
-        confirming = false;
-        manualPaused = false;
-        selected = firstCell();
-      } else if (isWon()) {
-        next();
-        return;
-      } else manualPaused = false;
-      syncClock();
-      save();
-      render();
-      cells[selected].focus();
-    });
-    const coverReplay = button(coverActions, "replay", () =>
-      openReplay(coverReplay),
-    );
-    const paintRestartCover = WorkTimeApp.games.createRestartCover({
-      cover: cover,
-      cancel: cancel,
-      accept: accept,
+    const coverView = WorkTimeApp.ui.mountSessionCover(
+      cover,
+      "sudoku",
       signal,
-    });
+      (id, source) => {
+        if (disposed || signal.aborted || suspended) return;
+        if (id === "cancel") {
+          confirming = false;
+          syncClock();
+          render();
+          restart.focus();
+          return;
+        }
+        if (id === "replay") {
+          openReplay(source);
+          return;
+        }
+        if (confirming) {
+          state = fresh(current);
+          drafts[current.id] = state;
+          confirming = false;
+          manualPaused = false;
+          selected = firstCell();
+        } else if (isWon()) {
+          next();
+          return;
+        } else manualPaused = false;
+        syncClock();
+        save();
+        render();
+        cells[selected].focus();
+      },
+    );
     const actions = node("div", "sudoku-actions", tools);
     tools.prepend(actions);
     const undo = button(actions, "undo", undoEdit);
@@ -563,7 +562,7 @@ WorkTimeApp.games.register({
           (Math.floor(branch.selected / 9) + 1) +
           ":" +
           ((branch.selected % 9) + 1);
-        b.title = description;
+        b.dataset.hintText = description;
         b.setAttribute("aria-label", description);
         const circle = node("span", "sudoku-branch-dot", b);
         circle.setAttribute("aria-hidden", "true");
@@ -622,7 +621,7 @@ WorkTimeApp.games.register({
       text.textContent = label;
       if (element.classList.contains("game-icon-button"))
         text.classList.add("game-sr-only");
-      element.title = element.classList.contains("game-icon-button")
+      element.dataset.hintText = element.classList.contains("game-icon-button")
         ? label
         : "";
       element.setAttribute("aria-label", label);
@@ -778,7 +777,7 @@ WorkTimeApp.games.register({
       render();
       if (won) {
         celebration.play(container.closest(".game-shell") || container);
-        accept.focus();
+        coverView.focus("accept");
       }
     }
     function openReplay(returnFocus) {
@@ -874,7 +873,7 @@ WorkTimeApp.games.register({
     function paintMeters() {
       const value = time(state?.elapsed || 0);
       if (timerValue.textContent !== value) timerValue.textContent = value;
-      timerValue.title = value;
+      timerValue.dataset.hintText = value;
     }
     function drawThermos() {
       buildCells();
@@ -1196,7 +1195,7 @@ WorkTimeApp.games.register({
             const label = node("span", "", null);
             label.textContent = current.skyscrapers ? clue || "" : (clue ?? "");
             if (current.skyscrapers ? !!clue : clue !== null) {
-              label.title = t(
+              label.dataset.hintText = t(
                 (current.xsums
                   ? ["xsumsTop", "xsumsLeft"]
                   : current.sandwich
@@ -1208,7 +1207,7 @@ WorkTimeApp.games.register({
                 },
               );
               label.setAttribute("role", "img");
-              label.setAttribute("aria-label", label.title);
+              label.setAttribute("aria-label", label.dataset.hintText);
             }
             return label;
           }),
@@ -1324,26 +1323,32 @@ WorkTimeApp.games.register({
       paintPauseCover(pausedCover, t("paused"));
       cover.hidden = !covered;
       field.inert = covered;
-      coverReplay.hidden = confirming || !isWon() || !hasReplay;
-      coverReplay.disabled = suspended;
-      coverReplay.textContent = t("replay");
       if (covered) {
-        coverTitle.textContent = t(
-          confirming ? "restart" : isWon() ? "won" : "paused",
-        );
-        coverDescription.textContent = confirming
-          ? t("confirm")
-          : isWon()
-            ? t("time") + " " + time(state.elapsed)
-            : "";
-        cancel.hidden = !confirming;
-        cancel.textContent = t("cancel");
-        accept.textContent = t(
-          confirming ? "reset" : isWon() ? "next" : "resume",
-        );
-        accept.disabled = suspended;
+        const actions = confirming
+          ? [{ id: "cancel", label: t("cancel") }]
+          : [];
+        actions.push({
+          id: "accept",
+          label: t(confirming ? "reset" : isWon() ? "next" : "resume"),
+          disabled: suspended,
+        });
+        if (!confirming && isWon() && hasReplay)
+          actions.push({
+            id: "replay",
+            label: t("replay"),
+            disabled: suspended,
+          });
+        coverView.display({
+          confirming,
+          title: t(confirming ? "restart" : isWon() ? "won" : "paused"),
+          detail: confirming
+            ? t("confirm")
+            : isWon()
+              ? t("time") + " " + time(state.elapsed)
+              : "",
+          actions,
+        });
       }
-      paintRestartCover(confirming);
       for (const [b, name, icon] of [
         [undo, "undo", "undo"],
         [notes, "notes", "event-note"],
@@ -1444,20 +1449,6 @@ WorkTimeApp.games.register({
           pencil = !pencil;
           render();
         }
-      }
-    });
-    listen(cover, "keydown", (event) => {
-      if (event.key === "Escape" && confirming) {
-        event.preventDefault();
-        event.stopPropagation();
-        confirming = false;
-        syncClock();
-        render();
-        restart.focus();
-      }
-      if (event.key === "Tab" && confirming) {
-        event.preventDefault();
-        (document.activeElement === cancel ? accept : cancel).focus();
       }
     });
     listen(root, "keydown", (event) => {

@@ -154,7 +154,7 @@ WorkTimeApp.ui.createNotifications = function (options) {
     const status = C.oaStaleness(state),
       notice = $("oaStaleNotice");
     notice.classList.toggle("hidden", !status || !status.stale);
-    notice.title =
+    notice.dataset.hintText =
       status && status.stale
         ? WorkTimeApp.i18n.t("copy.5910db2783") + status.date
         : "";

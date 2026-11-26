@@ -5,7 +5,6 @@ WorkTimeApp.ui.createHoldAction = function ({
   enabled = () => true,
   onShort,
   onLong,
-  keys = ["Space"],
   cancelShortAfterFeedback = false,
 }) {
   const events = WorkTimeApp.ui.createEventScope();
@@ -112,17 +111,7 @@ WorkTimeApp.ui.createHoldAction = function ({
   });
   events.listen(button, "contextmenu", (event) => event.preventDefault());
   events.listen(button, "keydown", (event) => {
-    if (keys.includes(event.code)) {
-      event.preventDefault();
-      if (!event.repeat) start();
-    }
     if (event.key === "Escape") cancel();
-  });
-  events.listen(button, "keyup", (event) => {
-    if (!keys.includes(event.code)) return;
-    event.preventDefault();
-    release();
-    button.click();
   });
   events.handler(button, "onclick", (event) => {
     event.preventDefault();

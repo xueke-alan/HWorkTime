@@ -126,6 +126,16 @@ const WorkTimeServiceApplication = (() => {
       if (next) days[date] = next;
       else delete days[date];
     }
+    function skipWrite() {
+      return {
+        changed: false,
+        applied: false,
+        persisted: true,
+        dirty,
+        error: null,
+        skipped: true,
+      };
+    }
     function commit(
       candidate,
       { atomic = false, restore = false, changes = {} } = {},
@@ -389,25 +399,55 @@ const WorkTimeServiceApplication = (() => {
         );
       },
       /** @param {WorkImportLog} log */
-      importRecords(log) {
+      async importRecords(log) {
+        await service.hydrateImports();
+        const { importKey, mergeObservation, recentImports } =
+          WorkTimeApp.domain.observations;
+        const dates = [...new Set(log.records.map((record) => record.date))];
         const candidate = {
           ...state,
           days: { ...state.days },
           imports: [...state.imports],
         };
-        for (const record of log.records)
-          if (candidate.days[record.date])
-            candidate.days[record.date] = clone(candidate.days[record.date]);
+        for (const date of dates)
+          if (candidate.days[date])
+            candidate.days[date] = clone(candidate.days[date]);
         for (const record of log.records)
           C.applyObservation(candidate, record, log.id);
+        if (
+          dates.every(
+            (date) =>
+              mergeObservation(state.days[date]?.oa, candidate.days[date].oa)
+                .code === "DUPLICATE",
+          )
+        ) {
+          const key = importKey(log);
+          const match = recentImports(state.imports).find(
+            (saved) => importKey(saved) === key,
+          );
+          if (match) {
+            const updated = C.compactOAState({
+              ...state,
+              days: {},
+              imports: [{ ...log, id: match.id }],
+            }).imports[0];
+            const saved = await commit(
+              {
+                ...state,
+                imports: state.imports.map((entry) =>
+                  entry === match ? updated : entry,
+                ),
+              },
+              { atomic: true, changes: { imports: [match.id] } },
+            );
+            return { ...saved, duplicate: saved.persisted };
+          }
+        }
         candidate.imports.push(clone(log));
         const compact = C.compactOAState({
           ...candidate,
           days: Object.fromEntries(
-            log.records.map((record) => [
-              record.date,
-              candidate.days[record.date],
-            ]),
+            dates.map((date) => [date, candidate.days[date]]),
           ),
           imports: [candidate.imports.at(-1)],
         });
@@ -415,10 +455,57 @@ const WorkTimeServiceApplication = (() => {
         candidate.imports[candidate.imports.length - 1] = compact.imports[0];
         return commit(candidate, {
           changes: {
-            days: log.records.map((record) => record.date),
+            days: dates,
             imports: [log.id],
           },
         });
+      },
+      async deduplicateImports() {
+        const canClean = () =>
+          state.imports.length >= 2 &&
+          !pending &&
+          !dirty &&
+          !persistence.loadIssue &&
+          persistence.canWrite !== false;
+        if (!canClean()) return skipWrite();
+        await service.hydrateImports();
+        if (!canClean()) return skipWrite();
+        const { recordExtras, dataExtras } = state._archive || {};
+        const extras = (module, id) =>
+          Object.keys(recordExtras?.[module]?.[id] || {}).some(
+            (key) => key !== "id" && key !== "order",
+          ) || Object.keys(dataExtras?.[module]?.[id] || {}).length > 0;
+        const redundant = WorkTimeApp.domain.observations.redundantImports(
+          state.imports,
+          (log) =>
+            !extras(A.ids.imports, log.id) &&
+            !log.records.some((_, index) =>
+              extras(A.ids.observations, JSON.stringify([log.id, index])),
+            ) &&
+            !log.sources.some((_, index) =>
+              extras(A.ids.evidence, JSON.stringify([log.id, index])),
+            ),
+        );
+        if (!redundant.size) return skipWrite();
+        const days = { ...state.days };
+        const dates = [];
+        for (const [date, day] of Object.entries(days)) {
+          const importId = redundant.get(day.oa?.importId);
+          if (!importId) continue;
+          days[date] = { ...day, oa: { ...day.oa, importId } };
+          dates.push(date);
+        }
+        return commit(
+          {
+            ...state,
+            days,
+            imports: state.imports.filter((log) => !redundant.has(log.id)),
+          },
+          {
+            atomic: true,
+            changes: { days: dates, imports: [...redundant.keys()] },
+          },
+        );
       },
       async removeImport(id) {
         await service.hydrateImports();

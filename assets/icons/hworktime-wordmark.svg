@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="385" height="50" viewBox="0 11 385 50" role="img" aria-label="HWorkTime">
+  <g fill="#193f35">
+    <!-- H: the crossbar steps up by one interval. -->
+    <path d="M8 12h10v22h8l6-7h8V12h10v48H40V36h-4l-6 7H18v17H8z"/>
+    <path d="M54 12h11l8 34 9-30h9l9 30 8-34h11l-13 48H95l-9-29-8 29H67z"/>
+    <path fill-rule="evenodd" d="M135 23c11 0 19 8 19 19s-8 19-19 19-19-8-19-19 8-19 19-19zm0 9c-6 0-9 4-9 10s3 10 9 10 9-4 9-10-3-10-9-10z"/>
+    <path d="M160 24h9v6c3-5 7-7 13-7v10h-3c-6 0-9 4-9 11v16h-10z"/>
+    <path d="M187 12h10v28l13-16h12l-15 17 16 19h-13l-13-16v16h-10z"/>
+  </g>
+  <g fill="#24775f">
+    <path d="M218 12h42v9h-16v39h-10V21h-16z"/>
+    <path d="M263 24h10v36h-10zm0-5v-8h12l-6 8z"/>
+    <path d="M281 24h9v4c3-3 6-5 11-5s9 2 11 6c3-4 7-6 12-6 9 0 13 6 13 15v22h-10V39c0-5-2-7-6-7s-7 3-7 8v20h-10V39c0-5-2-7-6-7s-7 3-7 8v20h-10z"/>
+    <path fill-rule="evenodd" d="M377 45h-25c1 5 4 8 10 8 4 0 7-1 10-4l5 6c-4 4-9 6-16 6-12 0-19-8-19-19s7-19 18-19c12 0 18 9 17 22zm-25-7h16c-1-5-3-7-8-7-4 0-7 3-8 7z"/>
+  </g>
+</svg>

@@ -13,7 +13,7 @@
 .game-jungle .jungle-setup [data-jungle-action^="difficulty-"] { width: 100%; height: auto; min-width: 0; aspect-ratio: 1; padding: .3rem; }
 .game-jungle .jungle-setup [data-jungle-action^="human-"] { min-height: 4.5rem; height: auto; padding: .6rem .3rem; flex-direction: column; gap: .35rem; }
 .jungle-start-side { font-size: .875rem; font-weight: 600; }
-.jungle-start-label { font-size: .75rem; opacity: .85; }
+.jungle-start-label { font-size: var(--ui-font-size, .75rem); opacity: .85; }
 .jungle-thinking {
   align-self: start;
   justify-self: start;
@@ -77,24 +77,24 @@
 .game-jungle .jungle-setup [data-jungle-action="start"] { min-height: 3rem; padding-inline: 1.5rem; }
 .game-jungle .jungle-choice-row [data-jungle-action="human-1"] { --game-button-edge: #b4504060; --game-button-fill: #b4504010; --game-button-hover: #ad3734; --game-button-hover-ink: #fff; color: var(--jungle-red); }
 .game-jungle .jungle-choice-row [data-jungle-action="human--1"] { --game-button-edge: #3c718d60; --game-button-fill: #3c718d10; --game-button-hover: #285b8f; --game-button-hover-ink: #fff; color: var(--jungle-blue); }
-.game-jungle .jungle-choice-row .game-button[data-jungle-action="human-1"] { background: #b4504010; border-color: #b4504060; color: var(--jungle-red); }
-.game-jungle .jungle-choice-row .game-button[data-jungle-action="human--1"] { background: #3c718d10; border-color: #3c718d60; color: var(--jungle-blue); }
-.game-jungle .jungle-choice-row .game-button[data-jungle-action="human-1"]:is(:hover, :active) { background: #ad3734; border-color: #ad3734; color: #fff; }
-.game-jungle .jungle-choice-row .game-button[data-jungle-action="human--1"]:is(:hover, :active) { background: #285b8f; border-color: #285b8f; color: #fff; }
+.game-jungle .jungle-choice-row .game-button[data-jungle-action="human-1"] { background: var(--ui-control-surface, #b4504010); border-color: var(--ui-control-border, #b4504060); color: var(--jungle-red); }
+.game-jungle .jungle-choice-row .game-button[data-jungle-action="human--1"] { background: var(--ui-control-surface, #3c718d10); border-color: var(--ui-control-border, #3c718d60); color: var(--jungle-blue); }
+.game-jungle .jungle-choice-row .game-button[data-jungle-action="human-1"]:is(:hover, :active) { background: var(--ui-selected-surface, #ad3734); border-color: var(--ui-selected-border, #ad3734); color: var(--ui-on-accent, white); }
+.game-jungle .jungle-choice-row .game-button[data-jungle-action="human--1"]:is(:hover, :active) { background: var(--ui-selected-surface, #285b8f); border-color: var(--ui-selected-border, #285b8f); color: var(--ui-on-accent, white); }
 .jungle-heading { margin: 0; font-size: 1.45rem; letter-spacing: -.02em; }
 .jungle-detail { margin: 0; color: var(--muted); line-height: 1.6; font-size: .85rem; }
 .jungle-options { border: 0; margin: 0; padding: 0; min-width: 0; }
 .jungle-label { margin-bottom: .65rem; font-weight: 600; }
 .jungle-choice-row { display: flex; gap: .65rem; }
 .game-jungle .jungle-choice-row .game-button { flex: 1; min-width: 0; justify-content: center; white-space: normal; }
-.game-jungle .jungle-choice-row .game-button[aria-pressed="true"] { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+.game-jungle .jungle-choice-row .game-button[aria-pressed="true"] { background: var(--ui-accent, var(--accent)); color: var(--ui-surface, var(--paper)); border-color: var(--ui-accent, var(--accent)); }
 .jungle-play { display: flex; justify-content: center; align-items: center; gap: 1.5rem; min-height: 100%; padding: .5rem; box-sizing: border-box; }
 .jungle-stage { flex: 0 0 auto; width: var(--jungle-size, 560px); min-width: 200px; max-width: 100%; }
 .jungle-stage { position: relative; }
-.jungle-result { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; padding: 1rem; background: #f1f4e452; border-radius: 17px; pointer-events: none; }
-.jungle-result-card { width: min(100%, 300px); padding: 1.25rem; box-sizing: border-box; border: 2px solid #c8b77d; border-radius: 28px; background: #fffaf0; color: #354d41; box-shadow: 0 8px 0 #d8d5b8, 0 18px 38px #364e3b26; text-align: center; pointer-events: auto; animation: jungle-result-pop 420ms cubic-bezier(.2,.8,.25,1.15) both; }
-.jungle-result[data-outcome="loss"] .jungle-result-card { border-color: #b1c4cd; background: #f6fafb; box-shadow: 0 8px 0 #d4dfe2, 0 18px 38px #364e3b26; }
-.jungle-result[data-outcome="draw"] .jungle-result-card { border-color: #b9c69c; }
+.jungle-result { position: absolute; inset: 0; z-index: 7; display: grid; place-items: center; padding: 1rem; background: #f1f4e452; border-radius: var(--ui-radius); pointer-events: none; }
+.jungle-result-card { width: min(100%, 300px); padding: 1.25rem; box-sizing: border-box; border: calc(2 * var(--ui-stroke)) solid var(--ui-control-border, #c8b77d); border-radius: var(--ui-radius); background: var(--ui-control-surface, #fffaf0); color: var(--ui-control-text, #354d41); box-shadow: 0 8px 0 #d8d5b8, 0 18px 38px #364e3b26; text-align: center; pointer-events: auto; animation: jungle-result-pop 420ms cubic-bezier(.2,.8,.25,1.15) both; }
+.jungle-result[data-outcome="loss"] .jungle-result-card { border-color: var(--ui-control-border, #b1c4cd); background: var(--ui-control-surface, #f6fafb); box-shadow: 0 8px 0 #d4dfe2, 0 18px 38px #364e3b26; }
+.jungle-result[data-outcome="draw"] .jungle-result-card { border-color: var(--ui-control-border, #b9c69c); }
 .jungle-result-art { width: min(100%, 160px); margin: -.5rem auto 0; }
 .jungle-result-art svg { display: block; width: 100%; height: auto; }
 .jungle-result-title { margin: 0; font-size: clamp(1.4rem, 3vw, 2rem); letter-spacing: .04em; }
@@ -114,11 +114,11 @@ html[data-reduced-motion="true"] .jungle-result-card { animation: none; }
   grid-template-rows: repeat(var(--jungle-rows), minmax(0, 1fr));
   aspect-ratio: var(--jungle-columns) / var(--jungle-rows);
   padding: 10px; box-sizing: border-box; border: 1px solid #b9b99b;
-  border-radius: 17px;
+  border-radius: var(--ui-radius);
   background: linear-gradient(135deg, #ece8d2, #c4c7a5 40%, #e6e5ce);
   box-shadow: inset 0 0 0 3px #f8f6e3, inset 0 0 0 5px #d1d0b2, 0 16px 38px #304d3417, 0 3px 8px #304d3410;
 }
-.jungle-map { position: absolute; inset: 10px; pointer-events: none; overflow: hidden; border-radius: 8px; z-index: -1; }
+.jungle-map { position: absolute; inset: 10px; pointer-events: none; overflow: hidden; border-radius: var(--ui-radius); z-index: -1; }
 .jungle-map > svg { display: block; width: 100%; height: 100%; }
 .jungle-board { --jungle-last-ink: var(--jungle-red); }
 .jungle-board { --jungle-move-ink: var(--jungle-red); }
@@ -157,7 +157,7 @@ html[data-reduced-motion="true"] .jungle-last-move :is(.jungle-trail-origin, .ju
 .jungle-cell.is-selected { z-index: 2; --jungle-cell-fill: color-mix(in srgb, var(--jungle-move-ink) 18%, transparent); }
 .jungle-cell.is-selected .jungle-piece { box-shadow: 0 0 0 2px #fff9, 0 0 0 5px var(--jungle-move-ink), 0 4px 8px #0002; }
 .jungle-cell.is-last { --jungle-cell-fill: color-mix(in srgb, var(--jungle-last-ink) 15%, transparent); }
-.jungle-cell.is-last::before { content: ""; position: absolute; inset: 3px; border: 2.5px solid var(--jungle-last-ink); border-radius: 6px; pointer-events: none; }
+.jungle-cell.is-last::before { content: ""; position: absolute; inset: 3px; border: 2.5px solid var(--jungle-last-ink); border-radius: var(--ui-radius); pointer-events: none; }
 .jungle-cell[data-last-move="from"]::before { border-style: dashed; opacity: .8; }
 .jungle-cell[data-last-move="to"] { --jungle-cell-fill: color-mix(in srgb, var(--jungle-last-ink) 24%, transparent); }
 .jungle-cell[data-last-move="to"]:not(.is-selected) .jungle-piece { box-shadow: 0 0 0 1px #fff9, 0 0 0 4px var(--jungle-last-ink), 0 4px 7px #354a3433; }
@@ -175,17 +175,17 @@ html[data-reduced-motion="true"] .jungle-last-move :is(.jungle-trail-origin, .ju
 html[data-reduced-motion="true"] .jungle-capture-indicator,
 html[data-reduced-motion="true"] .jungle-capture-indicator .jungle-bite-upper,
 html[data-reduced-motion="true"] .jungle-capture-indicator .jungle-bite-lower { animation: none; }
-.game-jungle .jungle-cell:focus-visible { outline: 3px solid var(--jungle-move-ink); outline-offset: -3px; z-index: 3; border-radius: 5px; }
+.game-jungle .jungle-cell:focus-visible { z-index: 3; border-radius: var(--ui-radius); }
 .jungle-controls { flex: 0 0 244px; display: grid; grid-template-rows: auto minmax(max-content, 1fr) auto; gap: 1.25rem; height: var(--jungle-panel-height); box-sizing: border-box; min-width: 0; padding: .5rem 0; }
 .jungle-objective { display: grid; align-content: start; gap: .4rem; overflow-wrap: anywhere; }
-.jungle-status { font-size: 1.2rem; font-weight: 650; margin: .65rem 0 0; min-height: 1.6em; color: var(--ink); }
+.jungle-status { font-size: var(--ui-font-size, 1.2rem); font-weight: 650; margin: .65rem 0 0; min-height: 1.6em; color: var(--ui-text, var(--ink)); }
 .jungle-status[data-side="red"] { color: var(--jungle-red); }
 .jungle-status[data-side="blue"] { color: var(--jungle-blue); }
 .jungle-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: .3rem; }
 .jungle-controls > .jungle-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .25rem; align-self: end; justify-self: start; width: 100%; margin: 0; }
 .jungle-controls .jungle-actions > [data-jungle-action="rotate"] { grid-area: 1 / 1; }
 .jungle-controls .jungle-actions > [data-jungle-action="rotate"] ~ .game-button { grid-row: 2; }
-.jungle-controls .jungle-actions > .game-button { width: 100%; min-width: 0; min-height: 3.6rem; height: auto; padding: .5rem .15rem; flex-direction: column; gap: .4rem; border-color: transparent; background: transparent; white-space: normal; text-align: center; justify-content: center; font-size: .75rem; line-height: 1.4; }
+.jungle-controls .jungle-actions > .game-button { width: 100%; min-width: 0; min-height: 3.6rem; height: auto; padding: .5rem .15rem; flex-direction: column; gap: .4rem; border-color: transparent; background: transparent; white-space: normal; text-align: center; justify-content: center; font-size: var(--ui-font-size, .75rem); line-height: 1.4; }
 .jungle-controls .jungle-actions .ui-icon { width: 1.3rem; height: 1.3rem; }
 .game-jungle .jungle-actions > [data-jungle-action="rotate"] { --game-button-fill: transparent; --game-button-edge: transparent; --game-button-hover: var(--game-control-hover); --game-button-hover-ink: var(--ink); margin: 0; color: var(--ink); background: transparent; border-color: transparent; }
 .game-jungle .jungle-actions > [data-jungle-action="rotate"]:is(:hover, :active):not(:disabled) { background: var(--game-button-hover); color: var(--ink); border-color: transparent; }
@@ -198,20 +198,19 @@ html[data-reduced-motion="true"] .jungle-capture-indicator .jungle-bite-lower { 
 .jungle-guide-animal { position: absolute; display: grid; place-items: center; width: 20%; aspect-ratio: 1; min-width: 0; padding: 1px; border: 1px solid color-mix(in srgb, var(--ink) 16%, var(--paper)); border-radius: 50%; background: radial-gradient(circle at 35% 25%, var(--paper), color-mix(in srgb, #d8d8b5 26%, var(--paper))); box-shadow: 0 2px 4px #334d2e10; transform: translate(-50%, -50%); }
 .jungle-guide-animal svg { display: block; width: 100%; height: 100%; }
 .jungle-strength-center { position: absolute; inset: 30%; display: grid; place-items: center; }
-.jungle-rules-info { display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); color: var(--muted); cursor: pointer; transition: color 160ms, background 160ms; }
+.jungle-rules-info { display: grid; place-items: center; width: 44px; height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: var(--ui-button-radius); background: var(--paper); color: var(--muted); cursor: pointer; transition: color 160ms, background 160ms; }
 .jungle-rules-info:hover { color: var(--accent); background: var(--game-control-hover); }
-.jungle-rules-info:focus-visible, .jungle-rules-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .jungle-rules-info .ui-icon { width: 24px; height: 24px; }
 .game-jungle[data-rules-open="true"] { overflow: hidden; }
-.jungle-rules-dialog { position: absolute; inset: 0; z-index: 8; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--paper); color: var(--ink); padding: clamp(.75rem, 3%, 2rem); box-sizing: border-box; }
+.jungle-rules-dialog { position: absolute; inset: 0; z-index: 8; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; background: var(--ui-surface, var(--paper)); color: var(--ui-text, var(--ink)); padding: clamp(.75rem, 3%, 2rem); box-sizing: border-box; }
 .jungle-rules-header { position: relative; width: min(100%, 48rem); box-sizing: border-box; justify-self: center; padding: .35rem 3rem .9rem 0; border-bottom: 1px solid var(--line); }
 .jungle-rules-title { margin: 0; font-size: 1.3rem; }
 .jungle-rules-paused { margin: .3rem 0 0; color: var(--muted); font-size: .8rem; line-height: 1.4; }
-.jungle-rules-close { position: absolute; top: .25rem; right: 0; display: grid; place-items: center; width: 36px; height: 36px; padding: 8px; background: transparent; color: var(--muted); border: 0; border-radius: 50%; cursor: pointer; }
+.jungle-rules-close { position: absolute; top: .25rem; right: 0; display: grid; place-items: center; width: 36px; height: 36px; padding: 8px; background: transparent; color: var(--muted); border: 0; border-radius: var(--ui-button-radius); cursor: pointer; }
 .jungle-rules-close:hover { background: var(--game-control-hover); color: var(--ink); }
 .jungle-rules-close .ui-icon { width: 20px; height: 20px; }
 .jungle-rules-body { min-height: 0; width: min(100%, 48rem); justify-self: center; overflow: auto; overscroll-behavior: contain; display: grid; align-content: start; padding: .4rem 0; }
-.jungle-rule-card { display: grid; grid-template-columns: 4rem minmax(0, 1fr); gap: .8rem; padding: .7rem 0; border-bottom: 1px solid var(--line); }
+.jungle-rule-card { display: grid; grid-template-columns: 4rem minmax(0, 1fr); gap: .8rem; padding: .7rem 0; border-bottom: var(--ui-stroke) solid var(--line); }
 .jungle-rule-card:last-child { border-bottom: 0; }
 .jungle-rule-card h3 { margin: 0; font-size: .9rem; line-height: 1.65; font-weight: 650; color: var(--accent); }
 .jungle-rule-card p { margin: 0; font-size: .9rem; line-height: 1.65; overflow-wrap: anywhere; white-space: pre-line; }
@@ -226,14 +225,14 @@ html[data-reduced-motion="true"] .jungle-capture-indicator .jungle-bite-lower { 
   .game-jungle .game-level-page-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
   .game-jungle .game-level-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); border-inline-end: 0; padding-inline-end: 3px; }
   .jungle-result { padding: .65rem; }
-  .jungle-result-card { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: .4rem .5rem; padding: .8rem; border-radius: 20px; }
+  .jungle-result-card { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: .4rem .5rem; padding: .8rem; border-radius: var(--ui-radius); }
   .jungle-result-art { grid-row: 1 / 3; width: 58px; margin: 0; align-self: center; }
   .jungle-result-title { font-size: 1.25rem; align-self: end; }
   .jungle-result-note { font-size: .72rem; margin: 0; }
   .jungle-result-actions { grid-column: 1 / -1; margin-top: .35rem; }
   .jungle-setup { margin: .5rem auto; padding: .75rem; gap: 1rem; }
-  .jungle-board { border-radius: 12px; padding: 7px; }
-  .jungle-map { inset: 7px; border-radius: 5px; }
+  .jungle-board { border-radius: var(--ui-radius); padding: 7px; }
+  .jungle-map { inset: 7px; border-radius: var(--ui-radius); }
   .jungle-last-move { inset: 7px; }
   .jungle-piece { inset: 10%; border-width: 1.5px; }
   .jungle-piece::after { inset: 2px; }

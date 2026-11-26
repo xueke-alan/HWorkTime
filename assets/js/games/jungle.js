@@ -161,7 +161,7 @@ WorkTimeApp.games.register({
     const play = node(root, "div", "jungle-play");
     const stage = node(play, "div", "jungle-stage");
     const board = node(stage, "div", "jungle-board");
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const map = node(board, "div", "jungle-map");
     map.setAttribute("aria-hidden", "true");
     const cells = Array.from({ length: 63 }, (_, index) => {
@@ -224,14 +224,10 @@ WorkTimeApp.games.register({
     result.hidden = true;
     result.setAttribute("role", "status");
     result.setAttribute("aria-live", "polite");
-    const resultCard = node(result, "div", "jungle-result-card");
-    const resultArt = node(resultCard, "div", "jungle-result-art");
-    resultArt.setAttribute("aria-hidden", "true");
-    const resultTitle = node(resultCard, "h3", "jungle-result-title");
-    const resultNote = node(resultCard, "p", "jungle-result-note");
-    const resultActions = node(resultCard, "div", "jungle-result-actions");
+    const resultView = WorkTimeApp.ui.mountGameResult(result, signal);
     let dismissedResult = "",
-      resultArtKind = "";
+      resultArtKind = "",
+      resultArtwork = "";
     const controls = node(play, "aside", "jungle-controls");
     const objective = node(controls, "header", "jungle-objective");
     const matchTitle = node(objective, "h3", "jungle-heading");
@@ -240,10 +236,8 @@ WorkTimeApp.games.register({
     status.setAttribute("role", "status");
     const thinkingIndicator = node(objective, "div", "jungle-thinking");
     thinkingIndicator.setAttribute("aria-hidden", "true");
-    // Material Symbols Rounded Psychology, Apache-2.0; Google revision 737e3324305806514d7909874fa1818ae1808232.
-    thinkingIndicator.innerHTML = `<svg class="jungle-thinking-icon" viewBox="0 -960 960 960" focusable="false">
-      <path d="M240-252q-57-52-88.5-121.5T120-520q0-150 105-255t255-105q125 0 221.5 73.5T827-615l52 205q5 19-7 34.5T840-360h-80v120q0 33-23.5 56.5T680-160h-80v40q0 17-11.5 28.5T560-80q-17 0-28.5-11.5T520-120v-80q0-17 11.5-28.5T560-240h120v-160q0-17 11.5-28.5T720-440h68l-38-155q-23-91-98-148t-172-57q-116 0-198 81t-82 197q0 60 24.5 114t69.5 96l26 24v168q0 17-11.5 28.5T280-80q-17 0-28.5-11.5T240-120v-132Zm254-188Z" />
-      <path class="jungle-thinking-gear" d="m434-410 4 32q1 8 6.5 13t13.5 5h44q8 0 13.5-5t6.5-13l4-32q8-3 14.5-7t11.5-9l30 13q7 3 14 1t11-9l22-38q4-7 2.5-14t-7.5-12l-26-19q2-8 2-16t-2-16l26-19q6-5 7.5-12t-2.5-14l-22-38q-4-7-11-9t-14 1l-30 13q-5-5-11.5-9t-14.5-7l-4-32q-1-8-6.5-13t-13.5-5h-44q-8 0-13.5 5t-6.5 13l-4 32q-8 3-14.5 7t-11.5 9l-30-13q-7-3-14-1t-11 9l-22 38q-4 7-2.5 14t7.5 12l26 19q-2 8-2 16t2 16l-26 19q-6 5-7.5 12t2.5 14l22 38q4 7 11 9t14-1l30-13q5 5 11.5 9t14.5 7Zm46-50q-25 0-42.5-17.5T420-520q0-25 17.5-42.5T480-580q25 0 42.5 17.5T540-520q0 25-17.5 42.5T480-460Z" />
+    thinkingIndicator.innerHTML = `<svg class="jungle-thinking-icon" viewBox="0 0 256 256" focusable="false">
+      <use class="jungle-thinking-gear" href="#icon-thinking-gear" />
     </svg>`;
     const engineFailure = node(controls, "div", "jungle-engine-error");
     const engineFailureText = node(engineFailure, "p", "jungle-detail");
@@ -308,11 +302,13 @@ WorkTimeApp.games.register({
       render();
     });
     actions.insertBefore(settings, undo);
-    button(resultActions, "result-review", "reviewBoard", () => {
+    function reviewResult() {
+      if (paused || signal.aborted) return;
       dismissedResult = resultKey();
       render();
-    });
-    button(resultActions, "result-restart", "playAgain", () => {
+    }
+    function restartResult() {
+      if (paused || signal.aborted) return;
       matchSave.matchSession = archive.newMatchSession();
       cancel();
       state = rules.create();
@@ -320,7 +316,7 @@ WorkTimeApp.games.register({
       persist();
       render();
       scheduleAI();
-    });
+    }
     const prompt = G.createRestartPrompt({
       host: stage,
       signal,
@@ -348,7 +344,7 @@ WorkTimeApp.games.register({
     const legend = node(controls, "div", "jungle-guide");
     const guideHeading = node(legend, "p", "jungle-guide-heading");
     const strength = node(legend, "div", "jungle-strength");
-    strength.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(strength);
     const links = node(strength, "div", "jungle-strength-links");
     links.setAttribute("aria-hidden", "true");
     const ringPoint = (degrees) => {
@@ -902,7 +898,7 @@ WorkTimeApp.games.register({
         (options.mode === "ai" && options.human === -1 ? 1 : 0);
       guideHeading.textContent = t("strength");
       strength.setAttribute("aria-label", t("strength"));
-      rulesButton.title = t("rulesTitle");
+      rulesButton.dataset.hintText = t("rulesTitle");
       rulesButton.setAttribute("aria-label", t("rulesTitle"));
       rulesHeading.textContent = t("rulesTitle");
       rulesSubtitle.textContent = t("rulesPaused");
@@ -913,8 +909,8 @@ WorkTimeApp.games.register({
         description.textContent = t("rule_" + key);
       });
       guideAnimals.forEach((el, i) => {
-        el.title = t("animal" + (8 - i));
-        el.setAttribute("aria-label", el.title);
+        el.dataset.hintText = t("animal" + (8 - i));
+        el.setAttribute("aria-label", el.dataset.hintText);
         el.setAttribute("role", "img");
       });
       error.hidden = !failed || rulesOpen;
@@ -1083,8 +1079,7 @@ WorkTimeApp.games.register({
             ? "win"
             : "loss";
       result.dataset.outcome = kind;
-      resultTitle.textContent = t("result" + kind);
-      resultNote.textContent = t("resultNote" + kind);
+
       const lastTo = state.path.at(-1)?.[1];
       const enteringAnimal =
         state.status === "won" && rules.dens.includes(lastTo)
@@ -1093,20 +1088,31 @@ WorkTimeApp.games.register({
       const animal =
         enteringAnimal || (kind === "win" ? 7 : kind === "loss" ? 8 : 3);
       const artKey = kind + ":" + animal;
-      if (artKey === resultArtKind) return;
-      resultArtKind = artKey;
-      const portrait = art.portraits[animal]
-        .replace(/^<svg[^>]*>/, "")
-        .replace(/<\/svg>$/, "");
-      const stars =
-        '<path d="m25 22 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1Zm110 12 2 5 6 1-4 4 1 5-5-3-5 3 1-5-4-4 6-1Z" fill="#e7b952"/>';
-      const backdrop =
-        kind === "win"
-          ? `<circle cx="80" cy="65" r="49" fill="#f4db8e"/><path d="m45 92-7 35 23-8 15 14 4-38m0 0 4 38 15-14 23 8-7-35" fill="#df916d"/>${stars}`
-          : kind === "loss"
-            ? '<circle cx="80" cy="65" r="49" fill="#dce9ee"/><path d="M34 110q-12 0-12-9t12-9q3-13 16-11 10 0 13 13 11-3 12 7t-13 9Z" fill="#f7faf9"/><path d="m130 39 5 7m-2 9 7 1" stroke="#8badb9" stroke-width="3" stroke-linecap="round"/>'
-            : `<circle cx="80" cy="65" r="49" fill="#e3eacb"/>${stars}`;
-      resultArt.innerHTML = `<svg viewBox="0 0 160 140" focusable="false">${backdrop}<g transform="translate(39 24) scale(.82)">${portrait}</g>${kind === "win" ? '<path d="m61 25 3-14 16 8 16-8 3 14Z" fill="#efbd43" stroke="#b78c31" stroke-width="1.5"/>' : kind === "loss" ? '<path d="m119 75 4-8 4 8q0 7-4 7t-4-7Z" fill="#88b8cb"/>' : ""}</svg>`;
+      if (artKey !== resultArtKind) {
+        resultArtKind = artKey;
+        const portrait = art.portraits[animal]
+          .replace(/^<svg[^>]*>/, "")
+          .replace(/<\/svg>$/, "");
+        const stars =
+          '<path d="m25 22 3 7 8 1-6 5 2 8-7-4-7 4 2-8-6-5 8-1Zm110 12 2 5 6 1-4 4 1 5-5-3-5 3 1-5-4-4 6-1Z" fill="#e7b952"/>';
+        const backdrop =
+          kind === "win"
+            ? `<circle cx="80" cy="65" r="49" fill="#f4db8e"/><path d="m45 92-7 35 23-8 15 14 4-38m0 0 4 38 15-14 23 8-7-35" fill="#df916d"/>${stars}`
+            : kind === "loss"
+              ? '<circle cx="80" cy="65" r="49" fill="#dce9ee"/><path d="M34 110q-12 0-12-9t12-9q3-13 16-11 10 0 13 13 11-3 12 7t-13 9Z" fill="#f7faf9"/><path d="m130 39 5 7m-2 9 7 1" stroke="#8badb9" stroke-width="3" stroke-linecap="round"/>'
+              : `<circle cx="80" cy="65" r="49" fill="#e3eacb"/>${stars}`;
+        resultArtwork = `<svg viewBox="0 0 160 140" focusable="false">${backdrop}<g transform="translate(39 24) scale(.82)">${portrait}</g>${kind === "win" ? '<path d="m61 25 3-14 16 8 16-8 3 14Z" fill="#efbd43" stroke="#b78c31" stroke-width="1.5"/>' : kind === "loss" ? '<path d="m119 75 4-8 4 8q0 7-4 7t-4-7Z" fill="#88b8cb"/>' : ""}</svg>`;
+      }
+      resultView.update({
+        game: "jungle",
+        title: t("result" + kind),
+        detail: t("resultNote" + kind),
+        artwork: resultArtwork,
+        actions: [
+          { id: "result-review", label: t("reviewBoard"), run: reviewResult },
+          { id: "result-restart", label: t("playAgain"), run: restartResult },
+        ],
+      });
     }
     document.addEventListener("worktime:languagechange", render, { signal });
     document.addEventListener(

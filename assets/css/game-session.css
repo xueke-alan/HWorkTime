@@ -19,7 +19,7 @@
   min-height: 4.1rem;
   padding: 0.5rem;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--ui-radius);
   background: var(--theme-surface-subtle, #f3f8f5);
   text-align: center;
 }
@@ -53,10 +53,10 @@
   height: var(--control-height);
   margin: 0;
   padding: 0 0.8rem;
-  border: 1px solid var(--game-button-edge, var(--game-control-border));
-  border-radius: var(--control-radius);
+  border: var(--ui-stroke) solid var(--game-button-edge, var(--game-control-border));
+  border-radius: var(--ui-button-radius);
   background: var(--game-button-fill, var(--game-control));
-  color: var(--ink);
+  color: var(--ui-text, var(--ink));
   box-shadow: none;
   font: 500 var(--text-small) var(--font-ui);
   line-height: 1.3;
@@ -78,19 +78,19 @@
   --game-button-fill: var(--accent);
   --game-button-hover: var(--theme-accent-dark, #116d59);
   --game-button-hover-ink: #fff;
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
+  background: var(--ui-accent, var(--accent));
+  color: var(--ui-on-accent, white);
+  border-color: var(--ui-accent, var(--accent));
 }
 .game-button[aria-pressed="true"]:hover:not(:disabled),
 .game-button[aria-pressed="true"]:active:not(:disabled) {
   background: var(--theme-accent-dark, #116d59);
-  color: #fff;
+  color: var(--ui-on-accent, white);
 }
 .game-icon-button {
   width: var(--control-height);
   padding: 0;
-  font-size: 1.2rem;
+  font-size: var(--ui-font-size, 1.2rem);
 }
 .game-icon-button .ui-icon {
   width: var(--icon-size);
@@ -105,7 +105,7 @@
   flex: none;
   overflow: auto;
   width: 100%;
-  font-size: var(--text-small);
+  font-size: var(--ui-font-size, var(--text-small));
 }
 .game-notice p {
   margin: 0;
@@ -134,7 +134,7 @@
   overflow: auto;
   text-align: center;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--ui-radius);
   background: var(--theme-surface-paper, #f8fbf9);
 }
 .game-help-screen[hidden] {
@@ -155,15 +155,15 @@
 @media (hover: hover) {
   .game-session .game-button:hover:not(:disabled) {
     background: var(--game-button-hover, var(--game-control-hover));
-    color: var(--game-button-hover-ink, var(--ink));
+    color: var(--game-button-hover-ink, var(--ui-text, var(--ink)));
     border-color: var(--game-button-edge, var(--game-control-border));
   }
 }
 .game-session .game-button:active:not(:disabled) {
-  color: var(--game-button-hover-ink, var(--ink));
+  color: var(--game-button-hover-ink, var(--ui-text, var(--ink)));
   background: var(
     --game-button-hover,
-    color-mix(in srgb, var(--accent) 16%, white)
+    color-mix(in srgb, var(--ui-accent, var(--accent)) 16%, white)
   );
   border-color: var(--game-button-edge, var(--game-control-border));
 }
@@ -251,10 +251,13 @@ body .game-session .game-select-options > .game-button:is(:hover, :active) {
   min-height: 44px;
   padding: 0.4rem;
   text-align: center;
-  font-size: 0.875rem;
+  font-size: var(--ui-font-size, 0.875rem);
   line-height: 1.4;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+.game-level-categories > .game-button {
+  border-radius: var(--ui-radius);
 }
 .game-level-grid {
   display: grid;
@@ -272,21 +275,22 @@ body .game-session .game-select-options > .game-button:is(:hover, :active) {
   aspect-ratio: 1;
   padding: 0;
   text-align: center;
-  font: 600 1.1rem / 1 var(--font-numeric);
+  font: 600 var(--ui-font-size, 1.1rem) / 1 var(--font-numeric);
 }
 .game-button.game-level-card {
   position: relative;
+  border-radius: var(--ui-radius);
   font-variant-numeric: tabular-nums;
 }
 .game-button.game-level-card[aria-current] {
   --game-button-edge: var(--accent);
   --game-button-fill: var(--accent-light);
-  color: var(--accent);
+  color: var(--ui-accent, var(--accent));
 }
 .game-button.game-level-card[data-level-status="locked"] {
   opacity: 1;
   --game-button-fill: var(--theme-surface-subtle, var(--paper));
-  color: var(--muted);
+  color: var(--ui-muted, var(--muted));
 }
 .game-level-badge {
   position: absolute;
@@ -300,9 +304,9 @@ body .game-session .game-select-options > .game-button:is(:hover, :active) {
   min-width: 24px;
   height: 24px;
   padding: 0;
-  border-radius: 50%;
-  background: var(--theme-surface-subtle, var(--paper));
-  color: var(--ink);
+  border-radius: var(--ui-radius);
+  background: var(--theme-surface-subtle, var(--ui-surface, var(--paper)));
+  color: var(--ui-text, var(--ink));
   line-height: 1;
   pointer-events: none;
 }
@@ -315,21 +319,21 @@ body .game-session .game-select-options > .game-button:is(:hover, :active) {
   height: 17px;
 }
 .game-level-badge:is([data-state="complete"], [data-state="stars"]) {
-  background: #e6f4eb;
-  color: #215c39;
+  background: var(--ui-control-surface, #e6f4eb);
+  color: var(--ui-control-text, #215c39);
 }
 .game-level-badge[data-state="draft"] {
-  background: #e8effa;
-  color: #254d82;
+  background: var(--ui-control-surface, #e8effa);
+  color: var(--ui-control-text, #254d82);
 }
 .game-level-badge[data-state="locked"] {
-  color: var(--muted);
+  color: var(--ui-muted, var(--muted));
 }
 .game-level-badge[data-state="stars"] {
   display: grid;
   grid-template-columns: repeat(2, 10px);
   align-content: center;
-  font: 700 10px / 10px var(--font-ui);
+  font: 700 var(--ui-font-size, 10px) / 10px var(--font-ui);
   text-align: center;
 }
 .game-level-badge[data-state="stars"] > span { width: 10px; }
@@ -339,8 +343,8 @@ body .game-session .game-select-options > .game-button:is(:hover, :active) {
   justify-self: center;
 }
 .game-level-badge[data-state="current"] {
-  background: var(--accent-light);
-  color: var(--accent);
+  background: var(--ui-highlight, var(--accent-light));
+  color: var(--ui-accent, var(--accent));
 }
 .game-level-card[aria-current] .game-level-badge:is([data-state="current"], [data-state="draft"])::before {
   content: "";
@@ -374,14 +378,14 @@ body .game-session .game-select-options > .game-button:is(:hover, :active) {
   }
   .game-session .game-level-categories .game-button {
     padding-inline: 0.2rem;
-    font-size: 0.75rem;
+    font-size: var(--ui-font-size, 0.75rem);
   }
   .game-level-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.35rem;
   }
   .game-level-grid .game-button {
-    font-size: 0.95rem;
+    font-size: var(--ui-font-size, 0.95rem);
   }
 }
 .game-celebration {
@@ -510,10 +514,10 @@ body .game-session .game-restart-actions > .game-button {
   height: auto;
   margin: 0;
   padding: 0.65rem 0.4rem;
-  border: 1px solid var(--game-control-border);
-  border-radius: var(--control-radius);
+  border: var(--ui-stroke) solid var(--game-control-border);
+  border-radius: var(--ui-button-radius);
   background: var(--game-control);
-  color: var(--ink);
+  color: var(--ui-text, var(--ink));
   font: 500 var(--text-small) / 1.4 var(--font-ui);
   white-space: normal;
   aspect-ratio: auto;
@@ -553,7 +557,7 @@ body .game-session .game-restart-actions > .game-button > .ui-icon { display: no
 .aero-die-face {
   position: absolute;
   inset: 0;
-  border-radius: 16%;
+  border-radius: var(--ui-radius);
   background: linear-gradient(148deg, #fffdf7 12%, #f2efe7 62%, #e2ddd0);
   box-shadow: inset 0 0 0 .75cqw #ffffff76, inset 0 -1.5cqw 2.5cqw #756b5326;
   backface-visibility: hidden;
@@ -564,7 +568,7 @@ body .game-session .game-restart-actions > .game-button > .ui-icon { display: no
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 11%;
+  border-radius: var(--ui-radius);
   background: #d3cec0;
   transform: translateZ(-3.5cqw) scale(.9);
   backface-visibility: hidden;

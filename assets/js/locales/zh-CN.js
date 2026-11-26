@@ -1,6 +1,9 @@
 "use strict";
 WorkTimeApp.data.locales ||= {};
 WorkTimeApp.data.locales["zh-CN"] = {
+  "workspace.menu": "工作区菜单",
+  "workspace.views": "视图",
+  "workspace.tools": "工具",
   "copy.91f8def561": "备份内容必须为文本。",
   "copy.6247442ea7": "备份超过 ",
   "copy.f75f226ec0": "MB 大小限制。",
@@ -145,9 +148,9 @@ WorkTimeApp.data.locales["zh-CN"] = {
   "copy.98339ead6f": " 天有效记录",
   "copy.0cee9f5104": "未识别日期",
   "copy.fb7fd1001d":
-    '" aria-label="查看导入详情" title="查看详情"><svg class="ui-icon" aria-hidden="true"><use href="#ms-info"/></svg></button><button type="button" class="ui-button danger" data-delete-import="',
+    '" aria-label="查看导入详情" data-hint-text="查看详情"><svg class="ui-icon" aria-hidden="true"><use href="#icon-info"/></svg></button><button type="button" class="ui-button danger" data-delete-import="',
   "copy.74a12ef5dc":
-    '" aria-label="删除导入批次" title="删除批次"><svg class="ui-icon" aria-hidden="true"><use href="#ms-delete-outline"/></svg></button></div></div><div class="import-history-meta">',
+    '" aria-label="删除导入批次" data-hint-text="删除批次"><svg class="ui-icon" aria-hidden="true"><use href="#icon-delete-outline"/></svg></button></div></div><div class="import-history-meta">',
   "copy.81a9b617ab": " 条记录</div></article>",
   "copy.d6971aab23": '<div class="import-history-empty">暂无导入历史</div>',
   "copy.b336d19181":
@@ -160,9 +163,9 @@ WorkTimeApp.data.locales["zh-CN"] = {
   "copy.d7f42a424c":
     '<div class="import-detail-raw-field"><textarea id="importDetailRawText" class="import-detail-raw-text" readonly aria-label="核心打卡文本" placeholder="没有可识别的核心打卡文本" spellcheck="false">',
   "copy.5c7f465892":
-    '<button type="button" class="ui-button icon-only" aria-label="上一条导入记录" title="上一条" data-detail-step="-1"',
+    '<button type="button" class="ui-button icon-only" aria-label="上一条导入记录" data-hint-text="上一条" data-detail-step="-1"',
   "copy.80bab87117":
-    '</span><button type="button" class="ui-button icon-only" aria-label="下一条导入记录" title="下一条" data-detail-step="1"',
+    '</span><button type="button" class="ui-button icon-only" aria-label="下一条导入记录" data-hint-text="下一条" data-detail-step="1"',
   "copy.184ad4d4ad": "未找到对应记录，请查看导入历史",
   "copy.617fe2d78b": "请使用 http 或 https 链接。",
   "copy.b0228f5569": "删除 ",
@@ -206,12 +209,15 @@ WorkTimeApp.data.locales["zh-CN"] = {
   "copy.1d2c74f862": " 起持续生效，覆盖此后全部作息。",
   "copy.3325b59fdd": "请填写完整且有效的日期范围。",
   "copy.4e08bf2cca": "休息时段请使用 HH:MM，结束必须晚于开始。",
+  "settings.breakStart": "休息开始时间",
   "copy.4beeb6588b":
     '<input class="breakstart clock-input" type="text" maxlength="5" autocomplete="off" inputmode="numeric" placeholder="12:00" aria-label="休息开始时间" value="',
+  "settings.breakEnd": "休息结束时间",
   "copy.b32b652361":
     '"><input class="breakend clock-input" type="text" maxlength="5" autocomplete="off" inputmode="numeric" placeholder="13:00" aria-label="休息结束时间" value="',
+  "settings.clearBreak": "清空休息时段",
   "copy.ab28b7393b":
-    '"><button class="ui-button icon-only" type="button" aria-label="清空休息时段" title="清空休息时段">',
+    '"><button class="ui-button icon-only" type="button" aria-label="清空休息时段" data-hint-text="清空休息时段">',
   "copy.b5b41e6754": "正在编辑 ",
   "copy.47cbad548a": " 的作息",
   "copy.5db8ce7daa": " · 未应用",
@@ -245,7 +251,8 @@ WorkTimeApp.data.locales["zh-CN"] = {
   "copy.345391343a": "导入尚未保存，原模板已保留，可重试。",
   "copy.6e4508239f": "打卡模板已导入",
   "copy.ac35793d79": '" aria-label="编辑模板 ',
-  "copy.293224a98b": '" title="编辑模板">',
+  "settings.editTemplate": "编辑模板",
+  "copy.293224a98b": '" data-hint-text="编辑模板">',
   "copy.7cf04378a1": "编辑时间模板",
   "copy.84c6ec48f3": '<span class="template-empty">暂无模板</span>',
   "copy.1177ecca4d": "复制失败，请全选后手动复制。",
@@ -261,7 +268,7 @@ WorkTimeApp.data.locales["zh-CN"] = {
   "copy.3a2fd0b35a": "；入职日期：",
   "copy.85b0268523": "发薪日",
   "copy.b3d0a0f476":
-    '<div class="schedule-change-tag" title="作息较前一天发生变化">',
+    '<div class="schedule-change-tag" data-hint-text="作息较前一天发生变化">',
   "copy.7b74743705": "工时变更",
   "copy.e9fa7a829a": " · 手动",
   "copy.591a8a36f9": " 工时变更",
@@ -288,17 +295,17 @@ WorkTimeApp.data.locales["zh-CN"] = {
   "copy.7c8d65e331": "待填写",
   "copy.a73dd6d86d": " – 待更新",
   "copy.6439fe575a":
-    '<span class="record-source-dot manual" title="手动填写" aria-hidden="true"></span>',
+    '<span class="record-source-dot manual" data-hint-text="手动填写" aria-hidden="true"></span>',
   "copy.932f850a42":
-    '<span class="record-source-dot oa secondary" title="同时保留 OA 导入数据" aria-hidden="true"></span>',
+    '<span class="record-source-dot oa secondary" data-hint-text="同时保留 OA 导入数据" aria-hidden="true"></span>',
   "copy.84059d0fb3":
-    '<span class="record-source-dot oa" title="OA 导入" aria-hidden="true"></span>',
+    '<span class="record-source-dot oa" data-hint-text="OA 导入" aria-hidden="true"></span>',
   "copy.5322471ae6": " 当天加班 ",
   "copy.6d645904e4": " 当天工时 ",
   "copy.dc516fa88c": " 日均加班 ",
   "copy.732f79dc36": " 全天请假",
   "copy.1ee7ecb783": " 请假 ",
-  "copy.886690f618": '" title="当天加班时长">',
+  "copy.886690f618": '" data-hint-text="当天加班时长">',
   "copy.1e6a453ebc": "本月截至当日：累计工作日加班 ÷ 已完成记录的折算出勤",
   "copy.809f2ba84f": "；打卡未完成，暂不显示平均加班",
   "copy.287a1d1034": "未填写",
@@ -324,15 +331,16 @@ WorkTimeApp.data.locales["zh-CN"] = {
   "copy.d31313dabc": "当前已选择 ",
   "copy.ae802cc1be": '月"><h3><span class="year-month-number">',
   "copy.2b3cbb76bd":
-    '</span><span class="year-month-stats"><span title="总加班时长（工作日与休息日合计）" aria-label="总加班时长">',
+    '</span><span class="year-month-stats"><span data-hint-text="总加班时长（工作日与休息日合计）" aria-label="总加班时长">',
   "copy.42b92eadd3":
-    'h</span><span title="平均加班工时（工作日加班 ÷ 折算出勤）" aria-label="平均加班工时">',
+    'h</span><span data-hint-text="平均加班工时（工作日加班 ÷ 折算出勤）" aria-label="平均加班工时">',
   "copy.6d332ee4da": "年 · ",
   "copy.06ce537cae": " 天完整记录",
   "copy.cd4a0376cd": "取消计划",
   "copy.0bfc077a0c": " · 周",
-  "copy.dbdd3a728e": '<span class="schedule-work" title="排班时间">',
-  "copy.55debd2786": '</span><span class="schedule-break" title="休息时间">',
+  "copy.dbdd3a728e": '<span class="schedule-work" data-hint-text="排班时间">',
+  "copy.55debd2786":
+    '</span><span class="schedule-break" data-hint-text="休息时间">',
   "copy.f311d6abc7": "时间请填写为 HH:MM，例如 08:30。",
   "copy.dfb8e4501a": "请假时长必须在 0 与每日标准工时之间。",
   "copy.c6601afb83": "时间异常：下班时间 ",
@@ -344,9 +352,10 @@ WorkTimeApp.data.locales["zh-CN"] = {
   "copy.feb728221b": "全天请假 <strong>",
   "copy.47fb6325b4": "</strong> · 出勤 <strong>0 天</strong>",
   "copy.f8d57c4f0d": "打卡未完成，暂不计入平均加班",
-  "copy.82aa6b450e": '<span title="有效工时">工时 <strong>',
+  "copy.82aa6b450e": '<span data-hint-text="有效工时">工时 <strong>',
   "copy.3df6853f05": "</strong></span><span>加班 <strong>",
-  "copy.40f72eec32": '</strong></span><span title="折算出勤">出勤 <strong>',
+  "copy.40f72eec32":
+    '</strong></span><span data-hint-text="折算出勤">出勤 <strong>',
   "copy.1b7f2b55c6": " 天</strong></span>",
   "copy.50aa76c3d6":
     '入职第 <strong id="employmentDays" data-number-motion></strong> 天',
@@ -669,7 +678,7 @@ WorkTimeApp.data.locales["zh-CN"] = {
   "copy.370463779d": "工时汇总",
   "copy.ac05786a10": "月度加班要求",
   "copy.8e91ca9989": "导入 OA 记录",
-  "copy.4c7c6082dd": "粘贴OA网站的考勤信息",
+  "copy.4c7c6082dd": "请粘贴从 OA 系统复制的考勤记录",
   "copy.6ca0a85066": "粘贴剪贴板中的OA考勤信息",
   "copy.de7fb7d3cf": "粘贴",
   "copy.17ee70762b": "OA系统",

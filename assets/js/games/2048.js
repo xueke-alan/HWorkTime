@@ -186,7 +186,7 @@ WorkTimeApp.games.register({
     });
     const board = node("div", "puzzle-board", root);
     board.tabIndex = 0;
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const grid = node("div", "puzzle-grid", board);
     grid.setAttribute("role", "table");
     const cells = Array.from({ length: 4 }, () => {
@@ -202,27 +202,21 @@ WorkTimeApp.games.register({
     layer.setAttribute("aria-hidden", "true");
     const overlay = node("div", "puzzle-overlay", board);
     board.append(confirmation);
-    const endTitle = node("h3", "", overlay);
-    const endHint = node("p", "", overlay);
-    const endActions = node("div", "puzzle-actions", overlay);
-    const keepGoing = button(endActions, "continue", () => {
-      if (confirming) return;
+    const resultView = WorkTimeApp.ui.mountGameResult(overlay, signal);
+    function continueGame() {
+      if (confirming || paused || disposed || signal.aborted) return;
       state.continued = true;
       save();
       render();
       board.focus();
-    });
-    keepGoing.append(WorkTimeApp.games.createIcon("play-arrow"));
-    const keepGoingLabel = node("span", "button-label", keepGoing);
-    const retry = button(endActions, "retry", () => {
-      if (confirming) return;
+    }
+    function retryGame() {
+      if (confirming || paused || disposed || signal.aborted) return;
       confirmationAction = "restart";
       confirming = true;
       render();
       cancel.focus();
-    });
-    retry.append(WorkTimeApp.games.createIcon("restart-alt"));
-    const retryLabel = node("span", "button-label", retry);
+    }
     const status = node("p", "puzzle-status game-sr-only", root);
     status.setAttribute("role", "status");
     const notice = node("div", "game-notice", root);
@@ -275,7 +269,7 @@ WorkTimeApp.games.register({
       }
       root.dataset.mode = demonstrating ? "ai" : "manual";
       WorkTimeApp.games.setIcon(ai, demonstrating ? "stop-circle" : "robot-2");
-      ai.title = t(demonstrating ? "aiStop" : "ai");
+      ai.dataset.hintText = t(demonstrating ? "aiStop" : "ai");
       ai.setAttribute("aria-label", t(demonstrating ? "aiStop" : "ai"));
       ai.setAttribute("aria-pressed", String(demonstrating));
       ai.disabled = confirming;
@@ -284,10 +278,10 @@ WorkTimeApp.games.register({
         rules.lost(state.board) ? "aiFinished" : "aiRunning",
       );
       WorkTimeApp.games.setIcon(undo, "undo");
-      undo.title = t("undo");
+      undo.dataset.hintText = t("undo");
       undo.setAttribute("aria-label", t("undo"));
       WorkTimeApp.games.setIcon(restart, "restart-alt");
-      restart.title = t("restart");
+      restart.dataset.hintText = t("restart");
       restart.setAttribute("aria-label", t("restart"));
       const aiConfirmation = confirming && confirmationAction !== "restart";
       confirmation.classList.toggle("puzzle-ai-confirm", aiConfirmation);
@@ -316,15 +310,18 @@ WorkTimeApp.games.register({
         lost = rules.lost(state.board);
       overlay.hidden = demonstrating || moving || confirming || (!won && !lost);
       overlay.dataset.result = won ? "won" : "lost";
-      endTitle.textContent = t(won ? "won" : "lost");
-      endHint.textContent = t(
-        demonstrating ? "aiFinished" : won ? "wonHint" : "lostHint",
-      );
-      keepGoingLabel.textContent = t("continue");
-      keepGoing.hidden = !won;
-      retryLabel.textContent = t("restart");
-      retry.disabled = false;
-      keepGoing.disabled = false;
+      if (!overlay.hidden) {
+        const actions = won
+          ? [{ id: "continue", label: t("continue"), run: continueGame }]
+          : [];
+        actions.push({ id: "retry", label: t("restart"), run: retryGame });
+        resultView.update({
+          game: "puzzle",
+          title: t(won ? "won" : "lost"),
+          detail: t(won ? "wonHint" : "lostHint"),
+          actions,
+        });
+      }
       status.textContent =
         t(won ? "won" : lost ? "lost" : "playing") +
         " · " +

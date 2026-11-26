@@ -90,7 +90,7 @@
   height: var(--snake-board-height, 360px);
   max-width: 100%;
   border: 1px solid var(--game-edge);
-  border-radius: 14px;
+  border-radius: var(--ui-radius);
   overflow: hidden;
   background: var(--game-board);
   touch-action: none;

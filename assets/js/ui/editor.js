@@ -108,7 +108,7 @@ WorkTimeApp.ui.createEditor = function (options) {
       .querySelector("use")
       .setAttribute(
         "href",
-        recorded ? "#ms-check" : planned ? "#ms-close" : "#ms-today",
+        recorded ? "#icon-check" : planned ? "#icon-close" : "#icon-today",
       );
   }
   function renderEditor() {
@@ -233,7 +233,7 @@ WorkTimeApp.ui.createEditor = function (options) {
                     WorkTimeApp.i18n.duration(day.leaveMinutes) +
                     WorkTimeApp.i18n.t("copy.47fb6325b4")
                   : WorkTimeApp.i18n.t("copy.f8d57c4f0d")
-                : '<span class="preview-attendance" title="' +
+                : '<span class="preview-attendance" data-hint-text="' +
                   esc(WorkTimeApp.i18n.t("copy.7a26926ed7")) +
                   '">' +
                   esc(WorkTimeApp.i18n.t("copy.7a26926ed7")) +
@@ -246,7 +246,7 @@ WorkTimeApp.ui.createEditor = function (options) {
       if (progress) {
         employmentDays = progress.days;
         employment =
-          '<span class="preview-employment" title="' +
+          '<span class="preview-employment" data-hint-text="' +
           esc(
             WorkTimeApp.i18n.t(
               progress.started ? "editor.anniversary" : "editor.startsIn",
@@ -271,11 +271,11 @@ WorkTimeApp.ui.createEditor = function (options) {
           : c.minutes === null
             ? " is-empty"
             : "") +
-        '" title="' +
+        '" data-hint-text="' +
         esc(daily.replace(/<[^>]*>/g, "")) +
         '">' +
         daily +
-        '</div><div class="preview-period"><span title="' +
+        '</div><div class="preview-period"><span data-hint-text="' +
         esc(
           WorkTimeApp.i18n.t("editor.through", {
             date: WorkTimeApp.i18n.date(selected),

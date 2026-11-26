@@ -37,10 +37,10 @@ WorkTimeApp.services.assets = (() => {
     if (pending.has(path)) {
       if (fetchPriority === "high" && elements.has(path))
         elements.get(path).fetchPriority = "high";
-      return pending.get(path);
+      return pending.get(path).task;
     }
+    const element = document.createElement(style ? "link" : "script");
     const task = new Promise((resolve, reject) => {
-      const element = document.createElement(style ? "link" : "script");
       element.fetchPriority = fetchPriority;
       elements.set(path, element);
       changed();
@@ -70,16 +70,30 @@ WorkTimeApp.services.assets = (() => {
         document.head.insertBefore(element, before);
       else document.head.append(element);
     });
-    pending.set(path, task);
+    pending.set(path, { task, element });
     // A failed load is retryable; successful scripts execute only once.
     task.catch(() => pending.delete(path));
     return task;
+  }
+  function script(path, options) {
+    const task = load(path, false, options);
+    if (!options?.validate) return task;
+    return task.then(() => {
+      if (options.validate()) return;
+      // The load event can fire for a script whose contents failed to execute.
+      const entry = pending.get(path);
+      if (entry?.task === task) {
+        entry.element.remove();
+        pending.delete(path);
+      }
+      throw Error("Asset did not initialize: " + path);
+    });
   }
   async function scripts(paths) {
     for (const path of paths) await load(path);
   }
   function preload(path, style = false) {
-    if (pending.has(path)) return pending.get(path);
+    if (pending.has(path)) return pending.get(path).task;
     if (preloads.has(path)) return preloads.get(path);
     // Preload bytes without executing modules, creating views or applying styles.
     const task = new Promise((resolve, reject) => {
@@ -112,7 +126,7 @@ WorkTimeApp.services.assets = (() => {
   }
   return {
     preload,
-    script: (path, options) => load(path, false, options),
+    script,
     style: (path, options) => load(path, true, options),
     scripts,
     whenIdle,

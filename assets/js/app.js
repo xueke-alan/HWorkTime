@@ -1,6 +1,7 @@
 "use strict";
 WorkTimeApp.services.bootstrap.run(
   async (lifecycle) => {
+    lifecycle.defer(() => WorkTimeApp.ui.disposeWorkspace?.());
     lifecycle.defer(() => WorkTimeApp.services.preferences.page.dispose());
     lifecycle.defer(() => WorkTimeApp.ui.theme.dispose());
     lifecycle.defer(() => WorkTimeApp.ui.alignment?.dispose());
@@ -191,19 +192,21 @@ WorkTimeApp.services.bootstrap.run(
       toast,
       renderTimeAnomalyNotice,
     } = notifications;
-    const { renderStats } = WorkTimeApp.ui.createSummary({
-      ...shared,
-      getState: getPreviewState,
-      core: {
-        pendingWorkdays: queries.pendingWorkdays,
-        selectOvertimeRequirement: queries.selectOvertimeRequirement,
-        summary: queries.summary,
-        targetPace: queries.targetPace,
-        validDate: D.time.validDate,
-      },
-      getRange: monthBounds,
-      isStorageFailed: () => model.storageFailed,
-    });
+    const { renderStats, dispose: disposeSummary } =
+      WorkTimeApp.ui.createSummary({
+        ...shared,
+        getState: getPreviewState,
+        core: {
+          pendingWorkdays: queries.pendingWorkdays,
+          selectOvertimeRequirement: queries.selectOvertimeRequirement,
+          summary: queries.summary,
+          targetPace: queries.targetPace,
+          validDate: D.time.validDate,
+        },
+        getRange: monthBounds,
+        isStorageFailed: () => model.storageFailed,
+      });
+    lifecycle.defer(disposeSummary);
     const weatherLayer = WorkTimeApp.ui.createCalendarWeather({
       calendar: $("calendar"),
       weather: WorkTimeApp.services.weather,
@@ -322,7 +325,7 @@ WorkTimeApp.services.bootstrap.run(
         WorkTimeApp.ui.typing?.hasDraft?.() ||
         WorkTimeApp.ui.vocabulary?.hasDraft?.(),
       onCommit(result) {
-        if (result.pending) return;
+        if (result.pending || result.skipped) return;
         if (result.applied)
           WorkTimeApp.services.countdown.setState(model.state);
         storageStatus.commit(result, stateOwner.failed);
@@ -362,6 +365,7 @@ WorkTimeApp.services.bootstrap.run(
         "saveBatch",
         "confirmBatch",
         "importRecords",
+        "deduplicateImports",
         "removeImport",
         "saveOAUrl",
         "saveSettings",
@@ -380,7 +384,13 @@ WorkTimeApp.services.bootstrap.run(
       save: (preferences) => application.savePreferences(preferences),
       getState: () => model.state.preferences,
     });
+    const { reload } = WorkTimeApp.ui.confirmations;
+    let reloadApproved = false;
     const beforeUnload = (event) => {
+      if (reloadApproved) {
+        reloadApproved = false;
+        return;
+      }
       if (
         !stateOwner.pending &&
         !stateOwner.dirty &&
@@ -392,10 +402,40 @@ WorkTimeApp.services.bootstrap.run(
       event.preventDefault();
       event.returnValue = "";
     };
+    const confirmImportReload = (event) => {
+      if (event.defaultPrevented || event.isComposing) return;
+      if (event.key === "Escape" && reload.confirm) {
+        // Consume Escape before the sidebar can close and reset its draft.
+        event.preventDefault();
+        event.stopPropagation();
+        reload.confirm = null;
+        return;
+      }
+      if (event.altKey || event.shiftKey) return;
+      const modifier = event.ctrlKey || event.metaKey;
+      const reloadKey = modifier
+        ? event.key.toLowerCase() === "r"
+        : event.key === "F5";
+      if (
+        !reloadKey ||
+        !$("pasteText").value.trim() ||
+        document.querySelector("dialog:modal")
+      )
+        return;
+      event.preventDefault();
+      reload.confirm ??= () => {
+        reload.confirm = null;
+        reloadApproved = true;
+        window.location.reload();
+      };
+    };
     window.addEventListener("beforeunload", beforeUnload);
-    lifecycle.defer(() =>
-      window.removeEventListener("beforeunload", beforeUnload),
-    );
+    window.addEventListener("keydown", confirmImportReload, true);
+    lifecycle.defer(() => {
+      window.removeEventListener("beforeunload", beforeUnload);
+      window.removeEventListener("keydown", confirmImportReload, true);
+      reload.confirm = null;
+    });
     Object.assign(actions, {
       prepareAgendaArchive: () => agenda?.prepareAgendaArchive(),
       controlIcon,
@@ -530,7 +570,7 @@ WorkTimeApp.services.bootstrap.run(
       ],
       [
         WorkTimeApp.ui.createImportController,
-        ["importRecords", "removeImport", "saveOAUrl"],
+        ["importRecords", "deduplicateImports", "removeImport", "saveOAUrl"],
         {
           deleteImport: D.observations.deleteImport,
           timeMin: D.time.timeMin,
@@ -587,13 +627,14 @@ WorkTimeApp.services.bootstrap.run(
       Object.assign(actions, commands);
     }
     for (const controller of controllers) controller.bind();
-    agenda = WorkTimeApp.ui.createAgenda({
+    agenda = WorkTimeApp.ui.createAgendaEntry({
       ...controllerOptions,
       document,
       window,
     });
     controllers.push(agenda);
     lifecycle.defer(() => agenda.dispose());
+    await agenda.bind();
     if (model.analysisMode) {
       try {
         await WorkTimeApp.services.assets.style("assets/css/analysis.css");
@@ -603,16 +644,53 @@ WorkTimeApp.services.bootstrap.run(
       }
     }
     if (lifecycle.closed) return;
-    agenda.bind();
     // Let the browser process the assembled controls before mounting the main
     // calendar and measuring the shared footer, keeping startup responsive.
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     if (lifecycle.closed) return;
-    workspace.mount();
+    await workspace.mount(
+      () => new Promise((resolve) => window.setTimeout(resolve, 0)),
+    );
+    if (lifecycle.closed) return;
     WorkTimeApp.services.vocabularyIdle.start();
     lifecycle.defer(() => WorkTimeApp.services.vocabularyIdle.dispose());
-    const games = WorkTimeApp.ui.createGamesController({ document, window });
-    lifecycle.defer(() => games.dispose());
+    const gamesPanel = $("gamesPanel");
+    let games, openingGames;
+    async function openGamesPanel() {
+      if (gamesPanel.hidden || games || openingGames || lifecycle.closed)
+        return;
+      openingGames = true;
+      try {
+        await Promise.all([
+          WorkTimeApp.services.assets.style("assets/css/game-menu.css"),
+          WorkTimeApp.services.assets.script(
+            "assets/js/ui/games-panel-runtime.min.js",
+          ),
+          WorkTimeApp.i18n.loadModule("games"),
+        ]);
+        if (!gamesPanel.hidden && !lifecycle.closed)
+          games = WorkTimeApp.ui.createGamesController({ document, window });
+      } catch (error) {
+        if (lifecycle.closed) return;
+        const retry = document.createElement("button");
+        retry.textContent = WorkTimeApp.i18n.t("copy.e2d53a6d3a");
+        retry.dataset.hintText = error.message;
+        retry.onclick = openGamesPanel;
+        gamesPanel.replaceChildren(retry);
+      } finally {
+        openingGames = false;
+      }
+    }
+    const gameVisibility = new MutationObserver(openGamesPanel);
+    gameVisibility.observe(gamesPanel, {
+      attributes: true,
+      attributeFilter: ["hidden"],
+    });
+    lifecycle.defer(() => {
+      gameVisibility.disconnect();
+      games?.dispose();
+    });
+    await openGamesPanel();
     function refreshLanguage() {
       const errors = WorkTimeApp.ui.fieldErrors.snapshot();
       const focusId = document.activeElement?.id;

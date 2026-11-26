@@ -7,13 +7,13 @@ Run from the repository root in PowerShell:
 ```powershell
 dotnet build tools/sokoban-solver/Solver.csproj -c Release -o test-results/sokoban-native
 $env:SOKOBAN_SEARCH_MS = "180000"
-node scripts/generate-sokoban-optima.cjs --large-patterns --export-native test-results/sokoban-native/input.json
+node scripts/sokoban/generate-sokoban-optima.cjs --large-patterns --export-native test-results/sokoban-native/input.json
 dotnet test-results/sokoban-native/Solver.dll test-results/sokoban-native/input.json test-results/sokoban-native/results.jsonl
-node scripts/generate-sokoban-optima.cjs --import-native test-results/sokoban-native/results.jsonl test-results/sokoban-native/input.json
-node scripts/import-sokoban.cjs
+node scripts/sokoban/generate-sokoban-optima.cjs --import-native test-results/sokoban-native/results.jsonl test-results/sokoban-native/input.json
+node scripts/sokoban/import-sokoban.cjs
 npm run prepare:assets
-node scripts/generate-sokoban-optima.cjs --check --require-complete
-node scripts/verify-sokoban-optimal.cjs
+node scripts/sokoban/generate-sokoban-optima.cjs --check --require-complete
+node scripts/verify/games/verify-sokoban-optimal.cjs
 ```
 
 Use a fresh results filename for each batch. Results are appended after each level. A null result means the search did not prove an optimum. Increase the budget and export again to retry only unfinished levels. Keep each input file with its results: import checks geometry and replays every route before accepting it. `--require-complete` fails if any of the 140 levels remains unproven.
@@ -29,10 +29,10 @@ The larger database allocates only reachable box layouts, using a layout ID plus
 Independent regression checks (use a fresh results file):
 
 ```powershell
-node scripts/verify-sokoban-optimal.cjs --export-native-fixtures test-results/sokoban-native/fixtures.json
+node scripts/verify/games/verify-sokoban-optimal.cjs --export-native-fixtures test-results/sokoban-native/fixtures.json
 dotnet test-results/sokoban-native/Solver.dll test-results/sokoban-native/fixtures.json test-results/sokoban-native/fixture-results.jsonl
-node scripts/verify-sokoban-optimal.cjs --check-native-fixtures test-results/sokoban-native/fixture-results.jsonl
-node scripts/verify-sokoban.cjs --theory-only
+node scripts/verify/games/verify-sokoban-optimal.cjs --check-native-fixtures test-results/sokoban-native/fixture-results.jsonl
+node scripts/verify/games/verify-sokoban.cjs --theory-only
 ```
 
 The fixture oracle searches elementary moves without shared push macros, heuristic matching, pattern databases or deadlock pruning. It covers solvable two-, three-, five- and six-box positions and a blocked four-box position.
@@ -47,6 +47,6 @@ Native input additionally supports `reverse: true`, enabling exact elementary-mo
 To reproduce both proofs, build the native solver as above, then select the two levels explicitly. `--level` includes already verified levels and uses any recorded route length as a search cutoff.
 
 ```powershell
-node scripts/generate-sokoban-optima.cjs --room-partitions --level sasquatch-1-3 --level sasquatch-1-16 --export-native test-results/sokoban-native/rooms.json
+node scripts/sokoban/generate-sokoban-optima.cjs --room-partitions --level sasquatch-1-3 --level sasquatch-1-16 --export-native test-results/sokoban-native/rooms.json
 dotnet test-results/sokoban-native/Solver.dll test-results/sokoban-native/rooms.json test-results/sokoban-native/room-results.jsonl
 ```

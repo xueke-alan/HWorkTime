@@ -1,5 +1,5 @@
 /* First-run setup follows the same quiet, connected rhythm as the timeline. */
-dialog.onboarding-dialog { width:min(38rem,calc(100vw - 2rem)); max-width:none; max-height:calc(100dvh - 2rem); margin:auto; padding:0; overflow:hidden; border:1px solid var(--line); border-radius:16px; background:var(--theme-surface-paper,var(--paper)); color:var(--ink); box-shadow:0 24px 80px rgb(23 51 44 / 18%); }
+dialog.onboarding-dialog { width:min(38rem,calc(100vw - 2rem)); max-width:none; max-height:calc(100dvh - 2rem); margin:auto; padding:0; overflow:hidden; border:1px solid var(--line); border-radius:var(--ui-radius); background:var(--theme-surface-paper,var(--paper)); color:var(--ink); box-shadow:0 24px 80px rgb(23 51 44 / 18%); }
 dialog.onboarding-dialog[open] { display:flex; flex-direction:column; }
 dialog.onboarding-dialog::backdrop { background:rgb(23 51 44 / 25%); backdrop-filter:blur(3px); }
 .onboarding-dialog [hidden] { display:none !important; }
@@ -21,17 +21,17 @@ dialog.onboarding-dialog::backdrop { background:rgb(23 51 44 / 25%); backdrop-fi
 .onboarding-node > .ui-aligned-text { grid-area:1 / 1; justify-self:center; }
 /* Keep the glyph layer independent of global inline-label line heights. */
 body #onboardingDialog .onboarding-node-text { position:absolute; top:50%; left:50%; display:block; width:max-content; margin:0; padding:0; font:inherit; line-height:1; letter-spacing:0; text-indent:0; text-box-trim:none; transform:translate(calc(-50% + var(--ui-ink-offset-x,0px)),calc(-50% + var(--ui-ink-offset,0px))); }
-.runtime-import-status { flex:none; width:100%; min-width:0; padding:10px 16px; font-size:var(--text-small); color:var(--muted); overflow-wrap:anywhere; }
+.runtime-import-status { flex:none; width:100%; min-width:0; padding:10px 16px; font-size:var(--ui-font-size, var(--text-small)); color:var(--ui-muted, var(--muted)); overflow-wrap:anywhere; }
 .runtime-import-status[hidden], .runtime-import-status [hidden] { display:none !important; }
 .runtime-import-status p { margin:0 0 8px; line-height:1.7; }
 .runtime-import-status details { max-height:160px; overflow:auto; margin-top:8px; }
 .runtime-import-progress { display:block; width:100%; height:6px; margin:6px 0 10px; accent-color:var(--accent); }
 .runtime-import-status > button { margin:0 8px 4px 0; }
-body #onboardingDialog .onboarding-stage-heading { margin:0; font:inherit; cursor:default; display:flex; align-items:center; gap:12px; width:100%; min-height:32px; padding:0; border:0; border-radius:var(--control-radius); background:transparent; color:var(--ink); box-shadow:none; text-align:start; }
+body #onboardingDialog .onboarding-stage-heading { margin:0; font:inherit; cursor:default; display:flex; align-items:center; gap:12px; width:100%; min-height:32px; padding:0; border:0; border-radius:var(--ui-radius); background:transparent; color:var(--ink); box-shadow:none; text-align:start; }
 .onboarding-stage-heading > [data-stage-title] { min-width:0; font-size:1rem; font-weight:650; }
 .onboarding-stage-status { flex:none; margin-inline-start:auto; color:var(--muted); font-size:11px; }
 .onboarding-item[data-state=current] .onboarding-stage-status,.onboarding-item[data-state=complete] .onboarding-stage-status { color:var(--accent); }
-.onboarding-dialog section { margin-top:12px; padding:18px; border:1px solid var(--line); border-radius:12px; background:var(--paper); }
+.onboarding-dialog section { margin-top:12px; padding:18px; border:1px solid var(--line); border-radius:var(--ui-radius); background:var(--paper); }
 .onboarding-dialog section h3 { margin:0 0 8px; font-size:1rem; line-height:1.5; font-weight:650; }
 .onboarding-dialog #onboardingFolder h3 { font-size:1.14rem; font-weight:700; overflow-wrap:anywhere; }
 .onboarding-dialog section p { margin:0; color:var(--muted); font-size:var(--text-small); line-height:1.8; overflow-wrap:anywhere; }
@@ -39,7 +39,7 @@ body #onboardingDialog .onboarding-folder-button, body #onboardingDialog .onboar
 body #onboardingDialog .onboarding-folder-button.is-selected { width:100%; box-sizing:border-box; justify-content:flex-start; text-align:left; }
 .onboarding-dialog section :is(.help,.warnings):not(:empty) { margin-top:12px; }
 .onboarding-dialog section .warnings { color:var(--theme-danger,#a44336); }
-.onboarding-dialog .dialog-foot { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; flex:none; padding:18px 28px; border-top:1px solid var(--line); background:var(--theme-surface-subtle,var(--paper)); }
+.onboarding-dialog .dialog-foot { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; flex:none; padding:18px 28px; border-top:var(--ui-stroke) solid var(--line); background:var(--theme-surface-subtle,var(--ui-surface, var(--paper))); }
 body #onboardingDialog .onboarding-install-button, body #onboardingDialog .onboarding-folder-button.is-selected { background:var(--theme-surface-paper,var(--paper)); color:var(--accent); border:1px solid var(--control-border); box-shadow:none; }
 .onboarding-install-head { display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; margin-bottom:8px; min-width:0; }
 .onboarding-dialog .onboarding-install-head h3 { flex:1 1 12rem; min-width:0; margin:0; }
@@ -50,9 +50,8 @@ body #onboardingDialog .onboarding-install-button:hover:not(:disabled), body #on
 .onboarding-folder-required { flex:1 1 12rem; min-width:0; margin:0; color:var(--muted); font-size:var(--text-small); line-height:1.6; overflow-wrap:anywhere; }
 .onboarding-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-inline-start:auto; }
 body #onboardingDialog .onboarding-actions .ui-button { height:auto !important; max-height:none !important; min-height:var(--control-height); padding:7px 12px !important; white-space:normal; }
-body #onboardingDialog :is(button,input):focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
 @media(max-width:540px) {
-  dialog.onboarding-dialog { width:calc(100vw - 24px); max-height:calc(100dvh - 24px); border-radius:14px; }
+  dialog.onboarding-dialog { width:calc(100vw - 24px); max-height:calc(100dvh - 24px); border-radius:var(--ui-radius); }
   .onboarding-dialog .dialog-head { padding:20px 18px 16px; }
   .onboarding-dialog .dialog-head h2 { font-size:1.35rem; }
   .onboarding-dialog .dialog-body { padding:24px 18px 20px; }

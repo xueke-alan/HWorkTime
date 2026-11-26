@@ -1,6 +1,9 @@
 "use strict";
 WorkTimeApp.data.locales ||= {};
 WorkTimeApp.data.locales["en"] = {
+  "workspace.menu": "Workspace menu",
+  "workspace.views": "View",
+  "workspace.tools": "Tools",
   "copy.91f8def561": "Backup must be text.",
   "copy.6247442ea7": "Backup exceeds ",
   "copy.f75f226ec0": " MB size limit.",
@@ -147,9 +150,9 @@ WorkTimeApp.data.locales["en"] = {
   "copy.98339ead6f": " valid days",
   "copy.0cee9f5104": "Unknown date",
   "copy.fb7fd1001d":
-    '" aria-label="View import details" title="View details"><svg class="ui-icon" aria-hidden="true"><use href="#ms-info"/></svg></button><button type="button" class="ui-button danger" data-delete-import="',
+    '" aria-label="View import details" data-hint-text="View details"><svg class="ui-icon" aria-hidden="true"><use href="#icon-info"/></svg></button><button type="button" class="ui-button danger" data-delete-import="',
   "copy.74a12ef5dc":
-    '" aria-label="Delete import batch" title="Delete batch"><svg class="ui-icon" aria-hidden="true"><use href="#ms-delete-outline"/></svg></button></div></div><div class="import-history-meta">',
+    '" aria-label="Delete import batch" data-hint-text="Delete batch"><svg class="ui-icon" aria-hidden="true"><use href="#icon-delete-outline"/></svg></button></div></div><div class="import-history-meta">',
   "copy.81a9b617ab": " records</div></article>",
   "copy.d6971aab23": '<div class="import-history-empty">No imports yet</div>',
   "copy.b336d19181":
@@ -162,9 +165,9 @@ WorkTimeApp.data.locales["en"] = {
   "copy.d7f42a424c":
     '<div class="import-detail-raw-field"><textarea id="importDetailRawText" class="import-detail-raw-text" readonly aria-label="Original attendance text" placeholder="No attendance text found" spellcheck="false">',
   "copy.5c7f465892":
-    '<button type="button" class="ui-button icon-only" aria-label="Previous import" title="Previous" data-detail-step="-1"',
+    '<button type="button" class="ui-button icon-only" aria-label="Previous import" data-hint-text="Previous" data-detail-step="-1"',
   "copy.80bab87117":
-    '</span><button type="button" class="ui-button icon-only" aria-label="Next import" title="Next" data-detail-step="1"',
+    '</span><button type="button" class="ui-button icon-only" aria-label="Next import" data-hint-text="Next" data-detail-step="1"',
   "copy.184ad4d4ad": "Record not found. Check import history.",
   "copy.617fe2d78b": "Use an HTTP or HTTPS URL.",
   "copy.b0228f5569": "Delete ",
@@ -214,12 +217,15 @@ WorkTimeApp.data.locales["en"] = {
   "copy.1d2c74f862": " onward, replacing all later schedules.",
   "copy.3325b59fdd": "Enter a complete, valid date range.",
   "copy.4e08bf2cca": "Use HH:MM for breaks. End time must be after start time.",
+  "settings.breakStart": "Break start",
   "copy.4beeb6588b":
     '<input class="breakstart clock-input" type="text" maxlength="5" autocomplete="off" inputmode="numeric" placeholder="12:00" aria-label="Break start" value="',
+  "settings.breakEnd": "Break end",
   "copy.b32b652361":
     '"><input class="breakend clock-input" type="text" maxlength="5" autocomplete="off" inputmode="numeric" placeholder="13:00" aria-label="Break end" value="',
+  "settings.clearBreak": "Clear break",
   "copy.ab28b7393b":
-    '"><button class="ui-button icon-only" type="button" aria-label="Clear break" title="Clear break">',
+    '"><button class="ui-button icon-only" type="button" aria-label="Clear break" data-hint-text="Clear break">',
   "copy.b5b41e6754": "Editing schedule: ",
   "copy.47cbad548a": " ",
   "copy.5db8ce7daa": " · Not applied",
@@ -255,7 +261,8 @@ WorkTimeApp.data.locales["en"] = {
     "Import not saved. Original templates retained. Try again.",
   "copy.6e4508239f": "Templates imported",
   "copy.ac35793d79": '" aria-label="Edit template ',
-  "copy.293224a98b": '" title="Edit template">',
+  "settings.editTemplate": "Edit template",
+  "copy.293224a98b": '" data-hint-text="Edit template">',
   "copy.7cf04378a1": "Edit time template",
   "copy.84c6ec48f3": '<span class="template-empty">No templates</span>',
   "copy.1177ecca4d": "Copy failed. Select all and copy manually.",
@@ -272,7 +279,7 @@ WorkTimeApp.data.locales["en"] = {
   "copy.3a2fd0b35a": "; started: ",
   "copy.85b0268523": "Payday",
   "copy.b3d0a0f476":
-    '<div class="schedule-change-tag" title="Schedule differs from the previous day">',
+    '<div class="schedule-change-tag" data-hint-text="Schedule differs from the previous day">',
   "copy.7b74743705": "New hours",
   "copy.e9fa7a829a": " · Manual",
   "copy.591a8a36f9": " Schedule change",
@@ -301,17 +308,17 @@ WorkTimeApp.data.locales["en"] = {
   "copy.7c8d65e331": "Not set",
   "copy.a73dd6d86d": " – Pending",
   "copy.6439fe575a":
-    '<span class="record-source-dot manual" title="Manual" aria-hidden="true"></span>',
+    '<span class="record-source-dot manual" data-hint-text="Manual" aria-hidden="true"></span>',
   "copy.932f850a42":
-    '<span class="record-source-dot oa secondary" title="OA entries also retained" aria-hidden="true"></span>',
+    '<span class="record-source-dot oa secondary" data-hint-text="OA entries also retained" aria-hidden="true"></span>',
   "copy.84059d0fb3":
-    '<span class="record-source-dot oa" title="OA import" aria-hidden="true"></span>',
+    '<span class="record-source-dot oa" data-hint-text="OA import" aria-hidden="true"></span>',
   "copy.5322471ae6": " · Daily OT ",
   "copy.6d645904e4": " · Daily hours ",
   "copy.dc516fa88c": " · Avg. OT ",
   "copy.732f79dc36": " Full-day leave",
   "copy.1ee7ecb783": " Leave ",
-  "copy.886690f618": '" title="Daily overtime">',
+  "copy.886690f618": '" data-hint-text="Daily overtime">',
   "copy.1e6a453ebc":
     "Month to date: weekday OT ÷ attendance from complete entries",
   "copy.809f2ba84f": "; incomplete entry, average OT unavailable",
@@ -338,15 +345,17 @@ WorkTimeApp.data.locales["en"] = {
   "copy.d31313dabc": "Selected: ",
   "copy.ae802cc1be": '"><h3><span class="year-month-number">',
   "copy.2b3cbb76bd":
-    '</span><span class="year-month-stats"><span title="Total OT across workdays and rest days" aria-label="Total overtime">',
+    '</span><span class="year-month-stats"><span data-hint-text="Total OT across workdays and rest days" aria-label="Total overtime">',
   "copy.42b92eadd3":
-    'h</span><span title="Average overtime (Weekday OT ÷ attendance)" aria-label="Average overtime">',
+    'h</span><span data-hint-text="Average overtime (Weekday OT ÷ attendance)" aria-label="Average overtime">',
   "copy.6d332ee4da": " · ",
   "copy.06ce537cae": " complete days",
   "copy.cd4a0376cd": "Cancel",
   "copy.0bfc077a0c": " · Week",
-  "copy.dbdd3a728e": '<span class="schedule-work" title="Scheduled hours">',
-  "copy.55debd2786": '</span><span class="schedule-break" title="Break">',
+  "copy.dbdd3a728e":
+    '<span class="schedule-work" data-hint-text="Scheduled hours">',
+  "copy.55debd2786":
+    '</span><span class="schedule-break" data-hint-text="Break">',
   "copy.f311d6abc7": "Enter a time in HH:MM format, e.g. 08:30.",
   "copy.dfb8e4501a": "Leave must be between 0 and the scheduled daily hours.",
   "copy.c6601afb83": "Time issue: clock-out ",
@@ -358,10 +367,10 @@ WorkTimeApp.data.locales["en"] = {
   "copy.feb728221b": "Full-day leave <strong>",
   "copy.47fb6325b4": "</strong> · Attendance <strong>0 days</strong>",
   "copy.f8d57c4f0d": "Incomplete entry. Excluded from average OT.",
-  "copy.82aa6b450e": '<span title="Work hours">Hours <strong>',
+  "copy.82aa6b450e": '<span data-hint-text="Work hours">Hours <strong>',
   "copy.3df6853f05": "</strong></span><span>OT <strong>",
   "copy.40f72eec32":
-    '</strong></span><span title="Attendance">Attendance <strong>',
+    '</strong></span><span data-hint-text="Attendance">Attendance <strong>',
   "copy.1b7f2b55c6": " days</strong></span>",
   "copy.50aa76c3d6":
     'Day <strong id="employmentDays" data-number-motion></strong> at work',

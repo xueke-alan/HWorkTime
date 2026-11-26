@@ -238,6 +238,7 @@ WorkTimeApp.ui.typing = (() => {
     if (disposed) return;
     view.setPage(page);
     body.insertBefore(sectionBar, status);
+    view.practice.reset();
     content.replaceChildren();
     content.dataset.view = replayState
       ? "replay"
@@ -320,7 +321,7 @@ WorkTimeApp.ui.typing = (() => {
       const item = node("button", "typing-chapter", chapters);
       item.type = "button";
       item.setAttribute("aria-current", chapter === index ? "true" : "false");
-      item.title = t(rows()[index].key);
+      item.dataset.hintText = t(rows()[index].key);
       node(
         "span",
         "typing-chapter-number",
@@ -379,7 +380,7 @@ WorkTimeApp.ui.typing = (() => {
             "aria-label",
             `${t("lesson", { n: lesson.number })} · ${lesson.goal} ${unit(lang)} · ${record?.stars || 0}/5`,
           );
-          if (locked) entry.title = t("locked");
+          if (locked) entry.dataset.hintText = t("locked");
           node("strong", "", entry, String(lesson.number).padStart(2, "0"));
           node(
             "small",
@@ -720,16 +721,16 @@ WorkTimeApp.ui.typing = (() => {
       oscillator.stop(audio.currentTime + 0.04);
     } catch {}
   }
-  function paintText(target, typed, view, words = false) {
-    if (!view) return;
-    const layoutWidth = String(view.clientWidth);
-    if (view.dataset.value === typed && view.dataset.width === layoutWidth)
+  function paintText(target, typed, host, words = false) {
+    if (!host) return;
+    const layoutWidth = String(host.clientWidth);
+    if (host.dataset.value === typed && host.dataset.width === layoutWidth)
       return;
-    view.dataset.value = typed;
-    view.dataset.width = layoutWidth;
+    host.dataset.value = typed;
+    host.dataset.width = layoutWidth;
     const chars = E.characters(target),
       input = E.characters(typed),
-      cards = view.classList.contains("typing-character-cards"),
+      cards = host.classList.contains("typing-character-cards"),
       offset = cards
         ? 0
         : words
@@ -740,63 +741,45 @@ WorkTimeApp.ui.typing = (() => {
       : words
         ? Math.min(chars.length, offset + 240)
         : Math.min(chars.length, Math.max(600, input.length + 400));
-    const fragment = document.createDocumentFragment();
-    for (let i = offset; i < end; i++) {
-      const span = node(
-        "span",
-        i < input.length
-          ? input[i] === chars[i]
-            ? "is-correct"
-            : "is-error"
-          : i === input.length
-            ? "is-cursor"
-            : "",
-      );
-      span.textContent = chars[i];
-      if (cards) {
-        const width = view.clientWidth || 700;
-        const visible = Math.max(3, Math.min(7, Math.floor(width / 92)));
-        const start = Math.max(
-          0,
-          Math.min(chars.length - visible, input.length - 1),
-        );
-        span.hidden = i < start || i >= start + visible;
-        if (chars[i] === " ") span.classList.add("is-space");
-      }
-      fragment.append(span);
-    }
-    view.replaceChildren(fragment);
-    const cursor = view.querySelector(".is-cursor");
+    view.practice.text(host, {
+      chars,
+      input,
+      offset,
+      end,
+      cards,
+      width: Number(layoutWidth),
+    });
+    const cursor = host.querySelector(".is-cursor");
     if (
       cursor &&
-      cursor.offsetTop - view.offsetTop >
-        view.scrollTop + view.clientHeight - 45
+      cursor.offsetTop - host.offsetTop >
+        host.scrollTop + host.clientHeight - 45
     )
-      view.scrollTop =
-        cursor.offsetTop - view.offsetTop - view.clientHeight + 60;
+      host.scrollTop =
+        cursor.offsetTop - host.offsetTop - host.clientHeight + 60;
   }
   function updateLive() {
     if (!session || session.finished || !liveStats) return;
     const m = E.metrics(session);
-    liveStats.replaceChildren();
-    metric(
-      liveStats,
-      "speed",
-      `${m.speed.toFixed(1)} ${unit(session.language)}`,
-    );
-    metric(liveStats, "accuracy", `${m.accuracy.toFixed(1)}%`);
-    metric(
-      liveStats,
-      "time",
-      duration(
-        session.limit
-          ? Math.max(0, session.limit - session.elapsed)
-          : session.elapsed,
-      ),
-    );
-    metric(liveStats, "goal", `${session.goal} ${unit(session.language)}`);
+    const measures = [
+      {
+        label: t("speed"),
+        value: m.speed.toFixed(1) + " " + unit(session.language),
+      },
+      { label: t("accuracy"), value: m.accuracy.toFixed(1) + "%" },
+      {
+        label: t("time"),
+        value: duration(
+          session.limit
+            ? Math.max(0, session.limit - session.elapsed)
+            : session.elapsed,
+        ),
+      },
+      { label: t("goal"), value: session.goal + " " + unit(session.language) },
+    ];
     if (session.mode === "words")
-      metric(liveStats, "points", String(wordPoints(session)));
+      measures.push({ label: t("points"), value: String(wordPoints(session)) });
+    view.practice.metrics(liveStats, measures);
     paintText(session.text, session.input, textView, session.mode === "words");
     positionInput();
     if (progressView) {
@@ -816,66 +799,8 @@ WorkTimeApp.ui.typing = (() => {
     if (!keyboard.hidden) renderKeyboard(keyboard, hint);
     if (!fingerView.hidden) renderFingers(hint);
   }
-  function renderKeyboard(parent, hint, heat = null) {
-    if (parent.childElementCount && !heat) {
-      for (const cap of parent.querySelectorAll(".typing-key")) {
-        const key = cap.dataset.key;
-        cap.classList.toggle(
-          "is-next",
-          key === hint?.key ||
-            (hint?.shift && key === "shift-" + hint.shiftHand),
-        );
-      }
-      return;
-    }
-    parent.replaceChildren();
-    for (const row of E.rows) {
-      const line = node("div", "typing-key-row", parent);
-      for (const key of row) {
-        const cap = node(
-          "span",
-          "typing-key" + (hint?.key === key ? " is-next" : ""),
-          line,
-          key,
-        );
-        cap.dataset.key = key;
-        if (heat) {
-          const n = (heat[key] || 0) + (heat[key.toUpperCase()] || 0);
-          if (n) {
-            cap.style.setProperty(
-              "--key-intensity",
-              String(Math.min(0.8, 0.15 + n / 20)),
-            );
-            cap.classList.add("has-errors");
-          }
-          cap.title = `${key}: ${n}`;
-        }
-      }
-    }
-    const bottom = node("div", "typing-key-row", parent);
-    const leftShift = node(
-      "span",
-      "typing-key typing-shift" +
-        (hint?.shift && hint.shiftHand === "left" ? " is-next" : ""),
-      bottom,
-      "Shift",
-    );
-    leftShift.dataset.key = "shift-left";
-    const space = node(
-      "span",
-      "typing-key typing-space" + (hint?.key === " " ? " is-next" : ""),
-      bottom,
-      "␣",
-    );
-    space.dataset.key = " ";
-    const rightShift = node(
-      "span",
-      "typing-key typing-shift" +
-        (hint?.shift && hint.shiftHand === "right" ? " is-next" : ""),
-      bottom,
-      "Shift",
-    );
-    rightShift.dataset.key = "shift-right";
+  function renderKeyboard(parent, hint, heat) {
+    view.practice.keyboard(parent, E.rows, hint, heat);
   }
   function renderFingers(hint) {
     if (!fingerView.childElementCount) {
@@ -1415,7 +1340,7 @@ WorkTimeApp.ui.typing = (() => {
       const key = dayKey(date),
         ms = data.daily[key] || 0;
       const square = node("span", "", calendar, String(date.getDate()));
-      square.title = `${key} · ${duration(ms)}`;
+      square.dataset.hintText = `${key} · ${duration(ms)}`;
       if (ms > 0) square.className = "is-active";
     }
     const weak = card(content, "typing-weak-card");

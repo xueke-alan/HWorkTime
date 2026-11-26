@@ -82,6 +82,8 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     try {
       if (settle) commitPageTransition(transition);
     } finally {
+      if (transition.yearTitle !== undefined)
+        delete $("monthTitle").dataset.yearTitleTarget;
       for (const [element, inert] of transition.elements) element.inert = inert;
       if (settle) transition.onComplete?.();
     }
@@ -93,6 +95,7 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     afterRender,
     onComplete,
     sidebarTransition = false,
+    yearTitle,
   }) {
     if (resettingBatch || model.batchMode || pageTransition) return;
     if (!sidebarTransition && !model.yearMode) actions.closeImport();
@@ -103,6 +106,7 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       update,
       afterRender,
       onComplete,
+      yearTitle,
       committed: false,
       animations: [],
       elements: new Map(),
@@ -125,7 +129,8 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       const content = $("panelContent"),
         elements = [
           content,
-          ...document.querySelectorAll(".calendar-footer > :not(.site-meta)"),
+          $("calendarFoot"),
+          $("yearLegend"),
           ...(transition.summaryTransition
             ? [
                 ...document.querySelectorAll(
@@ -177,6 +182,8 @@ WorkTimeApp.ui.createNavigationController = function (options) {
         commitPageTransition(transition);
         return;
       }
+      if (yearTitle !== undefined)
+        $("monthTitle").dataset.yearTitleTarget = String(yearTitle);
       await play(false);
       if (pageTransition !== transition) return;
       commitPageTransition(transition);
@@ -714,10 +721,13 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     $("batchModeToggle").querySelector(".button-label").textContent = batchText(
       overtime ? "direct" : "overtime",
     );
-    $("batchModeToggle").title = batchText(
+    $("batchModeToggle").dataset.hintText = batchText(
       overtime ? "switchDirect" : "switchOvertime",
     );
-    $("batchModeToggle").setAttribute("aria-label", $("batchModeToggle").title);
+    $("batchModeToggle").setAttribute(
+      "aria-label",
+      $("batchModeToggle").dataset.hintText,
+    );
     $("batchEndField").hidden = overtime;
     $("batchNextField").inert = overtime;
     document.querySelector(".batch-template-area").inert = overtime;
@@ -856,7 +866,7 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       return element;
     };
     status.replaceChildren();
-    status.removeAttribute("title");
+    status.removeAttribute("data-hint-text");
     if (!dates.length) status.append(line("p", batchText("chooseDates")));
     else if (!valid) status.append(line("p", issue));
     else {
@@ -891,7 +901,7 @@ WorkTimeApp.ui.createNavigationController = function (options) {
         summary.append(item);
       }
       status.append(summary);
-      status.title = batchText("previewNote");
+      status.dataset.hintText = batchText("previewNote");
     }
     actions.renderStats();
     actions.renderCalendar();
@@ -916,7 +926,7 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       if (!keepEditing) actions.leaveBatch();
       actions.render();
       actions.saveFeedback(true, message);
-      if (!keepEditing) $("batchToggle").focus();
+      if (!keepEditing) WorkTimeApp.ui.workspaceViews.focusMenu();
     } catch {
       $("batchError").textContent = batchText("saveFailed");
       actions.toast(WorkTimeApp.i18n.t("copy.77b0044d4f"), "error");
@@ -960,7 +970,8 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       document.querySelector(".panel-head"),
       "click",
       (event) => {
-        if (!pageTransition) return;
+        if (!pageTransition || event.target.closest(".toolbar-segmented"))
+          return;
         event.preventDefault();
         event.stopImmediatePropagation();
       },
@@ -1047,6 +1058,8 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       )
         return;
       event.preventDefault();
+      const button = card.querySelector(":scope > .day-select");
+      if (button) WorkTimeApp.ui.native.playInsetWave(button, event);
       stopTodayAttention();
       batchSweep = {
         pointerId: event.pointerId,
@@ -1167,6 +1180,7 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       return transitionPage({
         direction: model.yearMode ? -1 : 1,
         sidebarTransition: true,
+        yearTitle: !model.yearMode,
         update() {
           if (model.yearMode) {
             model.yearMode = false;
@@ -1185,25 +1199,13 @@ WorkTimeApp.ui.createNavigationController = function (options) {
         },
       });
     });
-    events.listen($("calendar"), "click", (e) => {
-      const monthButton = e.target.closest("[data-year-month-switch]");
-      if (monthButton) {
-        if (resettingBatch || model.batchMode || !model.yearMode) return;
-        const month = monthButton.dataset.yearMonthSwitch;
-        if (
-          !/^\d{4}-\d{2}$/.test(month) ||
-          Number(month.slice(0, 4)) !== model.viewYear ||
-          !C.validDate(month + "-01") ||
-          month === model.month
-        )
-          return;
-        model.month = month;
-        model.returnMonth = month;
-        // Refresh the whole workspace so the left month label, summary cards,
-        // target figures and year calendar all follow the selected month.
-        actions.render();
+    events.listen($("calendar"), "keydown", (e) => {
+      if (!e.target.matches(".year-month") || !["Enter", " "].includes(e.key))
         return;
-      }
+      e.preventDefault();
+      e.target.click();
+    });
+    events.listen($("calendar"), "click", (e) => {
       const button = e.target.closest("[data-year-date]");
       if (button) {
         if (model.batchMode) return;
@@ -1348,7 +1350,7 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       if (resettingBatch) return;
       stopTodayAttention();
       actions.leaveBatch();
-      $("batchToggle").focus();
+      WorkTimeApp.ui.workspaceViews.focusMenu();
     });
     events.handler($("batchClearSelection"), "onclick", () => {
       if (model.batchSaving) return;

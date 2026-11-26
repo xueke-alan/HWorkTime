@@ -22,15 +22,8 @@ const rules = {
   ],
 };
 module.exports = [
-  ...require("eslint-plugin-vue").configs["flat/essential"],
   {
-    files: ["src/**/*.vue", "packages/ui/src/**/*.vue"],
-    languageOptions: {
-      parserOptions: { parser: require("@typescript-eslint/parser") },
-    },
-  },
-  {
-    files: ["src/**/*.ts", "packages/ui/src/**/*.ts"],
+    files: ["src/**/*.{ts,tsx}"],
     languageOptions: { parser: require("@typescript-eslint/parser") },
     rules: { "no-debugger": "error" },
   },
@@ -39,6 +32,8 @@ module.exports = [
       "node_modules/**",
       ".refactor-backups/**",
       "assets/vendor/**",
+      "assets/js/ui/*-file.min.js",
+      "assets/js/ui/file-chunks/**",
       "assets/data/**",
       "scripts/vendor/**",
     ],

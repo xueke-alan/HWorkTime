@@ -646,7 +646,7 @@ WorkTimeApp.ui.createAgendaLayout = function ({
             "http://www.w3.org/2000/svg",
             "use",
           );
-          use.setAttribute("href", "#ms-chevron-" + direction);
+          use.setAttribute("href", "#icon-chevron-" + direction);
           icon.append(use);
           return icon;
         };
@@ -664,7 +664,7 @@ WorkTimeApp.ui.createAgendaLayout = function ({
             previous === borrowed ||
             updateCompletion(previous, button))
         ) {
-          previous.title = button.title;
+          previous.dataset.hintText = button.dataset.hintText ?? "";
           previous.classList.toggle(
             "continues-before",
             segment.continuesBefore,
@@ -1063,7 +1063,7 @@ WorkTimeApp.ui.createAgendaLayout = function ({
       icon.classList.add("agenda-chip-continuation");
       icon.setAttribute("aria-hidden", "true");
       const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-      use.setAttribute("href", "#ms-chevron-" + direction);
+      use.setAttribute("href", "#icon-chevron-" + direction);
       icon.append(use);
       if (direction === "left") title.prepend(icon);
       else title.append(icon);

@@ -194,8 +194,8 @@ body .game-sokoban .sokoban-toolbar-button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   padding: 0.65rem 0;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: var(--ui-stroke) solid var(--line);
+  border-radius: var(--ui-radius);
   background: var(--theme-surface-subtle, #f3f8f5);
 }
 .sokoban-theory-card .game-stat {
@@ -228,7 +228,7 @@ body .game-sokoban .sokoban-toolbar-button {
   min-height: 4.1rem;
   padding: 0.5rem;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--ui-radius);
   background: var(--theme-surface-subtle, #f3f8f5);
   display: flex;
   flex-direction: column;
@@ -247,7 +247,7 @@ body .game-sokoban .sokoban-toolbar-button {
   place-items: center;
   background: var(--soko-stage);
   border: 1px solid var(--soko-edge);
-  border-radius: 8px;
+  border-radius: var(--ui-radius);
   container-type: size;
 }
 .sokoban-board {
@@ -262,7 +262,7 @@ body .game-sokoban .sokoban-toolbar-button {
   aspect-ratio: var(--columns) / var(--rows);
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--ui-radius);
   overflow: visible;
   background: transparent;
   touch-action: none;
@@ -365,8 +365,8 @@ body .game-sokoban .sokoban-toolbar-button {
 .sokoban-status {
   grid-column: 1 / -1;
   margin: 0;
-  color: var(--muted);
-  font-size: var(--text-small);
+  color: var(--ui-muted, var(--muted));
+  font-size: var(--ui-font-size, var(--text-small));
   text-align: start;
   line-height: 1.5;
 }

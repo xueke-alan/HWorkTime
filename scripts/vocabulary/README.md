@@ -35,8 +35,8 @@ translation service, Python package or translation model is needed at runtime.
 7. `npm run prepare:vocabulary` and `npm run prepare:assets` rebuild application
    resources. Run `node scripts/vocabulary/audit-content.cjs` for an independent,
    deterministic 200-entry book-balanced Oxford IPA comparison, plus split senses.
-8. Run `node scripts/verify-vocabulary.cjs --unit`, the browser vocabulary/cache
-   checks, and `node scripts/verify-vocabulary-examples.cjs` for complete lists,
+8. Run `node scripts/verify/vocabulary/verify-vocabulary.cjs --unit`, the browser vocabulary/cache
+   checks, and `node scripts/verify/vocabulary/verify-vocabulary-examples.cjs` for complete lists,
    exact playback strings and mobile wrapping. After preparing the release, run
    the latter with `_site` to test the published offline entry too. Run
    `npm run check`, `npm run lint`, and `npm run check:format`.
@@ -136,7 +136,7 @@ assets. This supports first-use offline speech after manually installing a packa
 Audio caches remain separate and do not enter learning backups.
 
 Validate offline synthesis, cache reuse and removal of legacy choices with
-`node scripts/verify-vocabulary-models.cjs`; test actual offline synthesis using
+`node scripts/verify/vocabulary/verify-vocabulary-models.cjs`; test actual offline synthesis using
 `npm run check:speech -- --http --with-folder --package=.cache/speech-packages/worktime-speech-models-v1.wtmodels`.
 Append `--background` to exercise both idle engines.
 Samples are written under .cache/speech-previews/. These checks verify operation,

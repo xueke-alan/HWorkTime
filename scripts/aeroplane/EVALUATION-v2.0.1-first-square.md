@@ -31,6 +31,6 @@
 
 `npm run aeroplane:evaluate` 复验冻结候选，全部门槛通过后执行 `npm run aeroplane:export`。重新训练的新候选仍须通过同一门槛。
 
-`node scripts/verify-aeroplane.cjs` 验证四个颜色的出库、起飞、掷一首步及实际渲染坐标，旧存档自动修复，六格终点与反弹，模型与 Worker 一致性，动画、骰子、六语言和源码／发布版离线运行。日志及截图位于 `test-results/aeroplane/`。
+`node scripts/verify/games/verify-aeroplane.cjs` 验证四个颜色的出库、起飞、掷一首步及实际渲染坐标，旧存档自动修复，六格终点与反弹，模型与 Worker 一致性，动画、骰子、六语言和源码／发布版离线运行。日志及截图位于 `test-results/aeroplane/`。
 
 历史结果保留在 [2.0.0 报告](EVALUATION-v2.0.0.md) 与 [规则 1 报告](EVALUATION-v1.md)，它们只适用于当时的规则与配置。

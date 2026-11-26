@@ -102,9 +102,34 @@
     if (!entry) return;
     clearTimeout(entry.timer);
     entry.animation?.cancel();
-    element.classList.remove(entry.name);
-    element.style.removeProperty("--motion-delay");
+    if (entry.name) {
+      element.classList.remove(entry.name);
+      element.style.removeProperty("--motion-delay");
+    }
     running.delete(element);
+  }
+  function setToggleIcon(button, active, inactiveHref, animate = false) {
+    const use = button.querySelector("use");
+    const href = active ? "#icon-close" : inactiveHref;
+    if (use.getAttribute("href") === href) return;
+    const icon = use.ownerSVGElement;
+    stop(icon);
+    use.setAttribute("href", href);
+    if (!animate || disposed || reduced.matches || document.hidden) return;
+    const angle = active ? 65 : -65;
+    const animation = WorkTimeApp.ui.animationCompat.animate(
+      icon,
+      [
+        { opacity: 0.2, transform: `scale(0.55) rotate(${angle}deg)` },
+        { opacity: 1, transform: "scale(1) rotate(0deg)" },
+      ],
+      { duration: 280, easing: "cubic-bezier(0.2, 0.7, 0.3, 1)", fill: "both" },
+    );
+    const entry = { animation };
+    running.set(icon, entry);
+    animation.finished.then(() => {
+      if (running.get(icon) === entry) stop(icon);
+    });
   }
   function play(element, name = "motion-content", delay = 0) {
     if (!element || disposed || document.hidden) return;
@@ -266,6 +291,7 @@
     playEditorSurface,
     calendar,
     animateCalendar,
+    setToggleIcon,
     play,
     stop,
     isAnimating,

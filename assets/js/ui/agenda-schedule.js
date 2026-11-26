@@ -5,32 +5,10 @@ WorkTimeApp.ui.createAgendaSchedule = function ({ root, prefix = "agenda" }) {
   const time = WorkTimeApp.domain.time;
   const t = (key) => WorkTimeApp.i18n.t("agenda." + key);
   const field = (name) => fields.get(prefix + name);
-  const icon =
-    '<svg class="ui-icon" aria-hidden="true"><use href="#ms-calendar"/></svg>';
-  const dateField = (name, open) =>
-    `<div class="agenda-date-input"><input data-ui="input" id="${prefix + name}" type="date" min="1900-01-01" max="9999-12-31"><button data-ui="button" id="${prefix + open}" type="button" class="agenda-date-open">${icon}</button></div>`;
   root.classList.add("agenda-schedule-control");
-  root.setAttribute("role", "group");
+  WorkTimeApp.ui.native.setGroup(root);
   root.setAttribute("aria-labelledby", prefix + "ScheduleLabel");
-  root.innerHTML = `
-    <label for="${prefix}ScheduleOpen" data-schedule-label="dateTime"></label>
-    <button data-ui="button" id="${prefix}ScheduleOpen" type="button" class="agenda-schedule-input">${icon}<span id="${prefix}ScheduleSummary"></span><svg class="ui-icon" aria-hidden="true"><use href="#ms-chevron-right"/></svg></button>
-    <div id="${prefix}SchedulePopup" class="agenda-date-picker agenda-schedule agenda-schedule-popup is-range" popover="auto" role="dialog">
-    <div class="agenda-schedule-heading"><strong id="${prefix}ScheduleLabel">${icon}<span data-schedule-label="dateTime"></span></strong></div>
-    <div class="agenda-schedule-options">
-      <label class="agenda-schedule-toggle"><input data-ui="input" id="${prefix}AllDay" type="checkbox" role="switch" checked><span class="agenda-schedule-toggle-track" aria-hidden="true"></span><span data-schedule-label="allDay"></span></label>
-    </div>
-    <div class="agenda-schedule-range" role="group">
-      <div class="agenda-field" data-schedule-endpoint="start"><label for="${prefix}DateInput" data-schedule-label="startDate"></label>${dateField("DateInput", "DateOpen")}</div>
-      <span class="agenda-range-separator" aria-hidden="true">→</span>
-      <div class="agenda-field" data-schedule-endpoint="end"><label for="${prefix}EndDateInput" data-schedule-label="endDate"></label>${dateField("EndDateInput", "EndDateOpen")}</div>
-    </div>
-    <div id="${prefix}RangeStatus" class="agenda-schedule-status" role="status" aria-live="polite"></div>
-    <div class="agenda-schedule-calendars"><div id="${prefix}StartCalendar"></div><div id="${prefix}EndCalendar"></div></div>
-    <div class="agenda-schedule-row agenda-schedule-times">
-      <div class="agenda-field agenda-schedule-time" hidden><label for="${prefix}Start" data-schedule-label="start"></label><input data-ui="input" id="${prefix}Start" type="time"></div>
-      <div class="agenda-field agenda-schedule-time" hidden><label for="${prefix}End"></label><input data-ui="input" id="${prefix}End" type="time"></div>
-    </div><div class="agenda-picker-footer"><button data-ui="button" type="button" class="ui-button" data-schedule-today data-schedule-label="pickerToday"></button><button data-ui="button" type="button" class="ui-button primary" data-schedule-close data-schedule-label="pickerDone"></button></div></div>`;
+  WorkTimeApp.ui.workspaceViews.AgendaScheduleFields(root, { prefix });
   const fields = new Map(
     [...root.querySelectorAll("[id]")].map((node) => [node.id, node]),
   );
@@ -370,7 +348,7 @@ WorkTimeApp.ui.createAgendaSchedule = function ({ root, prefix = "agenda" }) {
           ? " — " + value.end
           : "") +
       (allDay ? " · " + t("allDay") : "");
-    trigger.title = field("ScheduleSummary").textContent;
+    trigger.dataset.hintText = field("ScheduleSummary").textContent;
     popup.setAttribute("aria-label", t("dateTime"));
     if (!month)
       month = (value.date || time.businessDate(new Date())).slice(0, 7);
@@ -436,6 +414,7 @@ WorkTimeApp.ui.createAgendaSchedule = function ({ root, prefix = "agenda" }) {
       popover.destroy();
       scope.abort();
       pickers.forEach((picker) => picker.dispose());
+      WorkTimeApp.ui.workspaceViews.dispose(root);
     },
   };
 };

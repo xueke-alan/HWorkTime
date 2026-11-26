@@ -132,42 +132,37 @@ WorkTimeApp.ui.music = (() => {
   function accessible(element, key) {
     if (registerBindings) labels.push({ element, key });
     element.setAttribute("aria-label", t(key));
-    if (key === "returnMain") element.removeAttribute("title");
-    else element.title = t(key);
+    if (key === "returnMain") element.removeAttribute("data-hint-text");
+    else element.dataset.hintText = t(key);
   }
+  const musicIcons = {
+    back: "chevron-left",
+    play: "play-arrow",
+    pause: "pause",
+    previous: "skip-previous",
+    next: "skip-next",
+    heart: "heart",
+    note: "music-notes",
+    library: "library-books",
+    folder: "folder",
+    search: "search",
+    locate: "crosshair",
+    volume: "text-to-speech",
+    muted: "speaker-slash",
+    shuffle: "shuffle",
+    repeat: "repeat",
+    lyrics: "text-align-left",
+    more: "more-horiz",
+    plus: "add",
+    minimize: "horizontal-rule",
+    expand: "expand-content",
+  };
   function icon(name) {
-    const paths = {
-      back: '<path d="m14 6-6 6 6 6"/>',
-      play: '<path d="m9 5 11 7-11 7Z" fill="currentColor" stroke="none"/>',
-      pause: '<path d="M8 5v14M16 5v14" stroke-width="4"/>',
-      previous: '<path d="M6 5v14M19 5 9 12l10 7Z"/>',
-      next: '<path d="M18 5v14M5 5l10 7-10 7Z"/>',
-      heart:
-        '<path d="M20.5 5.5a5 5 0 0 0-7 0L12 7l-1.5-1.5a5 5 0 0 0-7 7L12 21l8.5-8.5a5 5 0 0 0 0-7Z"/>',
-      note: '<path d="M9 18V5l11-2v13M9 8l11-2"/><ellipse cx="6" cy="18" rx="3" ry="2.5"/><ellipse cx="17" cy="16" rx="3" ry="2.5"/>',
-      library: '<path d="M4 4v16M9 4v16M14 5l5-1 3 15-5 1Z"/>',
-      folder: '<path d="M3 7V5h6l2 2h10v13H3Z"/><path d="M3 11h18"/>',
-      search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',
-      locate:
-        '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 1v4m0 14v4M1 12h4m14 0h4"/>',
-      volume:
-        '<path d="M3 9h4l5-5v16l-5-5H3ZM16 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/>',
-      muted: '<path d="M3 9h4l5-5v16l-5-5H3Zm13-1 6 8m0-8-6 8"/>',
-      shuffle:
-        '<path d="M3 6h3c4 0 8 12 12 12h3m-4-4 4 4-4 4M3 18h3c2 0 4-3 6-6s4-6 6-6h3m-4-4 4 4-4 4"/>',
-      repeat:
-        '<path d="m17 2 4 4-4 4M3 11V8a2 2 0 0 1 2-2h16M7 22l-4-4 4-4m14-1v3a2 2 0 0 1-2 2H3"/>',
-      lyrics:
-        '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8h10M7 12h7M7 16h10"/>',
-      more: '<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
-      plus: '<path d="M12 5v14M5 12h14"/>',
-      minimize: '<path d="M5 17h14"/>',
-      expand: '<path d="M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5"/>',
-    };
+    const id = musicIcons[name] || musicIcons.note;
     return (
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      (paths[name] || paths.note) +
-      "</svg>"
+      '<svg fill="currentColor" aria-hidden="true"><use href="#icon-' +
+      id +
+      '"/></svg>'
     );
   }
   function glyphName(glyph) {
@@ -408,6 +403,7 @@ WorkTimeApp.ui.music = (() => {
   accessible(lyricPane, "lyrics");
   const lyricSong = node("h3", "music-lyric-song", lyricPane);
   const lyricView = node("div", "music-lyrics", lyricPane);
+  const libraryView = WorkTimeApp.ui.mountMusicLibrary(list, lyricView);
   const tabs = node("div", "music-mobile-tabs", header);
   const songsTab = button(tabs, "songs", () => setMobile("songs"));
   const lyricsTab = button(tabs, "lyrics", () => setMobile("lyrics"));
@@ -439,8 +435,8 @@ WorkTimeApp.ui.music = (() => {
   const transport = node("div", "music-transport", centerControls);
   const transportView = WorkTimeApp.ui.mountMusicTransport(
     transport,
-    (action, event) => {
-      pulseMusic(event.currentTarget.querySelector(".music-glyph"));
+    (action, source) => {
+      pulseMusic(source.querySelector(".music-glyph"));
       const mode = controller.snapshot().mode;
       if (action === "shuffle")
         controller.mode(mode === "shuffle" ? "list" : "shuffle");
@@ -645,8 +641,8 @@ WorkTimeApp.ui.music = (() => {
     return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, "0")}`;
   }
   function dynamicLabel(element, key) {
-    if (key === "returnMain") element.removeAttribute("title");
-    else element.title = t(key);
+    if (key === "returnMain") element.removeAttribute("data-hint-text");
+    else element.dataset.hintText = t(key);
     element.setAttribute("aria-label", t(key));
   }
   function setMobile(view) {
@@ -857,7 +853,6 @@ WorkTimeApp.ui.music = (() => {
     const scroll = list.scrollTop,
       focused = document.activeElement?.dataset.musicPath,
       focusFavorite = document.activeElement?.dataset.musicFavorite;
-    const fragment = document.createDocumentFragment();
     const filtered = state.tracks.filter(
       (track) =>
         (!favoriteOnly || controller.isFavorite(track)) &&
@@ -873,53 +868,6 @@ WorkTimeApp.ui.music = (() => {
             numeric: true,
           }) || a.path.localeCompare(b.path),
     );
-    for (const [position, track] of filtered.entries()) {
-      const row = node("div", "music-track", fragment);
-      row.setAttribute("role", "listitem");
-      if (track === state.current) row.classList.add("is-current");
-      const item = button(row, "play", () => controller.select(track));
-      item.replaceChildren();
-      item.className = "music-track-select";
-      item.dataset.musicPath = track.path;
-      item.setAttribute("aria-current", String(track === state.current));
-      const number = node("span", "music-track-number", item);
-      number.textContent = String(position + 1);
-      number.setAttribute("aria-hidden", "true");
-      const identity = node("span", "music-track-identity", item);
-      node("strong", "", identity).textContent = track.title;
-      node("span", "music-track-subtitle", identity).textContent =
-        [track.artist, track.album].filter(Boolean).join(" · ") || track.path;
-      node("span", "music-track-album", item).textContent = track.album || "—";
-      item.title = track.path;
-      if (track.error)
-        node("span", "music-track-error", identity).textContent = t(
-          track.error,
-        );
-      const star = button(
-        row,
-        "favorite",
-        () => controller.favorite(track),
-        "♡",
-      );
-      star.dataset.musicFavorite = track.path;
-      star.classList.add("music-favorite");
-      star.setAttribute("aria-pressed", String(controller.isFavorite(track)));
-      dynamicLabel(
-        star,
-        controller.isFavorite(track) ? "unfavorite" : "favorite",
-      );
-      row.lastChild.classList.add("music-track-favorite");
-    }
-    if (!filtered.length && state.tracks.length) {
-      const empty = node("div", "music-empty", fragment);
-      copy(node("p", "", empty), "noResults");
-      button(empty, "clearSearch", () => {
-        query.value = "";
-        favoriteOnly = false;
-        listSignature = "";
-        render();
-      });
-    }
     const order = JSON.stringify(filtered.map((track) => track.path));
     const oldOrder = previousListOrder;
     previousListOrder = order;
@@ -930,7 +878,24 @@ WorkTimeApp.ui.music = (() => {
           musicAnimations.delete(element);
         }
     }
-    list.replaceChildren(fragment);
+    libraryView.tracks({
+      tracks: filtered,
+      current: state.current?.path,
+      noResults: !filtered.length && !!state.tracks.length,
+      favorite: (track) => controller.isFavorite(track),
+      play: (track) => controller.select(track),
+      toggle(track, icon) {
+        pulseMusic(icon);
+        controller.favorite(track);
+      },
+      clear() {
+        query.value = "";
+        favoriteOnly = false;
+        listSignature = "";
+        render();
+      },
+      text: t,
+    });
     list.scrollTop = scroll;
     if (oldOrder !== order && oldRows.size) {
       const oldPaths = new Set(JSON.parse(oldOrder));
@@ -976,38 +941,27 @@ WorkTimeApp.ui.music = (() => {
   }
   function renderLyrics(state) {
     const value = state.details?.lyrics;
-    if (value !== lastLyrics) {
+    const changed = value !== lastLyrics;
+    if (changed) {
       lastLyrics = value;
-      lyricIndex = -1;
-      lyricView.replaceChildren();
       revealMusic(lyricView);
-      if (value?.lines.length)
-        for (const line of value.lines) {
-          const item = node("button", "music-lyric-line", lyricView);
-          item.type = "button";
-          item.textContent = line.text || "♪";
-          item.onclick = () => controller.seek(line.time);
-        }
-      else {
-        const content = node("p", "music-plain-lyrics", lyricView);
-        content.textContent = value?.text || t("noLyrics");
-        if (!value?.text)
-          copy(node("p", "music-lyric-hint", lyricView), "lyricHint");
-      }
     }
-    if (!value?.lines.length) return;
     let active = -1;
-    for (let i = 0; i < value.lines.length; i++) {
+    for (let i = 0; i < (value?.lines?.length ?? 0); i++) {
       if (value.lines[i].time > state.position) break;
       active = i;
     }
-    if (active === lyricIndex) return;
-    lyricView.children[lyricIndex]?.classList.remove("is-current");
-    lyricView.children[lyricIndex]?.removeAttribute("aria-current");
+    if (!changed && active === lyricIndex && lyricView.childElementCount)
+      return;
     lyricIndex = active;
-    const line = lyricView.children[active];
-    line?.classList.add("is-current");
-    line?.setAttribute("aria-current", "true");
+    libraryView.lyrics({
+      lines: value?.lines,
+      plain: value?.text,
+      active,
+      seek: (time) => controller.seek(time),
+      text: t,
+    });
+    const line = active < 0 ? null : lyricView.children[active];
     if (
       line &&
       Date.now() > userScrollUntil &&
@@ -1033,10 +987,10 @@ WorkTimeApp.ui.music = (() => {
     if (!entry) return;
     entry.classList.toggle("is-playing", !state.paused);
     delete entry.dataset.hint;
-    entry.title = `${t("title")}${state.current ? " · " + state.current.title : ""}`;
+    entry.dataset.hintText = `${t("title")}${state.current ? " · " + state.current.title : ""}`;
     entry.setAttribute(
       "aria-label",
-      `${entry.title}${!state.paused ? " · " + t("play") : ""}`,
+      `${entry.dataset.hintText}${!state.paused ? " · " + t("play") : ""}`,
     );
     if (presentation === "mini") {
       entry.setAttribute("role", "tab");
@@ -1060,9 +1014,9 @@ WorkTimeApp.ui.music = (() => {
     const name = state.current?.title || t("idle"),
       artist = state.current?.artist || (!state.current ? t("pickSong") : "");
     if (miniSong.textContent !== name) miniSong.textContent = name;
-    miniSong.title = name;
+    miniSong.dataset.hintText = name;
     if (miniArtist.textContent !== artist) miniArtist.textContent = artist;
-    miniArtist.title = artist;
+    miniArtist.dataset.hintText = artist;
     setGlyph(miniPlay, state.paused ? "play" : "pause");
     dynamicLabel(miniPlay, state.paused ? "play" : "pause");
     for (const control of [miniPlay, miniPrevious, miniNext])
@@ -1270,10 +1224,6 @@ WorkTimeApp.ui.music = (() => {
       )
     )
       return;
-    if (event.code === "Space") {
-      event.preventDefault();
-      controller.toggle();
-    }
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
       controller.seek(
@@ -1302,6 +1252,7 @@ WorkTimeApp.ui.music = (() => {
     selectControls.dispose();
     toolbarView.dispose();
     transportView.dispose();
+    libraryView.dispose();
     dialog.remove();
     mini.remove();
     document.removeEventListener("worktime:failed", dispose);
@@ -1334,9 +1285,9 @@ WorkTimeApp.ui.music = (() => {
     } catch {
       const entry = document.getElementById("musicOpen");
       if (entry) {
-        entry.title = t("loadFailed");
+        entry.dataset.hintText = t("loadFailed");
         entry.dataset.hint = "detail";
-        entry.setAttribute("aria-label", entry.title);
+        entry.setAttribute("aria-label", entry.dataset.hintText);
       }
     }
   }
@@ -1357,9 +1308,9 @@ WorkTimeApp.ui.music = (() => {
         } catch {
           const entry = document.getElementById("musicOpen");
           if (entry) {
-            entry.title = t("loadFailed");
+            entry.dataset.hintText = t("loadFailed");
             entry.dataset.hint = "detail";
-            entry.setAttribute("aria-label", entry.title);
+            entry.setAttribute("aria-label", entry.dataset.hintText);
           }
         }
       } else await expand();

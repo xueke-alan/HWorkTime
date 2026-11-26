@@ -2,7 +2,6 @@
 /** settings controller. Instantiate once, then bind after all actions are connected. */
 WorkTimeApp.ui.secondary.settings = function (options) {
   const events = WorkTimeApp.ui.createEventScope();
-  const breakEvents = WorkTimeApp.ui.createEventScope();
   const {
     core: C,
     element: $,
@@ -53,28 +52,6 @@ WorkTimeApp.ui.secondary.settings = function (options) {
     }
     return breaks;
   }
-  function addBreak(b) {
-    const row = document.createElement("div");
-    row.className = "breakrow";
-    const fmt = (m) => C.pad(Math.floor(m / 60)) + ":" + C.pad(m % 60);
-    row.innerHTML =
-      WorkTimeApp.i18n.t("copy.4beeb6588b") +
-      (b ? fmt(b.start) : "") +
-      WorkTimeApp.i18n.t("copy.b32b652361") +
-      (b ? fmt(b.end) : "") +
-      WorkTimeApp.i18n.t("copy.ab28b7393b") +
-      actions.controlIcon("trash") +
-      "</button>";
-
-    breakEvents.handler(row.querySelector("button"), "onclick", () => {
-      row.querySelectorAll("input").forEach((input) => (input.value = ""));
-      row
-        .querySelector("input")
-        .dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    $("breaksList").append(row);
-  }
-
   function rawDraft() {
     return JSON.stringify([
       $("standardStart").value,
@@ -97,10 +74,25 @@ WorkTimeApp.ui.secondary.settings = function (options) {
   function loadSchedule(schedule) {
     $("standardStart").value = schedule.workStart;
     $("standardEnd").value = schedule.workEnd;
-    breakEvents.dispose();
-    $("breaksList").innerHTML = "";
-    for (let i = 0; i < Math.max(2, schedule.breaks.length); i++)
-      addBreak(schedule.breaks[i]);
+    const fmt = (m) => C.pad(Math.floor(m / 60)) + ":" + C.pad(m % 60);
+    const rows = Array.from(
+      { length: Math.max(2, schedule.breaks.length) },
+      (_, i) => {
+        const value = schedule.breaks[i];
+        return {
+          start: value ? fmt(value.start) : "",
+          end: value ? fmt(value.end) : "",
+        };
+      },
+    );
+    // Reset unsaved DOM edits even when the newly selected schedule has identical values.
+    WorkTimeApp.ui.workspaceViews.dispose($("breaksList"));
+    WorkTimeApp.ui.workspaceViews.BreakFields($("breaksList"), {
+      rows,
+      startLabel: WorkTimeApp.i18n.t("settings.breakStart"),
+      endLabel: WorkTimeApp.i18n.t("settings.breakEnd"),
+      clearLabel: WorkTimeApp.i18n.t("settings.clearBreak"),
+    });
     originalDraft = rawDraft();
     updateSchedulePreview();
   }
@@ -195,40 +187,34 @@ WorkTimeApp.ui.secondary.settings = function (options) {
       ...model.state.scheduleRanges,
     ];
     const fmt = (m) => C.pad(Math.floor(m / 60)) + ":" + C.pad(m % 60);
-    $("scheduleList").innerHTML = items
-      .map((r, i) => {
-        const title = r.start
-          ? r.start +
-            WorkTimeApp.i18n.t("copy.9f96f7e891") +
-            (r.end || WorkTimeApp.i18n.t("copy.5971bd41a3"))
-          : WorkTimeApp.i18n.t("copy.32fdb2d9ea");
-        const selected =
-          !!preferredRange &&
-          preferredRange.start === r.start &&
-          preferredRange.end === r.end;
-        return (
-          '<button data-ui="button" type="button" class="ui-button schedule-list-item" data-schedule-index="' +
-          i +
-          '" aria-pressed="' +
-          selected +
-          '" aria-label="' +
-          esc(title + "，" + describeSchedule(r.schedule)) +
-          '"><span class="schedule-card-heading"><strong>' +
-          esc(title) +
-          '</strong><span class="schedule-card-hours">' +
-          esc(C.hours(r.schedule.standardMinutes)) +
-          ' h</span></span><small class="schedule-card-details"><span>' +
-          esc(r.schedule.workStart + "–" + r.schedule.workEnd) +
+    const choices = items.map((r, i) => {
+      const title = r.start
+        ? r.start +
+          WorkTimeApp.i18n.t("copy.9f96f7e891") +
+          (r.end || WorkTimeApp.i18n.t("copy.5971bd41a3"))
+        : WorkTimeApp.i18n.t("copy.32fdb2d9ea");
+      const selected =
+        !!preferredRange &&
+        preferredRange.start === r.start &&
+        preferredRange.end === r.end;
+      return {
+        title,
+        selected,
+        label: title + "，" + describeSchedule(r.schedule),
+        hours: C.hours(r.schedule.standardMinutes),
+        detail:
+          r.schedule.workStart +
+          "–" +
+          r.schedule.workEnd +
           WorkTimeApp.i18n.t("copy.846ab5a883") +
-          esc(
-            r.schedule.breaks
-              .map((b) => fmt(b.start) + "–" + fmt(b.end))
-              .join("、") || WorkTimeApp.i18n.t("copy.1a8b4ad549"),
-          ) +
-          "</span></small></button>"
-        );
-      })
-      .join("");
+          (r.schedule.breaks
+            .map((b) => fmt(b.start) + "–" + fmt(b.end))
+            .join("、") || WorkTimeApp.i18n.t("copy.1a8b4ad549")),
+      };
+    });
+    WorkTimeApp.ui.workspaceViews.ScheduleChoices($("scheduleList"), {
+      items: choices,
+    });
   }
   function guardSettingsClose(event) {
     if (!hasScheduleDraft()) return;
@@ -246,7 +232,7 @@ WorkTimeApp.ui.secondary.settings = function (options) {
     )
       return;
     const target = event.target.closest(
-      "#calendar .day[data-date], #calendar [data-year-date], #prevMonth, #nextMonth, #todayButton, #monthTitle, #agendaMode, #batchToggle, #yearViewToggle, #restore, #restoreStorage, #initializeStorage, #analysisToggle, .notification-tab, .tool-card, .vocabulary-mini-expand",
+      "#calendar .day[data-date], #calendar [data-year-date], #prevMonth, #nextMonth, #todayButton, #monthTitle, #agendaMode, #batchToggle, #restore, #restoreStorage, #initializeStorage, #analysisToggle, .notification-tab, .tool-card, .vocabulary-mini-expand",
     );
     if (!target) return;
     const keepSettings = target.matches(
@@ -461,7 +447,7 @@ WorkTimeApp.ui.secondary.settings = function (options) {
 
   function dispose() {
     rangeController.dispose();
-    breakEvents.dispose();
+    WorkTimeApp.ui.workspaceViews.dispose($("breaksList"));
     events.dispose();
     bound = false;
   }

@@ -8,7 +8,7 @@ const { chromium } = require("playwright");
 const {
   runtimeServer,
   installRuntimeFixture,
-} = require("../runtime-test-helpers.cjs");
+} = require("../lib/runtime-test-helpers.cjs");
 const root = path.resolve(__dirname, "../..");
 async function main() {
   const site = path.resolve(

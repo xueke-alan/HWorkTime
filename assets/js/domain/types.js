@@ -6,7 +6,7 @@
  * @typedef {{start:number,end:number}} WorkBreak
  * @typedef {{configured:boolean,workStart:string,workEnd:string,standardMinutes:number,breaks:WorkBreak[]}} WorkSettings
  * @typedef {{employmentDate:string,workCity:string}} WorkPersonal
- * @typedef {{pageTheme:'green'|'blue'|'purple'|'orange'|'rose'|'slate'|'cyan'|'mint'|'olive'|'gold'|'red'|'brown',forecastMode?:'hourly'|'daily',motionMode?:'system'|'full'|'reduce',language?:'auto'|'zh-CN'|'zh-TW'|'zh-HK'|'en'|'ko'|'ja',weatherDays?:0|3|5|7,lastAutoBackupDate?:string|null,lastAutoBackupHour?:string|null,lastBackupAt?:string|null}} WorkPreferences
+ * @typedef {{pageTheme:'green'|'blue'|'purple'|'orange'|'rose'|'slate'|'cyan'|'mint'|'olive'|'gold'|'red'|'brown',forecastMode?:'hourly'|'daily',motionMode?:'system'|'full'|'reduce',showCalendarMascot?:boolean,language?:'auto'|'zh-CN'|'zh-TW'|'zh-HK'|'en'|'ko'|'ja',weatherDays?:0|3|5|7,lastAutoBackupDate?:string|null,lastAutoBackupHour?:string|null,lastBackupAt?:string|null}} WorkPreferences
  * @typedef {{id:string,order?:number,data:Object}} ArchiveRecord
  * @typedef {{id:string,version:number,records:ArchiveRecord[]}} ArchiveModule
  * @typedef {{format:'worktime-archive',formatVersion:1,archive:{id:string,createdAt:string},modules:ArchiveModule[],exportedAt?:string}} WorkArchive
@@ -33,12 +33,12 @@
  * @typedef {{changed:boolean,applied:boolean,persisted:boolean,dirty:boolean,code:string|null,message:string,error:Error|null}} WorkOperationResult
  * @typedef {Error & {code?:string}} WorkStorageError
  * @typedef {{persisted:boolean,error?:WorkStorageError|null}} WorkWriteResult
- * @typedef {{loadIssue:WorkStorageLoadIssue,commit:(state:WorkStateData,changes:Object)=>Promise<WorkWriteResult>,restore:(state:WorkStateData)=>Promise<WorkWriteResult>,hydrateImports:(state:WorkStateData)=>Promise<WorkStateData>,export:(state:WorkStateData)=>Promise<WorkArchive>}} WorkStatePersistence
+ * @typedef {{loadIssue:WorkStorageLoadIssue,canWrite?:boolean,commit:(state:WorkStateData,changes:Object)=>Promise<WorkWriteResult>,restore:(state:WorkStateData)=>Promise<WorkWriteResult>,hydrateImports:(state:WorkStateData)=>Promise<WorkStateData>,export:(state:WorkStateData)=>Promise<WorkArchive>}} WorkStatePersistence
  * @typedef {{defaultState:typeof WorkTimeApp.domain.state.defaultState,calendarInfo:typeof WorkTimeApp.domain.calendar.calendarInfo,validateTimeTemplate:typeof WorkTimeApp.domain.validation.validateTimeTemplate,applyObservation:typeof WorkTimeApp.domain.observations.applyObservation,compactOAState:typeof WorkTimeApp.domain.observations.compactOAState,deleteImport:typeof WorkTimeApp.domain.observations.deleteImport}} WorkApplicationCore
  * @typedef {Pick<typeof WorkTimeDomainStatistics,'summary'|'countRestOvertimeDays'|'selectOvertimeRequirement'|'targetPace'|'pendingWorkdays'|'oaStaleness'|'attendanceHoursThrough'|'cumulativeAverageOvertime'> & Pick<typeof WorkTimeDomainTime,'validDate'|'businessDate'|'businessMinutes'|'timeMin'|'localDate'|'dateKey'> & Pick<typeof WorkTimeDomainRecords,'calculate'> & Pick<typeof WorkTimeDomainSchedule,'scheduleForDate'> & Pick<typeof WorkTimeDomainState,'DEFAULT_START'>} WorkDerivedCore
  * @typedef {{agenda:{validate:(item:any)=>WorkAgendaItem,validateItems:(items:any)=>WorkAgendaItem[],forDate:(items:WorkAgendaItem[],date:string)=>WorkAgendaItem[],lastDate:(item:WorkAgendaItem)=>string,overlaps:(item:WorkAgendaItem,first:string,last:string)=>boolean,segments:(items:WorkAgendaItem[],dates:string[])=>any[],move:(item:WorkAgendaItem,days:number)=>WorkAgendaItem},batch:typeof WorkTimeDomainBatch,calendar:typeof WorkTimeDomainCalendar,observations:typeof WorkTimeDomainObservations,preferences:typeof WorkTimeDomainPreferences,records:typeof WorkTimeDomainRecords,schedule:typeof WorkTimeDomainSchedule,state:typeof WorkTimeDomainState,statistics:typeof WorkTimeDomainStatistics,time:typeof WorkTimeDomainTime,validation:typeof WorkTimeDomainValidation}} WorkDomainNamespace
  * @typedef {{application:typeof WorkTimeServiceApplication,derived:typeof WorkTimeServiceDerived,clock:typeof WorkTimeServiceClock,[key:string]:any}} WorkServiceNamespace
- * @typedef {{domain:WorkDomainNamespace,services:WorkServiceNamespace,ui:Object,data:{dateInfo:Object,[key:string]:any}}} WorkTimeNamespace
+ * @typedef {{isDevelopmentEnabled:()=>boolean,domain:WorkDomainNamespace,services:WorkServiceNamespace,ui:Object,data:{dateInfo:Object,[key:string]:any}}} WorkTimeNamespace
  *
  * OA status 'off' is an observation with no punches, not an implicit personal leave.
  * sourcePriority defaults to OA, filling missing clocks from manual; manual priority uses manual alone.

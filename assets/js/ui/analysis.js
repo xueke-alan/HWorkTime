@@ -375,7 +375,7 @@ WorkTimeApp.ui.createAnalysis = function ({
       Home: 0,
       End: groups.length - 1,
     }[event.key];
-    if (event.key === "Enter" || event.key === " ") {
+    if (event.key === "Enter") {
       event.preventDefault();
       pinDate(group.dataset.date);
     }

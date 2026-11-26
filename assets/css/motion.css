@@ -6,14 +6,17 @@ html:where([data-reduced-motion="false"]):not(.app-loading) :where(body, .panel,
 
 /* Selection thickness is an inset shadow; keep it in the transition list even
    when shared palette rules replace the calendar's component transitions. */
-html:where([data-reduced-motion="false"]):not(.app-loading) body #calendar > .day,
-  html:where([data-reduced-motion="false"]):not(.app-loading) body .year-month .year-day {
+html:where([data-reduced-motion="false"]):not(.app-loading) body #calendar > .day {
     transition:
       background-color 180ms ease-out,
       border-color 240ms var(--motion-ease),
       box-shadow 240ms var(--motion-ease),
       opacity 180ms var(--motion-ease);
   }
+
+html:where([data-reduced-motion="false"]):not(.app-loading) body .year-month .year-day {
+  transition: border-color 180ms var(--motion-ease), box-shadow 180ms var(--motion-ease);
+}
 
 /* Residual shared-file rules restored to their component owner. */
 body .sidebar-actions > #importOpen {
@@ -71,11 +74,11 @@ body .summary-sidebar.sidebar-navigation-instant .sidebar-oa-pane[open] {
 }
 @keyframes backup-ripple {
   from {
-    transform: scale(0.75);
-    opacity: 0.8;
+    transform: scale(0);
+    opacity: 0.26;
   }
   to {
-    transform: scale(2.2);
+    transform: scale(1);
     opacity: 0;
   }
 }
@@ -280,7 +283,7 @@ body .leave-popover:not(.hidden) {
   :where(html:where([data-reduced-motion="true"])) body .motion-year-month {
     animation: none !important;
   }
-:where(html:where([data-reduced-motion="true"])) body .year-watermark {
+:root[data-reduced-motion="true"] body .year-watermark {
   transition: none;
 }
 

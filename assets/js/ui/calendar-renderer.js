@@ -133,6 +133,17 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
     return [attribute.value, ...profiles].join(" ");
   }
 
+  function syncAttributes(element, next) {
+    for (const attribute of [...element.attributes])
+      if (!next.hasAttribute(attribute.name))
+        element.removeAttribute(attribute.name);
+    for (const attribute of next.attributes) {
+      const value = attributeValue(element, attribute);
+      if (element.getAttribute(attribute.name) !== value)
+        element.setAttribute(attribute.name, value);
+    }
+  }
+
   function updateHTML(element, html) {
     if (markup.get(element) === html) return;
     element.innerHTML = html;
@@ -166,31 +177,12 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
       element.querySelector(".year-month-number"),
       candidate.querySelector(".year-month-number").textContent,
     );
-    const monthSwitch = element.querySelector(".year-month-switch"),
-      nextMonthSwitch = candidate.querySelector(".year-month-switch");
-    if (
-      monthSwitch?.getAttribute("aria-pressed") !==
-      nextMonthSwitch?.getAttribute("aria-pressed")
-    )
-      monthSwitch?.setAttribute(
-        "aria-pressed",
-        nextMonthSwitch?.getAttribute("aria-pressed") || "false",
-      );
-    for (const next of nextButtons) {
-      const button = buttons.get(next.dataset.yearDate);
-      for (const attribute of [...button.attributes])
-        if (!next.hasAttribute(attribute.name))
-          button.removeAttribute(attribute.name);
-      for (const attribute of next.attributes) {
-        const value = attributeValue(button, attribute);
-        if (button.getAttribute(attribute.name) !== value)
-          button.setAttribute(attribute.name, value);
-      }
-      // Year cards always carry number, lunar, festival and badge layers.
-      // Replace only when data changed; mode switches keep the same markup.
-      if (button.innerHTML !== next.innerHTML)
-        button.innerHTML = next.innerHTML;
-    }
+    for (const next of nextButtons)
+      syncAttributes(buttons.get(next.dataset.yearDate), next);
+    const layers = element.querySelectorAll(".year-day-layer");
+    candidate.querySelectorAll(".year-day-layer").forEach((layer, index) => {
+      updateHTML(layers[index], layer.innerHTML);
+    });
     return true;
   }
 
@@ -225,17 +217,12 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
           candidate.dataset.yearMonth ||
           candidate.getAttribute("aria-label") ||
           index);
-    if (
-      !candidates.some((candidate, index) => {
-        const previous = calendarNodes.get(nodeKey(candidate, index));
-        return previous?.element.parentElement === container;
-      })
-    ) {
-      // A different month/year structure must switch in one operation; intermediate
-      // layouts otherwise change the browser's scroll anchor on narrow screens.
-      container.replaceChildren(...candidates);
-      calendarNodes.clear();
-    }
+    const surfaces = WorkTimeApp.ui.calendarCells(
+      candidates.map((candidate, index) => ({
+        key: nodeKey(candidate, index),
+        tag: candidate.localName,
+      })),
+    );
     const headerAlignment = [],
       artworkMotions = [],
       sourceMotions = [],
@@ -261,8 +248,8 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
               })),
             )
           : [];
-      let element = candidate,
-        sourceMotion;
+      const element = surfaces[index];
+      let sourceMotion;
       const currentCard =
           previous?.element.parentElement === container
             ? previous.element
@@ -295,7 +282,6 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
       } else if (currentCard && !animatePlanned)
         stopPlannedAnimation(currentCard);
       if (previous && previous.element.parentElement === container) {
-        element = previous.element;
         if (previous.source !== source) {
           if (
             element.matches(".day") &&
@@ -364,6 +350,12 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
             // header, otherwise the replacement's taller raw line boxes move
             // agenda contents until the next alignment frame.
             const preserved = new Map();
+            const select = element.querySelector(":scope > .day-select"),
+              nextSelect = candidate.querySelector(":scope > .day-select");
+            if (select && nextSelect) {
+              syncAttributes(select, nextSelect);
+              preserved.set(nextSelect, select);
+            }
             if (preserveHeader) preserved.set(nextHeader, header);
             else if (nextHeader) headerAlignment.push(nextHeader);
             const currentBodies = [...element.children].filter((child) =>
@@ -417,7 +409,10 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
             element.classList.add("has-weather");
         }
       }
-      if (element === candidate) {
+      if (!currentCard) {
+        for (const attribute of candidate.attributes)
+          element.setAttribute(attribute.name, attribute.value);
+        element.replaceChildren(...candidate.childNodes);
         const header = element.querySelector(".daytop");
         if (header) headerAlignment.push(header);
       }
@@ -433,8 +428,6 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
           (attribute) => attribute.name,
         ),
       });
-      if (container.children[index] !== element)
-        container.insertBefore(element, container.children[index] || null);
       // Roll actual text changes, retaining the number component across style and
       // source changes so selecting an unchanged record cannot restart motion.
       for (const field of numberFields) {
@@ -476,8 +469,6 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
         sourceMotions.push({ dot, transform });
       }
     });
-    for (const [key, previous] of calendarNodes)
-      if (!next.has(key)) previous.element.remove();
     if (focusDate && document.activeElement !== focused)
       container
         .querySelector(

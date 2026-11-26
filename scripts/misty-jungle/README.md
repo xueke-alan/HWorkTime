@@ -46,7 +46,7 @@ map to upstream red. FEN letters are R/C/D/W/P/T/L/E. Saving remains version 1.
 ## Verification
 
 `node scripts/misty-jungle/verify.cjs` checks compiled rules, terminal states,
-tactics, timing and allocation reuse. `node scripts/verify-jungle.cjs` tests
+tactics, timing and allocation reuse. `node scripts/verify/games/verify-jungle.cjs` tests
 file:// play with blocked HTTP(S), real WASM responses, cancellation, reload,
 failure/retry, local play, locales, animation and board rotation.
 

@@ -103,7 +103,7 @@ WorkTimeApp.ui.secondary.personal = function ({
       const office = document.createElement("small");
       office.className = "work-city-office";
       office.textContent = WorkTimeApp.i18n.message(details?.office || "");
-      option.title = name.textContent + " · " + office.textContent;
+      option.dataset.hintText = name.textContent + " · " + office.textContent;
       option.append(name, office);
       list.append(option);
     }
@@ -437,10 +437,7 @@ WorkTimeApp.ui.secondary.personal = function ({
                 cityMatches.length;
           highlightCity();
         }
-      } else if (
-        (event.key === " " || event.key === "Enter") &&
-        $("workCityOptions").hidden
-      ) {
+      } else if (event.key === "Enter" && $("workCityOptions").hidden) {
         event.preventDefault();
         showCities();
       } else if (

@@ -13,18 +13,69 @@ function offlineShell(root, { published = false, version } = {}) {
     return fs.readFileSync(file);
   };
   const html = read("index.html").toString();
-  const entries = new Set(["index.html", "manifest.webmanifest"]);
+  const entries = new Set([
+    "index.html",
+    "manifest.webmanifest",
+    "assets/icons/hworktime-wordmark.svg",
+    "assets/images/calendar-cat.png",
+  ]);
   for (const match of html.matchAll(/\b(?:src|href)="((?:assets\/)[^"#]+)"/g))
     entries.add(match[1]);
+  if (published) {
+    const manifest = JSON.parse(read("workspace/.vite/manifest.json"));
+    for (const chunk of Object.values(manifest)) {
+      for (const file of [
+        chunk.file,
+        ...(chunk.css || []),
+        ...(chunk.assets || []),
+      ])
+        entries.add("workspace/" + file);
+    }
+  }
+  // The versioned HTML can request a different cache key from a module import.
+  for (const page of ["index.html", "tools/convert-backup.html"]) {
+    entries.add(page);
+    for (const match of read(page)
+      .toString()
+      .matchAll(/\b(?:src|href)="([^"#]+)"/g)) {
+      if (
+        !/\.(?:js|css)(?:\?|$)/.test(match[1]) ||
+        /^(?:\w+:|\/)/.test(match[1])
+      )
+        continue;
+      entries.add(path.posix.join(path.posix.dirname(page), match[1]));
+    }
+  }
   const dynamic = [
-    ...["core", "date", "view", "startup"].map(
+    ...(!published
+      ? [
+          "assets/js/ui/workspace-file.min.js",
+          ...fs
+            .readdirSync(path.join(root, "assets/js/ui/file-chunks"))
+            .filter((file) => file.endsWith(".js"))
+            .map((file) => "assets/js/ui/file-chunks/" + file),
+          "assets/js/ui/workspace-file.min.css",
+          "assets/js/ui/converter-file.min.js",
+          "assets/js/ui/converter-file.min.css",
+        ]
+      : []),
+    ...["core", "date", "view", "startup", "secondary"].map(
       (name) => `assets/js/ui/${name}-runtime.min.js`,
     ),
     ...["zh-CN", "zh-TW", "zh-HK", "en", "ja", "ko"].map(
       (id) => `assets/js/locales/runtime/${id}.js`,
     ),
     "assets/vendor/lunar.min.js",
+    "assets/data/international-festivals.js",
+    "assets/data/festivals.js",
+    "assets/css/game-menu.css",
     "assets/css/analysis.css",
+    "assets/css/agenda-details.css",
+    "assets/js/ui/agenda-feature.min.js",
+    "assets/js/ui/games-panel-runtime.min.js",
+    ...["zh-CN", "en", "zh-TW", "zh-HK", "ko", "ja"].map(
+      (id) => "assets/js/locales/runtime/games/" + id + ".js",
+    ),
     "assets/css/game-session.css",
   ];
   for (const asset of dynamic)
@@ -58,7 +109,9 @@ function offlineShell(root, { published = false, version } = {}) {
     );
   };
   const digest = hash(
-    assets.map((asset) => asset + ":" + contentHash(asset)).join("\n"),
+    [...assets, "service-worker.js"]
+      .map((asset) => asset + ":" + contentHash(asset))
+      .join("\n"),
   );
   version ||= JSON.parse(read("package.json").toString()).version;
   return (

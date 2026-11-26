@@ -305,7 +305,6 @@ WorkTimeApp.ui.popover = (() => {
   document.body.append(hint);
   let target = null,
     text = "",
-    originalTitle = null,
     description = null,
     timer = null,
     motion = null,
@@ -339,9 +338,6 @@ WorkTimeApp.ui.popover = (() => {
     if (native && !hint.hidden) hint.hidePopover();
     hint.hidden = true;
     if (target) {
-      // Rendering may have supplied a newer title while this hint was open.
-      if (originalTitle !== null && target.getAttribute("title") === "")
-        target.setAttribute("title", originalTitle);
       if (description === null) target.removeAttribute("aria-describedby");
       else target.setAttribute("aria-describedby", description);
     }
@@ -452,12 +448,11 @@ WorkTimeApp.ui.popover = (() => {
     )
       return;
     const action = element.getAttribute("data-action-hint");
-    const title = element.getAttribute("title");
     const label = action
       ? WorkTimeApp.i18n.t(action)
       : action === ""
         ? element.getAttribute("aria-label")?.trim()
-        : (element.dataset.dateMarkerHint || title)?.trim();
+        : (element.dataset.dateMarkerHint || element.dataset.hintText)?.trim();
     if (!label) return;
     target = element;
     if (element.matches(".site-audio-activity"))
@@ -466,10 +461,7 @@ WorkTimeApp.ui.popover = (() => {
         attributeFilter: ["data-date-marker-hint", "hidden"],
       });
     text = label;
-    originalTitle = title;
     description = target.getAttribute("aria-describedby");
-    // Suppress native bubbles even when a visible label makes the hint redundant.
-    if (title !== null) target.setAttribute("title", "");
     // Bottom navigation never opens hints, including clipped or status labels.
     if (element.closest(".editor > .notification-tabs")) return;
     if (action !== null && element.matches(':disabled,[aria-disabled="true"]'))
@@ -496,7 +488,8 @@ WorkTimeApp.ui.popover = (() => {
     );
     timer = setTimeout(show, immediate ? 0 : 240);
   }
-  const hintTrigger = "[title],[data-action-hint],[data-date-marker-hint]";
+  const hintTrigger =
+    "[data-hint-text],[data-action-hint],[data-date-marker-hint]";
   document.addEventListener("pointerover", (event) => {
     if (event.pointerType !== "touch")
       open(event.target.closest?.(hintTrigger));

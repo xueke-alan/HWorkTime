@@ -84,7 +84,7 @@ WorkTimeApp.games.register({
       choosing = false;
       confirming = true;
       render();
-      cancel.focus();
+      coverView.focus("cancel");
     });
     restart.classList.add("game-icon-button");
     restart.append(WorkTimeApp.games.createIcon("restart-alt"));
@@ -107,10 +107,8 @@ WorkTimeApp.games.register({
     const field = node("div", "garden-field", arena);
     const stage = node("div", "garden-stage", field);
     const board = node("div", "garden-board", stage);
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const cover = node("section", "garden-cover", arena);
-    const coverTitle = node("h3", "", cover),
-      coverText = node("p", "", cover);
     const levels = WorkTimeApp.games.createLevelPage(
       root,
       "garden-level-page",
@@ -138,36 +136,36 @@ WorkTimeApp.games.register({
       render();
       picker.focus({ preventScroll: true });
     }
-    const coverActions = node("div", "garden-cover-actions", cover);
-    const primary = button(coverActions, "primary", () => {
-      if (confirming) start(0, Math.floor(Math.random() * 4294967296));
-      else if (rules.phase(state, tiles) === "won")
-        start(
-          state.level < rules.levelCount - 1 ? state.level + 1 : 0,
-          state.level < rules.levelCount - 1
-            ? state.seed
-            : Math.floor(Math.random() * 4294967296),
-        );
-      else start(state.level, state.seed);
-    });
-    const cancel = button(coverActions, "cancel", () => {
-      confirming = false;
-      choosing = false;
-      render();
-      restart.focus();
-    });
-    const paintRestartCover = WorkTimeApp.games.createRestartCover({
-      cover: cover,
-      cancel: cancel,
-      accept: primary,
+    const coverView = WorkTimeApp.ui.mountSessionCover(
+      cover,
+      "garden",
       signal,
-    });
+      (id) => {
+        if (paused || disposed || signal.aborted || busy) return;
+        if (id === "cancel") {
+          confirming = false;
+          choosing = false;
+          render();
+          restart.focus();
+          return;
+        }
+        if (confirming) start(0, Math.floor(Math.random() * 4294967296));
+        else if (rules.phase(state, tiles) === "won")
+          start(
+            state.level < rules.levelCount - 1 ? state.level + 1 : 0,
+            state.level < rules.levelCount - 1
+              ? state.seed
+              : Math.floor(Math.random() * 4294967296),
+          );
+        else start(state.level, state.seed);
+      },
+    );
     const trayBlock = node("div", "garden-tray-block", arena);
     const trayHeader = node("div", "garden-tray-heading", trayBlock);
     const trayTitle = node("strong", "", trayHeader),
       trayCount = node("span", "", trayHeader);
     const tray = node("div", "garden-tray", trayBlock);
-    tray.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(tray);
     const traySlots = Array.from({ length: 7 }, () => {
       const slot = node("button", "garden-slot garden-token", tray);
       slot.type = "button";
@@ -180,7 +178,7 @@ WorkTimeApp.games.register({
     const reserveRow = node("div", "garden-reserve-row", field);
     const reserveTitle = node("strong", "game-sr-only", reserveRow);
     const reserve = node("div", "garden-reserve", reserveRow);
-    reserve.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(reserve);
     const reserveSlots = Array.from({ length: 2 }, () => {
       const slot = node("button", "garden-slot garden-token", reserve);
       slot.type = "button";
@@ -670,7 +668,7 @@ WorkTimeApp.games.register({
       await moveMotion(before, next, action, id, origins);
       if (disposed || signal.aborted || paused || state !== next) return;
       render();
-      if (rules.phase(state, tiles) === "won") primary.focus();
+      if (rules.phase(state, tiles) === "won") coverView.focus("primary");
       else if (action === "pick") focusTile();
       else if (action === "store")
         (
@@ -693,7 +691,7 @@ WorkTimeApp.games.register({
           state.removed.length - state.tray.length - state.reserve.length;
       root.setAttribute("aria-label", t("name"));
       restart.setAttribute("aria-label", t("new"));
-      restart.title = t("new");
+      restart.dataset.hintText = t("new");
       chapterTitle.textContent = t(
         "level" + rules.difficulty(state.level).chapter,
       );
@@ -701,7 +699,7 @@ WorkTimeApp.games.register({
       chapterTitle.setAttribute("aria-current", "step");
       picker.textContent =
         String(state.level + 1).padStart(2, "0") + " / " + rules.levelCount;
-      picker.title = t("choose");
+      picker.dataset.hintText = t("choose");
       picker.setAttribute("aria-expanded", String(choosing));
       root.dataset.choosing = String(choosing);
       play.hidden = choosing;
@@ -713,7 +711,7 @@ WorkTimeApp.games.register({
           choosing;
       levels.refresh();
       closeLevels.setAttribute("aria-label", t("cancel"));
-      closeLevels.title = t("cancel");
+      closeLevels.dataset.hintText = t("cancel");
       picker.setAttribute(
         "aria-label",
         t("levelLabel", { n: state.level + 1, stars: records[state.level] }),
@@ -770,7 +768,7 @@ WorkTimeApp.games.register({
       tray.dataset.danger = String(state.tray.length >= 5);
       tray.setAttribute("aria-label", t("tray"));
       reserveTitle.textContent = t("reserve");
-      reserveRow.title = t("reserve") + " · " + t("reserveRule");
+      reserveRow.dataset.hintText = t("reserve") + " · " + t("reserveRule");
       reserve.setAttribute("aria-label", t("reserve"));
       for (const [slots, ids, action] of [
         [traySlots, state.tray, "store"],
@@ -796,7 +794,7 @@ WorkTimeApp.games.register({
               ? t("empty")
               : t(action, { name: symbolName(tiles[id].type) }),
           );
-          slot.title = slot.getAttribute("aria-label");
+          slot.dataset.hintText = slot.getAttribute("aria-label");
         });
       toolLabels.get(store).textContent = t("storeTool");
       store.disabled =
@@ -805,7 +803,7 @@ WorkTimeApp.games.register({
         !state.tray.length ||
         state.reserve.length >= 2;
       store.dataset.count = String(2 - state.reserve.length);
-      store.title = t("reserveRule");
+      store.dataset.hintText = t("reserveRule");
       store.setAttribute(
         "aria-label",
         t("storeTool") + " · " + (2 - state.reserve.length),
@@ -835,38 +833,40 @@ WorkTimeApp.games.register({
       );
       warning.textContent = saveFailed ? t("saveFailed") : "";
       cover.hidden = !confirming && phase === "playing";
-      coverTitle.textContent = t(
-        confirming
-          ? "confirm"
-          : phase === "won"
-            ? state.level === rules.levelCount - 1
-              ? "finished"
-              : "won"
-            : "blocked",
-      );
-      coverText.textContent = t(
-        confirming
-          ? "confirmText"
-          : phase === "won"
-            ? "wonText"
-            : "blockedText",
-      );
-      if (!confirming && phase === "won")
-        coverText.textContent =
-          "★".repeat(rules.stars(state, tiles)) + " · " + t("rating");
-      primary.textContent = t(
-        confirming
-          ? "new"
-          : phase === "won"
-            ? state.level === rules.levelCount - 1
-              ? "again"
-              : "next"
-            : "retry",
-      );
-      cancel.hidden = !confirming;
-      cancel.textContent = t("cancel");
+      if (!cover.hidden)
+        coverView.display({
+          confirming,
+          title: t(
+            confirming
+              ? "confirm"
+              : phase === "won"
+                ? state.level === rules.levelCount - 1
+                  ? "finished"
+                  : "won"
+                : "blocked",
+          ),
+          detail: confirming
+            ? t("confirmText")
+            : phase === "won"
+              ? "★".repeat(rules.stars(state, tiles)) + " · " + t("rating")
+              : t("blockedText"),
+          actions: [
+            ...(confirming ? [{ id: "cancel", label: t("cancel") }] : []),
+            {
+              id: "primary",
+              label: t(
+                confirming
+                  ? "new"
+                  : phase === "won"
+                    ? state.level === rules.levelCount - 1
+                      ? "again"
+                      : "next"
+                    : "retry",
+              ),
+            },
+          ],
+        });
       help.refresh();
-      paintRestartCover(confirming);
     }
     listen(board, "click", (event) => {
       const tile = event.target.closest("[data-tile]");

@@ -1,2 +1,2 @@
 #!/bin/sh
-exec node scripts/pre-push.cjs "$@"
+exec node scripts/hooks/pre-push.cjs "$@"

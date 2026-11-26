@@ -1,0 +1,229 @@
+body .work-body > :is(.sidebar-brand, .workspace-header) {
+  border: 0;
+  min-width: 0;
+  height: auto;
+  position: relative;
+  z-index: 8;
+  padding: 0.375rem 0;
+}
+body .work-body > .workspace-header {
+  border-block-end: 1px solid var(--line);
+  display: grid;
+  align-content: center;
+  overflow: visible;
+}
+body .work-body > .sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  margin: 0;
+}
+.work-body .sidebar-brand h1 {
+  margin: 0;
+  width: 7.1em;
+  max-width: calc(100% - 1rem);
+  font-size: clamp(1.4rem, 1.65vw, 2rem);
+}
+.work-body .sidebar-brand-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.workspace-header-controls {
+  --control-height: 40px;
+  --toolbar-column-gap: 0.5rem;
+  --workspace-view-gap: 24px;
+}
+.workspace-header-controls .ant-btn-icon {
+  color: var(--toolbar-icon-color);
+}
+.workspace-tool-buttons .ant-btn-variant-solid[aria-pressed="true"] {
+  background-color: var(--ant-btn-bg-color);
+  border-color: var(--ant-btn-border-color);
+}
+.workspace-tool-buttons .ant-btn-variant-solid .ant-btn-icon {
+  color: var(--ant-btn-text-color);
+}
+.workspace-header-controls .ant-btn-icon svg,
+body .workspace-header .workspace-tool-buttons button > .ui-icon {
+  display: block;
+  width: 20px;
+  height: 20px;
+}
+body .workspace-header #monthTitle {
+  --ant-btn-bg-color-active: var(--ant-btn-bg-color);
+  border: 0;
+  box-shadow: none;
+  font-family: var(--font-ui);
+  font-weight: 700;
+}
+body .workspace-header #monthTitle:hover {
+  --ant-btn-bg-color-active: var(--ant-btn-bg-color-hover);
+}
+body .workspace-header .month-controls button.icon-only {
+  width: var(--control-height);
+  min-width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
+}
+@media (min-width: 851px) {
+  body .work-body > .workspace-header {
+    min-height: 68px;
+  }
+  body .workspace > .editor {
+    --column-header-height: var(--workspace-toolbar-height, 68px);
+  }
+  body .editor .editor-mode-header {
+    box-sizing: border-box;
+    height: var(--column-header-height);
+  }
+}
+.workspace-header-controls,
+.workspace-tool-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.workspace-header-controls {
+  padding-inline-end: 0.75rem;
+  column-gap: var(--toolbar-column-gap);
+}
+.workspace-tool-buttons {
+  --icon-button-width: 56px;
+  /* Reserve space for the widest mode so hiding its action cannot rewrap the toolbar. */
+  min-inline-size: calc(
+    3 * var(--icon-button-width) + var(--workspace-view-gap) + 0.5rem
+  );
+  margin-inline-start: auto;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+.workspace-tool-buttons .workspace-context-actions,
+.workspace-permanent-actions {
+  display: flex;
+  align-items: center;
+}
+.workspace-tool-buttons .workspace-context-actions {
+  gap: 0;
+}
+.workspace-permanent-actions {
+  gap: 0.5rem;
+}
+.workspace-action-divider {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+body .workspace-header .month-controls {
+  margin: 0;
+  margin-inline-end: calc(
+    var(--workspace-view-gap) - var(--toolbar-column-gap)
+  );
+  position: relative;
+  flex: none;
+  flex-wrap: nowrap;
+}
+:is(.workspace-view-divider, .workspace-action-divider) {
+  box-sizing: border-box;
+  inline-size: var(--workspace-view-gap);
+  block-size: var(--control-height);
+  /* Measure the line against the button face inside its border. */
+  padding-block: var(--ui-stroke);
+  pointer-events: none;
+}
+:is(.workspace-view-divider, .workspace-action-divider)::before {
+  content: "";
+  inline-size: var(--workspace-divider-thickness);
+  block-size: 60%;
+  border-radius: calc(var(--workspace-divider-thickness) / 2);
+  background: var(--workspace-divider-color);
+}
+.workspace-view-divider {
+  display: none;
+  position: absolute;
+  inset-inline-start: 100%;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  place-items: center;
+}
+.workspace-header[data-views-inline] .workspace-view-divider {
+  display: grid;
+}
+.workspace-header .workspace-command-host {
+  display: none !important;
+}
+.workspace-tool-buttons .agenda-toolbar-slot {
+  width: var(--icon-button-width);
+}
+.workspace-tool-buttons
+  .agenda-toolbar-slot:has(
+    > :is(#yearViewToggle, #agendaViewToggle):not([hidden])
+  ) {
+  width: max-content;
+}
+.workspace-tool-buttons
+  .agenda-toolbar-slot
+  > :is(button, #yearViewToggle, #agendaViewToggle) {
+  grid-area: 1/1;
+}
+.workspace-header-controls {
+  container-type: inline-size;
+}
+@container (max-width: 460px) {
+  .workspace-tool-buttons:has(#agendaViewToggle:not([hidden])) {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-end;
+    row-gap: 0.5rem;
+  }
+  .workspace-context-actions:has(#agendaViewToggle:not([hidden]))
+    .workspace-action-divider {
+    display: none;
+  }
+}
+@media (min-width: 1151px) {
+  body .work-body > .workspace-header {
+    border-inline-start: var(--ui-stroke) solid var(--line);
+  }
+  .workspace-header-controls {
+    padding-inline-start: calc(
+      var(--calendar-inline-gutter) - var(--ui-stroke)
+    );
+  }
+  body .workspace-header .month-controls {
+    margin-inline-start: 10px;
+  }
+}
+@media (min-width: 1151px) and (max-width: 1280px) {
+  .workspace-header-controls {
+    --toolbar-column-gap: 0.25rem;
+  }
+  body .workspace-header .month-controls {
+    gap: 0.25rem;
+  }
+  body .workspace-header .month-controls .month-title {
+    font-size: 1.3rem;
+  }
+}
+@media (max-width: 1150px) {
+  .workspace-header-controls {
+    padding-inline: 0.75rem;
+  }
+}
+
+@media (max-width: 390px) {
+  body .workspace-header .month-controls {
+    --month-item-gap: 0.32rem;
+    --control-height: 34px;
+    gap: var(--month-item-gap);
+  }
+}
+@media (max-width: 360px) {
+  .workspace-tool-buttons {
+    --icon-button-width: var(--control-height);
+  }
+}

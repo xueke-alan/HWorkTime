@@ -1,5 +1,33 @@
 "use strict";
 (() => {
+  const messages = {
+    "zh-CN": ["显示虚拟形象", "让小猫抬头", "未能保存虚拟形象设置"],
+    "zh-TW": ["顯示虛擬形象", "讓小貓抬頭", "無法儲存虛擬形象設定"],
+    "zh-HK": ["顯示虛擬形象", "讓小貓抬頭", "未能儲存虛擬形象設定"],
+    en: [
+      "Show calendar mascot",
+      "Make the kitten look up",
+      "Could not save the calendar mascot setting",
+    ],
+    ja: [
+      "カレンダーのマスコットを表示",
+      "子猫に顔を上げてもらう",
+      "マスコットの設定を保存できませんでした",
+    ],
+    ko: [
+      "캘린더 마스코트 표시",
+      "고양이가 고개를 들게 하기",
+      "마스코트 설정을 저장하지 못했습니다",
+    ],
+  };
+  for (const [language, [show, lookUp, saveFailed]] of Object.entries(messages))
+    Object.assign(WorkTimeApp.data.locales[language], {
+      "calendarMascot.show": show,
+      "calendarMascot.lookUp": lookUp,
+      "calendarMascot.saveFailed": saveFailed,
+    });
+})();
+(() => {
   const labels = {
     "zh-CN": "自动朗读",
     en: "Automatic reading",
@@ -2230,16 +2258,16 @@ for (const [language, value] of Object.entries({
 })();
 (() => {
   const rows = {
-    "zh-CN": ["所需加班", "可用工时"],
-    "zh-TW": ["所需加班", "可用工時"],
-    "zh-HK": ["所需加班", "可用工時"],
-    en: ["OT needed", "Available"],
-    ko: ["필요 초과", "가능 시간"],
-    ja: ["必要残業", "余裕時間"],
+    "zh-CN": ["所需加班总工时", "可用工时"],
+    "zh-TW": ["所需加班總工時", "可用工時"],
+    "zh-HK": ["所需加班總工時", "可用工時"],
+    en: ["Total OT needed", "Available"],
+    ko: ["필요한 총 초과근무 시간", "가능 시간"],
+    ja: ["必要な総残業時間", "余裕時間"],
   };
   for (const [language, [needed, available]] of Object.entries(rows))
     Object.assign(WorkTimeApp.data.locales[language], {
-      "short.needed": needed,
+      "summary.totalOvertimeNeeded": needed,
       "short.available": available,
       "short.target.remaining": "{label} · {count} d",
     });
@@ -2505,32 +2533,90 @@ for (const [language, value] of Object.entries({
     "zh-CN": [
       "删除 {date} 导入的“{sources}”？将更新 {affected} 个日期，其中 {restored} 个恢复其他导入记录，{cleared} 个清除此批记录。",
       "共 {imports} 次导入 · {dates} 个有效日期",
+      "未解析到任何考勤数据",
+      "重复考勤已合并，保留最新一次导入",
     ],
     en: [
       "Delete “{sources}”, imported {date}? This updates {affected} dates: {restored} restored from other imports and {cleared} cleared from this batch.",
       "{imports} imports · {dates} valid dates",
+      "No attendance data found",
+      "Duplicate attendance records merged. The latest import was kept.",
     ],
     "zh-TW": [
       "刪除 {date} 匯入的「{sources}」？將更新 {affected} 個日期，其中 {restored} 個還原其他匯入記錄，{cleared} 個清除此批記錄。",
       "共 {imports} 次匯入 · {dates} 個有效日期",
+      "未解析到任何考勤資料",
+      "重複出勤記錄已合併，保留最新一次匯入",
     ],
     "zh-HK": [
       "刪除 {date} 匯入的「{sources}」？將更新 {affected} 個日期，其中 {restored} 個還原其他匯入記錄，{cleared} 個清除此批記錄。",
       "共 {imports} 次匯入 · {dates} 個有效日期",
+      "未解析到任何考勤資料",
+      "重複考勤記錄已合併，保留最新一次匯入",
     ],
     ko: [
       "{date}에 가져온 ‘{sources}’을 삭제할까요? {affected}개 날짜가 갱신됩니다. {restored}개는 다른 가져오기 기록으로 복원되고, {cleared}개는 이 묶음에서 제거됩니다.",
       "가져오기 {imports}회 · 유효 날짜 {dates}개",
+      "근태 데이터를 찾지 못했습니다",
+      "중복 근태 기록을 합쳐 가장 최근에 가져온 기록을 남겼습니다.",
     ],
     ja: [
       "{date}に取り込んだ「{sources}」を削除しますか？{affected}日分を更新し、{restored}日分は別の取込から復元、{cleared}日分はこの取込から消去します。",
       "取込{imports}件・有効な日付{dates}日分",
+      "解析できる勤怠データがありません",
+      "重複する勤怠記録をまとめ、最新の取込を残しました。",
     ],
   };
-  for (const [language, [confirmation, totals]] of Object.entries(rows))
+  for (const [
+    language,
+    [confirmation, totals, noAttendanceData, duplicateBatch],
+  ] of Object.entries(rows))
     Object.assign(WorkTimeApp.data.locales[language], {
       "import.deleteSummary": confirmation,
       "import.historyTotals": totals,
+      "import.noAttendanceData": noAttendanceData,
+      "import.duplicateBatch": duplicateBatch,
+    });
+})();
+
+(() => {
+  const rows = {
+    "zh-CN": [
+      "刷新页面？",
+      "刷新",
+      "刷新会丢失未导入的考勤文本和其他未保存的修改。",
+    ],
+    "zh-TW": [
+      "重新整理頁面？",
+      "重新整理",
+      "重新整理會遺失未匯入的考勤文字和其他未儲存的變更。",
+    ],
+    "zh-HK": [
+      "重新載入頁面？",
+      "重新載入",
+      "重新載入會遺失未匯入的考勤文字和其他未儲存的變更。",
+    ],
+    en: [
+      "Reload this page?",
+      "Reload",
+      "Reloading will discard unimported attendance text and other unsaved changes.",
+    ],
+    ko: [
+      "페이지를 새로고침할까요?",
+      "새로고침",
+      "새로고침하면 가져오지 않은 근태 텍스트와 저장하지 않은 변경사항이 사라집니다.",
+    ],
+    ja: [
+      "ページを再読み込みしますか？",
+      "再読み込み",
+      "再読み込みすると、取り込んでいない勤怠テキストと未保存の変更が失われます。",
+    ],
+  };
+  for (const [language, [title, confirm, warning]] of Object.entries(rows))
+    Object.assign(WorkTimeApp.data.locales[language], {
+      "import.reloadTitle": title,
+      "import.reloadConfirm": confirm,
+      "import.reloadDraftWarning": warning,
     });
 })();
 
@@ -2750,243 +2836,54 @@ for (const [language, label] of Object.entries({
 })();
 (() => {
   const keys = [
-    "save",
-    "saveHint",
-    "import",
-    "paste",
-    "file",
-    "preview",
-    "before",
-    "cancel",
-    "confirm",
-    "mergeNote",
-    "conflict",
-    "local",
-    "incoming",
-    "added",
-    "merged",
-    "unchanged",
-    "improved",
-    "done",
-    "copied",
-    "downloaded",
-    "empty",
-    "invalid",
-    "wrongType",
-    "version",
-    "tooLarge",
     "localInvalid",
     "changed",
     "recovery",
-    "noBackup",
     "storageError",
-    "clipboardFallback",
     "gameOnly",
   ];
   const messages = {
     "zh-CN": [
-      "保存存档",
-      "保存游戏存档：点击复制，按住两秒下载",
-      "导入游戏存档",
-      "粘贴游戏存档",
-      "选择文件",
-      "预览合并",
-      "下载导入前备份",
-      "取消",
-      "确认合并",
-      "成绩与通关记录自动择优合并；冲突进度默认保留本机。胜场取较大值，不累加。",
-      "冲突进度来源",
-      "保留本机",
-      "采用导入的进度",
-      "新增",
-      "合并",
-      "未变化",
-      "成绩提升",
-      "游戏存档导入完成：新增 {added}，合并 {merged}，未变化 {unchanged}。",
-      "存档已复制",
-      "游戏存档已下载。",
-      "暂无游戏存档。",
-      "游戏存档数据损坏或包含不支持的游戏。",
-      "请选择游戏专用存档；此入口不支持整页备份。",
-      "不支持此游戏存档版本。",
-      "游戏存档或解压后的内容超过 16 MiB。",
       "本机游戏存档损坏，已停止操作，原始数据未删除。",
-      "本机存档已变化，预览已刷新，请重新检查并确认。",
-      "游戏存档恢复尚未完成，请释放存储空间后重新打开页面；当前不会继续导入。",
-      "暂无导入前备份。",
-      "无法读取或保存游戏存档，请检查浏览器存储与剪贴板权限。",
-      "无法读取剪贴板，请粘贴存档或选择文件。",
-      "这是游戏专用存档，请从游戏菜单导入。",
+      "读取备份期间游戏存档已变化，请重试。",
+      "游戏存档恢复尚未完成，请释放存储空间后重新打开页面。",
+      "无法读取或保存游戏存档，请检查浏览器存储权限。",
+      "游戏专用存档已停止支持。",
     ],
     "zh-TW": [
-      "儲存存檔",
-      "儲存遊戲存檔：點選複製，按住兩秒下載",
-      "匯入遊戲存檔",
-      "貼上遊戲存檔",
-      "選擇檔案",
-      "預覽合併",
-      "下載匯入前備份",
-      "取消",
-      "確認合併",
-      "成績與通關紀錄自動擇優合併；衝突進度預設保留本機。勝場取較大值，不累加。",
-      "衝突進度來源",
-      "保留本機",
-      "採用匯入的進度",
-      "新增",
-      "合併",
-      "未變更",
-      "成績提升",
-      "遊戲存檔匯入完成：新增 {added}，合併 {merged}，未變更 {unchanged}。",
-      "存檔已複製",
-      "遊戲存檔已下載。",
-      "暫無遊戲存檔。",
-      "遊戲存檔資料損壞或包含不支援的遊戲。",
-      "請選擇遊戲專用存檔；此入口不支援整頁備份。",
-      "不支援此遊戲存檔版本。",
-      "遊戲存檔或解壓縮後的內容超過 16 MiB。",
-      "本機遊戲存檔損壞，已停止操作，原始資料未刪除。",
-      "本機存檔已變更，預覽已更新，請重新檢查並確認。",
-      "遊戲存檔還原尚未完成，請釋放儲存空間後重新開啟頁面；目前不會繼續匯入。",
-      "暫無匯入前備份。",
-      "無法讀取或儲存遊戲存檔，請檢查瀏覽器儲存與剪貼簿權限。",
-      "無法讀取剪貼簿，請貼上存檔或選擇檔案。",
-      "這是遊戲專用存檔，請從遊戲選單匯入。",
+      "本機遊戲存檔已損毀，操作已停止，原始資料仍保留。",
+      "讀取備份時遊戲存檔已變更，請再試一次。",
+      "遊戲存檔尚未完成復原，請釋放儲存空間後重新開啟頁面。",
+      "無法讀取或儲存遊戲存檔，請檢查瀏覽器儲存權限。",
+      "遊戲專用存檔已停止支援。",
     ],
     "zh-HK": [
-      "儲存存檔",
-      "儲存遊戲存檔：點選複製，按住兩秒下載",
-      "匯入遊戲存檔",
-      "貼上遊戲存檔",
-      "選擇檔案",
-      "預覽合併",
-      "下載匯入前備份",
-      "取消",
-      "確認合併",
-      "成績與過關紀錄自動擇優合併；衝突進度預設保留本機。勝場取較大值，不累加。",
-      "衝突進度來源",
-      "保留本機",
-      "採用匯入的進度",
-      "新增",
-      "合併",
-      "未變更",
-      "成績提升",
-      "遊戲存檔匯入完成：新增 {added}，合併 {merged}，未變更 {unchanged}。",
-      "存檔已複製",
-      "遊戲存檔已下載。",
-      "暫無遊戲存檔。",
-      "遊戲存檔資料損壞或包含不支援的遊戲。",
-      "請選擇遊戲專用存檔；此入口不支援整頁備份。",
-      "不支援此遊戲存檔版本。",
-      "遊戲存檔或解壓縮後的內容超過 16 MiB。",
-      "本機遊戲存檔損壞，已停止操作，原始資料未刪除。",
-      "本機存檔已變更，預覽已更新，請重新檢查並確認。",
-      "遊戲存檔還原尚未完成，請釋放儲存空間後重新開啟頁面；目前不會繼續匯入。",
-      "暫無匯入前備份。",
-      "無法讀取或儲存遊戲存檔，請檢查瀏覽器儲存與剪貼簿權限。",
-      "無法讀取剪貼簿，請貼上存檔或選擇檔案。",
-      "這是遊戲專用存檔，請從遊戲選單匯入。",
+      "本機遊戲存檔已損壞，操作已停止，原始資料仍保留。",
+      "讀取備份期間遊戲存檔已變更，請重試。",
+      "遊戲存檔尚未完成復原，請釋放儲存空間後重新開啟頁面。",
+      "無法讀取或儲存遊戲存檔，請檢查瀏覽器儲存權限。",
+      "遊戲專用存檔已停止支援。",
     ],
     en: [
-      "Save games",
-      "Save games: click to copy, hold for two seconds to download",
-      "Import game saves",
-      "Paste game saves",
-      "Choose file",
-      "Preview merge",
-      "Download pre-import backup",
-      "Cancel",
-      "Confirm merge",
-      "Best scores and completed levels merge automatically. Conflicting progress keeps local data by default. Win counts use the maximum, never a sum.",
-      "Conflicting progress",
-      "Keep local",
-      "Use imported progress",
-      "Added",
-      "Merged",
-      "Unchanged",
-      "Improved record",
-      "Game saves imported: {added} added, {merged} merged, {unchanged} unchanged.",
-      "Saves copied",
-      "Game saves downloaded.",
-      "No game saves yet.",
-      "Game saves are damaged or contain an unsupported game.",
-      "Choose a game-only archive. Full-page backups are not supported here.",
-      "This game archive version is not supported.",
-      "Game saves or decompressed data exceed 16 MiB.",
-      "A local game save is damaged. The operation stopped; original data was preserved.",
-      "Local saves changed. The preview was refreshed; review and confirm again.",
-      "Game save recovery is incomplete. Free storage and reopen the page; importing is blocked for now.",
-      "No pre-import backup yet.",
-      "Unable to read or save game data. Check browser storage and clipboard permissions.",
-      "Clipboard unavailable. Paste your saves or choose a file.",
-      "This is a game-only archive. Import it from the game menu.",
+      "Local game saves are damaged. The original data is still there.",
+      "Game saves changed while preparing the backup. Please try again.",
+      "Game save recovery is incomplete. Free up storage space and reopen the page.",
+      "Game saves could not be read or written. Check your browser storage permissions.",
+      "Game-only backups are no longer supported.",
     ],
     ja: [
-      "セーブを保存",
-      "ゲームのセーブ：クリックでコピー、2秒長押しでダウンロード",
-      "セーブを読み込む",
-      "セーブを貼り付け",
-      "ファイルを選択",
-      "統合を確認",
-      "読み込み前のバックアップ",
-      "キャンセル",
-      "統合する",
-      "最高記録とクリア済みステージを統合します。競合する進行状況は既定でこの端末を優先します。勝利数は加算せず大きい値を採用します。",
-      "競合する進行状況",
-      "この端末を優先",
-      "読み込んだ進行状況を使う",
-      "追加",
-      "統合",
-      "変更なし",
-      "記録更新",
-      "セーブの読み込み完了：追加 {added}、統合 {merged}、変更なし {unchanged}。",
-      "コピー済み",
-      "セーブをダウンロードしました。",
-      "セーブはまだありません。",
-      "セーブが破損しているか、未対応のゲームが含まれています。",
-      "ゲーム専用のセーブを選択してください。ページ全体のバックアップは使えません。",
-      "このセーブ形式のバージョンには対応していません。",
-      "セーブまたは展開後のデータが16 MiBを超えています。",
-      "この端末のセーブが破損しています。操作を停止し、元のデータを保持しました。",
-      "この端末のセーブが変更されました。更新された内容を確認して再度確定してください。",
-      "セーブの復元が未完了です。空き容量を確保してページを開き直してください。読み込みは停止しています。",
-      "読み込み前のバックアップはありません。",
-      "セーブの読み書きができません。ブラウザーの保存領域とクリップボード権限を確認してください。",
-      "クリップボードを読めません。貼り付けるかファイルを選択してください。",
-      "ゲーム専用のセーブです。ゲームメニューから読み込んでください。",
+      "ローカルのゲームセーブデータが破損しています。元のデータは残っています。",
+      "バックアップの準備中にゲームセーブデータが更新されました。もう一度お試しください。",
+      "ゲームセーブデータの復元が完了していません。空き容量を確保してページを開き直してください。",
+      "ゲームセーブデータを読み書きできません。ブラウザーのストレージ権限を確認してください。",
+      "ゲーム専用バックアップのサポートは終了しました。",
     ],
     ko: [
-      "저장 파일 내보내기",
-      "게임 저장: 클릭하여 복사, 2초간 눌러 다운로드",
-      "게임 저장 가져오기",
-      "게임 저장 붙여넣기",
-      "파일 선택",
-      "병합 미리보기",
-      "가져오기 전 백업 다운로드",
-      "취소",
-      "병합 확인",
-      "최고 기록과 완료한 단계를 자동 병합합니다. 충돌하는 진행 상황은 기본적으로 현재 기기를 유지합니다. 승리 횟수는 합산하지 않고 큰 값을 사용합니다.",
-      "충돌하는 진행 상황",
-      "현재 기기 유지",
-      "가져온 진행 상황 사용",
-      "추가",
-      "병합",
-      "변경 없음",
-      "기록 향상",
-      "게임 저장 가져오기 완료: 추가 {added}, 병합 {merged}, 변경 없음 {unchanged}.",
-      "복사 완료",
-      "게임 저장을 다운로드했습니다.",
-      "게임 저장이 없습니다.",
-      "저장 데이터가 손상되었거나 지원하지 않는 게임이 포함되어 있습니다.",
-      "게임 전용 저장을 선택하세요. 전체 페이지 백업은 지원하지 않습니다.",
-      "지원하지 않는 게임 저장 버전입니다.",
-      "저장 또는 압축 해제 데이터가 16 MiB를 초과합니다.",
-      "현재 기기의 저장이 손상되었습니다. 작업을 중지하고 원본 데이터를 유지했습니다.",
-      "현재 저장이 변경되었습니다. 갱신된 미리보기를 검토하고 다시 확인하세요.",
-      "게임 저장 복구가 완료되지 않았습니다. 공간을 확보하고 페이지를 다시 여세요. 가져오기가 중지되었습니다.",
-      "가져오기 전 백업이 없습니다.",
-      "게임 저장을 읽거나 쓸 수 없습니다. 브라우저 저장소와 클립보드 권한을 확인하세요.",
-      "클립보드를 읽을 수 없습니다. 저장을 붙여넣거나 파일을 선택하세요.",
-      "게임 전용 저장입니다. 게임 메뉴에서 가져오세요.",
+      "기기의 게임 저장 데이터가 손상되었습니다. 원본 데이터는 보존되어 있습니다.",
+      "백업을 준비하는 동안 게임 저장 데이터가 변경되었습니다. 다시 시도해 주세요.",
+      "게임 저장 데이터 복구가 완료되지 않았습니다. 저장 공간을 확보한 후 페이지를 다시 열어 주세요.",
+      "게임 저장 데이터를 읽거나 저장할 수 없습니다. 브라우저 저장소 권한을 확인해 주세요.",
+      "게임 전용 백업 지원이 종료되었습니다.",
     ],
   };
   for (const [language, values] of Object.entries(messages))
@@ -2994,17 +2891,6 @@ for (const [language, label] of Object.entries({
       WorkTimeApp.data.locales[language]["gameArchive." + key] = values[index];
     });
 })();
-for (const [language, labels] of Object.entries({
-  "zh-CN": ["新增 {count} 个草稿", "新增 {count} 个通关记录"],
-  "zh-TW": ["新增 {count} 個草稿", "新增 {count} 個通關紀錄"],
-  "zh-HK": ["新增 {count} 個草稿", "新增 {count} 個過關紀錄"],
-  en: ["{count} new drafts", "{count} new completed levels"],
-  ja: ["進行中データを {count} 件追加", "クリア記録を {count} 件追加"],
-  ko: ["새 초안 {count}개", "새 완료 기록 {count}개"],
-})) {
-  WorkTimeApp.data.locales[language]["gameArchive.draftsAdded"] = labels[0];
-  WorkTimeApp.data.locales[language]["gameArchive.completedAdded"] = labels[1];
-}
 for (const [language, labels] of Object.entries({
   "zh-CN": [
     "完整备份（含游戏存档）：点击复制，按住两秒下载",
@@ -3377,6 +3263,19 @@ for (const [language, label] of Object.entries({
   ko: "3주 보기",
 })) {
   WorkTimeApp.data.locales[language]["agenda.threeWeekView"] = label;
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": ["单周", "双周", "三周"],
+  "zh-TW": ["單週", "雙週", "三週"],
+  "zh-HK": ["單週", "雙週", "三週"],
+  en: ["1 week", "2 weeks", "3 weeks"],
+  ja: ["1週", "2週", "3週"],
+  ko: ["1주", "2주", "3주"],
+})) {
+  ["oneWeek", "twoWeeks", "threeWeeks"].forEach((key, i) => {
+    WorkTimeApp.data.locales[language]["agenda." + key] = labels[i];
+  });
 }
 
 for (const [language, label] of Object.entries({
@@ -4214,6 +4113,8 @@ for (const [language, labels] of Object.entries({
     "班",
     "热力图模式",
     "普通日历模式",
+    "热力图",
+    "年历",
   ],
   "zh-TW": [
     "切換到熱力圖",
@@ -4224,6 +4125,8 @@ for (const [language, labels] of Object.entries({
     "班",
     "熱力圖模式",
     "普通日曆模式",
+    "熱力圖",
+    "年曆",
   ],
   "zh-HK": [
     "切換到熱力圖",
@@ -4234,6 +4137,8 @@ for (const [language, labels] of Object.entries({
     "班",
     "熱力圖模式",
     "普通日曆模式",
+    "熱力圖",
+    "年曆",
   ],
   en: [
     "Switch to heatmap",
@@ -4244,6 +4149,8 @@ for (const [language, labels] of Object.entries({
     "Work",
     "Heatmap mode",
     "Calendar mode",
+    "Heatmap",
+    "Calendar",
   ],
   ja: [
     "ヒートマップに切り替え",
@@ -4254,6 +4161,8 @@ for (const [language, labels] of Object.entries({
     "出",
     "ヒートマップモード",
     "カレンダーモード",
+    "ヒートマップ",
+    "年暦",
   ],
   ko: [
     "히트맵으로 전환",
@@ -4264,6 +4173,8 @@ for (const [language, labels] of Object.entries({
     "근",
     "히트맵 모드",
     "달력 모드",
+    "히트맵",
+    "연간 달력",
   ],
 })) {
   WorkTimeApp.data.locales[language]["yearView.toHeatmap"] = labels[0];
@@ -4274,6 +4185,8 @@ for (const [language, labels] of Object.entries({
   WorkTimeApp.data.locales[language]["yearView.workLabel"] = labels[5];
   WorkTimeApp.data.locales[language]["yearView.heatmapMode"] = labels[6];
   WorkTimeApp.data.locales[language]["yearView.calendarMode"] = labels[7];
+  WorkTimeApp.data.locales[language]["yearView.heatmap"] = labels[8];
+  WorkTimeApp.data.locales[language]["yearView.calendar"] = labels[9];
 }
 for (const [language, labels] of Object.entries({
   "zh-CN": ["年度数据分析", "总加班时长", "完整记录天数"],

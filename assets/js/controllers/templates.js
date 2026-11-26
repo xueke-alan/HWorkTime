@@ -27,12 +27,12 @@ WorkTimeApp.ui.createTemplateController = function (options) {
     for (const id of ["addTimeTemplate", "batchAddTimeTemplate"]) {
       const button = $(id);
       button.disabled = full;
-      button.title = full
+      button.dataset.hintText = full
         ? WorkTimeApp.i18n.t("copy.b4c64a5057")
         : WorkTimeApp.i18n.t("copy.b464e3690d");
-      button.setAttribute("aria-label", button.title);
+      button.setAttribute("aria-label", button.dataset.hintText);
       const icon = button.querySelector("use"),
-        href = full ? "#ms-block" : "#ms-add";
+        href = full ? "#icon-block" : "#icon-add";
       if (icon.getAttribute("href") !== href) icon.setAttribute("href", href);
     }
     for (const prefix of ["day", "batch"]) {
@@ -232,33 +232,7 @@ WorkTimeApp.ui.createTemplateController = function (options) {
       WorkTimeApp.i18n.language + JSON.stringify(model.state.timeTemplates);
     if (signature === renderedTemplates) return;
     renderedTemplates = signature;
-    $("timeTemplateList").innerHTML = model.state.timeTemplates.length
-      ? model.state.timeTemplates
-          .map(
-            (t) =>
-              '<div class="time-template-chip"><button data-ui="button" type="button" class="ui-button template-fill" data-template-fill="' +
-              esc(t.id) +
-              '" title="' +
-              esc(
-                t.name +
-                  " · " +
-                  t.start +
-                  "–" +
-                  t.end +
-                  (t.nextDay ? WorkTimeApp.i18n.t("copy.c751037c58") : ""),
-              ) +
-              '"><span class="button-label">' +
-              esc(t.name) +
-              '</span></button><button data-ui="button" type="button" class="ui-button template-edit icon-only" data-template-edit="' +
-              esc(t.id) +
-              WorkTimeApp.i18n.t("copy.ac35793d79") +
-              esc(t.name) +
-              WorkTimeApp.i18n.t("copy.293224a98b") +
-              actions.controlIcon("more") +
-              "</button></div>",
-          )
-          .join("")
-      : "";
+    renderTemplateButtons($("timeTemplateList"), false);
     renderedTemplateIds = animateNewTemplates(
       $("timeTemplateList"),
       renderedTemplateIds,
@@ -304,43 +278,22 @@ WorkTimeApp.ui.createTemplateController = function (options) {
       $(prefix + "Next").checked = template.nextDay;
     }
   }
+  function renderTemplateButtons(host, batch) {
+    WorkTimeApp.ui.workspaceViews.TimeTemplates(host, {
+      items: model.state.timeTemplates,
+      batch,
+      edit: WorkTimeApp.i18n.t("settings.editTemplate"),
+      nextDay: WorkTimeApp.i18n.t("copy.c751037c58"),
+    });
+  }
   function renderBatchTimeTemplates() {
     updateTemplateLimit();
-    const signature = JSON.stringify(model.state.timeTemplates);
+    const signature =
+      WorkTimeApp.i18n.language + JSON.stringify(model.state.timeTemplates);
     if (signature === renderedBatchTemplates) return;
     renderedBatchTemplates = signature;
     const list = $("batchTimeTemplateList");
-    if (!model.state.timeTemplates.length) {
-      list.innerHTML = "";
-      renderedBatchTemplateIds = new Set();
-      return;
-    }
-    list.innerHTML = model.state.timeTemplates
-      .map((template) => {
-        return (
-          '<div class="time-template-chip"><button data-ui="button" type="button" class="ui-button template-fill" data-batch-template="' +
-          esc(template.id) +
-          '" title="' +
-          esc(
-            template.name +
-              " · " +
-              template.start +
-              "–" +
-              template.end +
-              (template.nextDay ? WorkTimeApp.i18n.t("copy.c751037c58") : ""),
-          ) +
-          '"><span class="button-label">' +
-          esc(template.name) +
-          '</span></button><button data-ui="button" type="button" class="ui-button template-edit icon-only" data-batch-template-edit="' +
-          esc(template.id) +
-          WorkTimeApp.i18n.t("copy.ac35793d79") +
-          esc(template.name) +
-          WorkTimeApp.i18n.t("copy.293224a98b") +
-          actions.controlIcon("more") +
-          "</button></div>"
-        );
-      })
-      .join("");
+    renderTemplateButtons(list, true);
     renderedBatchTemplateIds = animateNewTemplates(
       list,
       renderedBatchTemplateIds,

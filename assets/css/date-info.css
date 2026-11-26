@@ -35,7 +35,7 @@ body .editor > .notification-tabs .notification-tab {
   background: transparent;
   isolation: isolate;
   box-shadow: none;
-  color: var(--accent);
+  color: var(--ui-accent, var(--accent));
   line-height: 1;
 }
 body .editor > .notification-tabs .notification-tab::before,
@@ -154,7 +154,7 @@ body .editor #dateInfoPanel {
   overflow-wrap: anywhere;
 }
 body .editor > .notification-tabs button.notification-tab {
-  font-size: 1rem;
+  font-size: var(--ui-font-size, 1rem);
   transition: color 0.15s;
 }
 body .editor > .notification-tabs .notification-tab::before {
@@ -168,11 +168,11 @@ body
 }
 body .editor > .notification-tabs .notification-tab[aria-selected="false"],
 body .editor > .notification-tabs .notification-tab[aria-haspopup="dialog"] {
-  color: var(--muted);
+  color: var(--ui-muted, var(--muted));
 }
 body .editor > .notification-tabs .notification-tab:hover {
   background: transparent;
-  color: var(--accent);
+  color: var(--ui-accent, var(--accent));
 }
 @media (min-width: 1151px) {
   body .editor .date-info-area {
@@ -219,7 +219,7 @@ body .editor > .notification-tabs button.notification-tab {
   overflow: visible;
 }
 body .editor > .notification-tabs .notification-tab[aria-selected="true"] {
-  color: var(--accent);
+  color: var(--ui-accent, var(--accent));
 }
 body
   .editor
@@ -229,7 +229,7 @@ body .editor > .notification-tabs .notification-tab[aria-haspopup="dialog"]:is(:
   opacity: 0.45;
 }
 body .editor > .notification-tabs .notification-tab:focus-visible {
-  border-radius: 0.428571rem;
+  border-radius: var(--ui-radius);
   outline: 0;
 }
 body .editor #dateInfoPanel {
@@ -264,7 +264,7 @@ body #dateInfoPanel .festival-section:last-child {
 body #dateInfoPanel .festival-label {
   font-weight: 600;
   margin-bottom: 0.214286rem;
-  color: var(--ink);
+  color: var(--ui-text, var(--ink));
 }
 body #dateInfoPanel .festival-section .date-info-rows {
   margin: 0;
@@ -277,7 +277,7 @@ body #dateInfoPanel .history-event-content {
   color: var(--ink);
   font-size: inherit;
   text-decoration: none;
-  border-radius: 0.428571rem;
+  border-radius: var(--ui-radius);
 }
 body .editor > .notification-tabs {
   --tab-icon-size: 1rem;
@@ -560,14 +560,14 @@ body .editor > .notification-tabs .notification-badge {
   right: auto;
   width: 5px;
   height: 5px;
-  border-radius: 50%;
-  background: #dba13d;
+  border-radius: var(--ui-radius);
+  background: var(--ui-control-surface, #dba13d);
   box-shadow: 0 0 0 1px var(--theme-surface-paper, #fbfdfb);
   z-index: 2;
   pointer-events: none;
 }
 body .editor > .notification-tabs .notification-badge[data-tone="error"] {
-  background: #c44d45;
+  background: var(--ui-danger-surface, #c44d45);
 }
 
 body .editor #dateInfoPanel.countdown-panel {
@@ -599,7 +599,7 @@ body #dateInfoPanel .festival-section {
 }
 body .editor #dateInfoPanel.almanac-panel {
   background: transparent;
-  color: var(--ink);
+  color: var(--ui-text, var(--ink));
 }
 body #dateInfoPanel.almanac-panel .date-info-date {
   color: #855743;
@@ -959,7 +959,7 @@ body .date-context-header .date-context-switch .ui-text-action {
   justify-content: center;
   gap: 0.357143rem;
   border: 0;
-  border-radius: var(--control-radius);
+  border-radius: var(--ui-button-radius);
   background: transparent;
   box-shadow: none;
   padding: 0;
@@ -967,20 +967,16 @@ body .date-context-header .date-context-switch .ui-text-action {
   height: auto;
   min-height: 0;
   max-height: none;
-  font-size: 0.85rem;
+  font-size: var(--ui-font-size, 0.85rem);
   line-height: 1.2;
-  color: var(--theme-text-muted, #94a69e);
+  color: var(--ui-muted, var(--theme-text-muted, #94a69e));
 }
 body
   .date-context-header
   .date-context-switch
   .ui-text-action[aria-selected="true"] {
-  color: var(--accent);
+  color: var(--ui-accent, var(--accent));
   font-weight: 650;
-}
-body .date-context-switch button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
 }
 body .editor .has-date-context #dateInfoPanel {
   border-top: 0;
@@ -1052,7 +1048,7 @@ body #dateInfoPanel.festivals-panel .holiday-calendar-note {
   min-height: 0;
   overflow: auto;
   padding: 14px;
-  color: var(--ink);
+  color: var(--ui-text, var(--ink));
 }
 .tools-panel[hidden], .tools-cards[hidden], .tool-card[hidden], .tools-panel > section[hidden] { display: none !important; }
 .tools-back { margin-bottom: 12px; }
@@ -1071,9 +1067,9 @@ body #dateInfoPanel.festivals-panel .holiday-calendar-note {
   min-width: 0;
   padding: 8px 2px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--ui-radius);
   background: transparent;
-  color: var(--ink);
+  color: var(--ui-text, var(--ink));
   text-align: center;
   font: inherit;
   cursor: pointer;
@@ -1084,13 +1080,12 @@ body #dateInfoPanel.festivals-panel .holiday-calendar-note {
   width: 54px;
   max-width: 100%;
   height: auto;
-  border-radius: 24%;
+  border-radius: var(--ui-radius);
 }
 .tool-card strong { max-width: 100%; font-size: var(--text-small); font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
 .tool-card span { color: var(--muted); font-size: 12px; line-height: 1.4; }
 .tool-card span:empty { display: none; }
 .tool-card:hover { background: var(--theme-surface-soft, #eef5f1); }
-.tool-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .tool-card:active { transform: translateY(1px); }
 @container (max-width: 259px) {
   .tools-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }

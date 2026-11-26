@@ -124,7 +124,7 @@
 }
 .lights-board {
   position: relative;
-  border-radius: 16px;
+  border-radius: var(--ui-radius);
 }
 .lights-cells {
   display: grid;
@@ -378,10 +378,6 @@
 }
 .lights-warning:empty {
   display: none;
-}
-.game-lights-out button:focus-visible {
-  outline: 3px solid var(--lights-ink);
-  outline-offset: 2px;
 }
 .game-lights-out .lights-cell:focus-visible {
   outline: none;

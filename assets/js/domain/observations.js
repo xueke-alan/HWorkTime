@@ -32,12 +32,19 @@ const WorkTimeDomainObservations = (() => {
     }
     return lines.join("\n");
   }
+  const compactRecord = (record) => ({
+    ...record,
+    raw: compactOAText(record.raw),
+  });
+  function compactImport(log) {
+    return {
+      ...log,
+      sources: log.sources.map(compactRecord),
+      records: log.records.map(compactRecord),
+    };
+  }
   /** Only raw text changes; accepted observations remain authoritative. Input is untouched. */
   function compactOAState(state) {
-    const compactRecord = (record) => ({
-      ...record,
-      raw: compactOAText(record.raw),
-    });
     return {
       ...state,
       days: Object.fromEntries(
@@ -46,15 +53,58 @@ const WorkTimeDomainObservations = (() => {
           day.oa ? { ...day, oa: compactRecord(day.oa) } : day,
         ]),
       ),
-      imports: state.imports.map((log) => ({
-        ...log,
-        sources: log.sources.map((source) => ({
-          ...source,
-          raw: compactOAText(source.raw),
-        })),
-        records: log.records.map(compactRecord),
-      })),
+      imports: state.imports.map(compactImport),
     };
+  }
+  /** Match accepted rows and preserved evidence in order, apart from batch identity. */
+  function importKey(log) {
+    const { id, at, ...details } = compactImport(log);
+    return JSON.stringify(details, (_, value) =>
+      value && typeof value === "object" && !Array.isArray(value)
+        ? Object.fromEntries(
+            Object.keys(value)
+              .sort()
+              .map((key) => [key, value[key]]),
+          )
+        : value,
+    );
+  }
+  function recentImports(imports) {
+    return imports
+      .slice()
+      .reverse()
+      .sort((a, b) => Date.parse(b.at) - Date.parse(a.at));
+  }
+  function redundantImports(imports, canRemove) {
+    const byTime = recentImports(imports);
+    const position = new Map(imports.map((log, index) => [log.id, index]));
+    const previous = new Map();
+    const redundant = new Map();
+    for (const [index, log] of byTime.entries()) {
+      const key = importKey(log);
+      const newer = previous.get(key);
+      if (newer && canRemove(log)) {
+        const records = new Map(log.records.map((row) => [row.date, row]));
+        const interrupts = (entry) =>
+          entry.records.some(
+            (row) =>
+              records.has(row.date) &&
+              mergeObservation(records.get(row.date), row).code !== "DUPLICATE",
+          );
+        const a = position.get(newer.log.id),
+          b = position.get(log.id);
+        // Protect both chronological corrections and the existing delete/replay order.
+        if (
+          !byTime.slice(newer.index + 1, index).some(interrupts) &&
+          !imports.slice(Math.min(a, b) + 1, Math.max(a, b)).some(interrupts)
+        ) {
+          redundant.set(log.id, newer.log.id);
+          continue;
+        }
+      }
+      previous.set(key, { log, index });
+    }
+    return redundant;
   }
   function parseText(raw, year, source = "粘贴文本", referenceDate = null) {
     const warnings = [],
@@ -217,6 +267,9 @@ const WorkTimeDomainObservations = (() => {
   return {
     compactOAText,
     compactOAState,
+    importKey,
+    recentImports,
+    redundantImports,
     parseText,
     mergeObservation,
     applyObservation,

@@ -18,10 +18,13 @@ WorkTimeApp.ui.music = (() => {
       try {
         if (!pending)
           pending = (async () => {
-            await WorkTimeApp.services.assets.script(
-              "assets/js/ui/secondary-runtime.min.js",
-              { fetchPriority: "high" },
-            );
+            await Promise.all([
+              WorkTimeApp.ui.loadMusicViews(),
+              WorkTimeApp.services.assets.script(
+                "assets/js/ui/secondary-runtime.min.js",
+                { fetchPriority: "high" },
+              ),
+            ]);
             await Promise.all([
               WorkTimeApp.i18n.loadModule("music"),
               WorkTimeApp.services.assets.style("assets/css/music.css"),
@@ -41,8 +44,8 @@ WorkTimeApp.ui.music = (() => {
       } catch {
         if (entry && current()) {
           entry.dataset.hint = "detail";
-          entry.title = WorkTimeApp.ui.musicText("loadFailed");
-          entry.setAttribute("aria-label", entry.title);
+          entry.dataset.hintText = WorkTimeApp.ui.musicText("loadFailed");
+          entry.setAttribute("aria-label", entry.dataset.hintText);
         }
       }
     },

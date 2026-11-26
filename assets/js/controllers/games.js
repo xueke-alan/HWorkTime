@@ -6,8 +6,13 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
   const reduced = compat.preference();
   const motion = compat.workspaceMotion;
   const workspace = document.querySelector(".workspace");
-  const origin = workspace.querySelector("section.panel");
-  const panels = [...workspace.children];
+  const origin = workspace.querySelector(".work-body > section.panel");
+  const panels = [
+    workspace.querySelector(".summary-sidebar"),
+    origin,
+    workspace.querySelector(".editor"),
+  ];
+  const backgroundRoots = [...workspace.children];
   const sidebar = document.getElementById("gamesPanel");
   const idleCover = document.createElement("div");
   idleCover.className = "game-idle-cover";
@@ -121,14 +126,16 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
     idleCover.classList.toggle("is-initial", immediate);
     idleCover.classList.add("is-visible");
   }
-  const archiveUI = WorkTimeApp.ui.createGameArchiveController({
-    document,
-    window,
-  });
   const gameArchive = WorkTimeApp.services.gameArchive;
   let archiveReady = false,
     archiveFailure = null,
+    storageNotice = null,
     handlingArchiveChange = false;
+  function reportStorageIssue(code) {
+    storageNotice = "gameArchive." + code;
+    sidebarMenu?.refreshProgress();
+    shellMenu?.refreshProgress();
+  }
   gameArchive
     .initialize()
     .then(() => {
@@ -136,11 +143,9 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
     })
     .catch((error) => {
       // Restricted storage must not stop games from running without persistence.
-      archiveFailure = ["recovery", "invalid"].includes(error.code)
-        ? error
-        : null;
+      archiveFailure = error?.code === "recovery" ? error : null;
       archiveReady = true;
-      archiveUI.report(error);
+      reportStorageIssue(archiveFailure?.code ?? "storageError");
     });
   const shell = document.createElement("div");
   shell.className = "game-shell";
@@ -200,7 +205,6 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
   function releaseGame() {
     loadGeneration++;
     content.removeAttribute("aria-busy");
-    archiveUI.detach(content);
     abort?.abort();
     abort = null;
     call("dispose");
@@ -420,7 +424,9 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
     shell.hidden = true;
     workspace.classList.remove("is-game-expanded");
     origin.classList.remove("game-origin-muted");
-    panels.forEach((panel, index) => (panel.inert = savedInert[index]));
+    backgroundRoots.forEach(
+      (panel, index) => (panel.inert = savedInert[index]),
+    );
     document.documentElement.style.overflow = savedOverflow;
     if (savedScroll) window.scrollTo(savedScroll.x, savedScroll.y);
     savedScroll = null;
@@ -440,7 +446,7 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
         if (container === content) sidebarMenu.select(id);
       },
       onLaunch: launch,
-      archiveUI,
+      storageNotice: () => storageNotice,
     });
     if (container === sidebar) {
       sidebar.append(idleCover);
@@ -458,12 +464,12 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
   async function launch(id) {
     if (!archiveReady) return;
     if (archiveFailure) {
-      archiveUI.report(archiveFailure);
+      reportStorageIssue(archiveFailure.code);
       return;
     }
     try {
       if (gameArchive.pendingRecovery()) {
-        archiveUI.report({ code: "recovery" });
+        reportStorageIssue("recovery");
         return;
       }
     } catch {
@@ -474,7 +480,7 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
     if (!entry) return;
     const opening = state === "closed";
     if (opening) {
-      savedInert = panels.map((panel) => panel.inert);
+      savedInert = backgroundRoots.map((panel) => panel.inert);
       savedOverflow = document.documentElement.style.overflow;
       savedScroll = { x: window.scrollX, y: window.scrollY };
       document.documentElement.style.overflow = "hidden";
@@ -482,7 +488,7 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
       setState("opening");
       // Focus leaves the underlying workspace before it becomes inert.
       shell.focus({ preventScroll: true });
-      panels.forEach((panel) => (panel.inert = true));
+      backgroundRoots.forEach((panel) => (panel.inert = true));
       for (const panel of panels) WorkTimeApp.ui.motion?.stop(panel);
       restingPanels = panels.map((panel) => readFrame(panel, panel !== origin));
       measure();
@@ -540,7 +546,6 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
     const menu = focused?.closest(
       ".game-menu-header, .game-library",
     )?.parentElement;
-    const control = focused?.dataset.gameArchive;
     const play = focused?.classList.contains("game-menu-play");
     sidebarMenu = renderMenu(sidebar);
     if (state !== "closed") {
@@ -552,11 +557,9 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
     }
     const selector = gameId
       ? `[data-game="${gameId}"]`
-      : control
-        ? `[data-game-archive="${control}"]`
-        : play
-          ? ".game-menu-play"
-          : null;
+      : play
+        ? ".game-menu-play"
+        : null;
     if (selector) menu?.querySelector(selector)?.focus();
   }
   function rememberIdlePointer(event) {
@@ -596,7 +599,6 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
   });
   const unlistenHover = compat.listen(hoverDevice, refreshIdleCover);
   events.listen(shell, "keydown", (event) => {
-    if (archiveUI.isOpen()) return;
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -625,11 +627,7 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
     }
   });
   events.listen(document, "focusin", (event) => {
-    if (
-      state !== "closed" &&
-      !archiveUI.isOpen() &&
-      !shell.contains(event.target)
-    )
+    if (state !== "closed" && !shell.contains(event.target))
       exitButton.focus({ preventScroll: true });
   });
   events.listen(document, "visibilitychange", () => {
@@ -689,7 +687,6 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
       revision++;
       stopMotion();
       releaseGame();
-      archiveUI.dispose();
       events.dispose();
       unlisten();
       observer.disconnect();

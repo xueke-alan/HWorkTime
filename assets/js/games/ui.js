@@ -18,11 +18,11 @@ WorkTimeApp.games.createCompletionHistory = function ({
   panel.className =
     kind === "match" ? "game-match-history" : "game-completion-history";
   host.insertBefore(panel, before);
-  const heading = document.createElement("h3");
   const list = document.createElement("div");
+  list.style.display = "contents";
   const transport = document.createElement("div");
   transport.className = "game-replay-controls";
-  panel.append(heading, list);
+  panel.append(list);
   (playbackHost || panel).append(transport);
   const t = (name, params) =>
     WorkTimeApp.i18n.t("games.history." + name, params);
@@ -32,25 +32,41 @@ WorkTimeApp.games.createCompletionHistory = function ({
     playing = false,
     source = null;
   let savedInert = [];
-  const buttons = {};
-  const progress = document.createElement("span");
-  progress.className = "game-replay-progress";
-  progress.setAttribute("role", "status");
+  const view = WorkTimeApp.ui.mountReplayHistory(list, transport);
+  let disposed = false;
   function pause() {
     clearTimeout(timer);
     timer = null;
     playing = false;
   }
   function paint() {
-    transport.hidden = !record;
-    if (!record) return;
-    progress.textContent = `${index} / ${record.path.length}`;
-    buttons.play.textContent = t(playing ? "pause" : "play");
-    buttons.previous.textContent = t("previous");
-    buttons.next.textContent = t("next");
-    buttons.exit.textContent = t("exit");
-    buttons.previous.disabled = index === 0;
-    buttons.next.disabled = index === record.path.length;
+    if (disposed) return;
+    view.controls(
+      record
+        ? {
+            index,
+            length: record.path.length,
+            playing,
+            play: () => {
+              if (playing) {
+                pause();
+                paint();
+              } else play();
+            },
+            previous: () => {
+              pause();
+              index = Math.max(0, index - 1);
+              frame();
+            },
+            next: () => {
+              pause();
+              index = Math.min(record.path.length, index + 1);
+              frame();
+            },
+            exit: () => exit(),
+          }
+        : null,
+    );
   }
   function frame() {
     onFrame(record.path.slice(0, index), index === record.path.length);
@@ -89,100 +105,53 @@ WorkTimeApp.games.createCompletionHistory = function ({
     render();
     if (restoreFocus) source?.focus({ preventScroll: true });
   }
-  for (const [name, callback] of Object.entries({
-    play: () => {
-      if (playing) {
-        pause();
-        paint();
-      } else play();
-    },
-    previous: () => {
-      pause();
-      index = Math.max(0, index - 1);
-      frame();
-    },
-    next: () => {
-      pause();
-      index = Math.min(record.path.length, index + 1);
-      frame();
-    },
-    exit: () => exit(),
-  })) {
-    const button = WorkTimeApp.ui.native.createElement("button");
-    button.type = "button";
-    button.className = "game-button";
-    button.dataset.replayAction = name;
-    button.addEventListener("click", callback, { signal });
-    buttons[name] = button;
-    transport.append(button);
+  function begin(value, button) {
+    if (record || disposed) return;
+    source = button;
+    record = value;
+    index = 0;
+    root.dataset.replaying = "true";
+    onStart(record);
+    if (playbackHost) playbackHost.append(transport);
+    let branch = playbackHost ? transport : panel;
+    while (branch !== root && branch.parentElement) {
+      for (const sibling of branch.parentElement.children) {
+        if (sibling === branch) continue;
+        savedInert.push([sibling, sibling.inert]);
+        sibling.inert = true;
+      }
+      branch = branch.parentElement;
+    }
+    render();
+    frame();
+    transport
+      .querySelector('[data-replay-action="play"]')
+      ?.focus({ preventScroll: true });
+    play();
   }
-  transport.prepend(progress);
-  let signature = "";
   function render() {
+    if (disposed) return;
     const values = records();
     panel.hidden = values === null;
-    heading.textContent = t(kind === "match" ? "matchHeading" : "heading");
-    panel.setAttribute("aria-label", heading.textContent);
-    const nextSignature = JSON.stringify(values) + heading.textContent;
-    if (signature !== nextSignature) {
-      signature = nextSignature;
-      list.replaceChildren();
-      if (!values?.length)
-        list.textContent = t(kind === "match" ? "matchEmpty" : "empty");
-      for (const value of values || []) {
-        const row = document.createElement("div");
-        row.className = "game-completion-row";
-        const label = document.createElement("span");
-        const date = new Date(value.finishedAt);
-        const dateText =
-          String(date.getFullYear()).padStart(4, "0") +
-          String(date.getMonth() + 1).padStart(2, "0") +
-          String(date.getDate()).padStart(2, "0");
-        label.textContent = title
-          ? title(value, dateText)
-          : t("record", {
-              steps: steps(value.path),
-              date: dateText,
-            });
-        const button = WorkTimeApp.ui.native.createElement("button");
-        button.type = "button";
-        button.className = "game-button";
-        button.dataset.replayRecord = value.id;
-        button.textContent = t("replay");
-        button.setAttribute(
-          "aria-label",
-          t("replay") + " · " + label.textContent,
-        );
-        button.addEventListener(
-          "click",
-          () => {
-            if (record) return;
-            source = button;
-            record = value;
-            index = 0;
-            root.dataset.replaying = "true";
-            onStart(record);
-            if (playbackHost) playbackHost.append(transport);
-            let branch = playbackHost ? transport : panel;
-            while (branch !== root && branch.parentElement) {
-              for (const sibling of branch.parentElement.children) {
-                if (sibling === branch) continue;
-                savedInert.push([sibling, sibling.inert]);
-                sibling.inert = true;
-              }
-              branch = branch.parentElement;
-            }
-            frame();
-            buttons.play.focus({ preventScroll: true });
-            play();
-          },
-          { signal },
-        );
-        row.append(label, button);
-        list.append(row);
-      }
-    }
-    list.inert = !!record;
+    const heading = t(kind === "match" ? "matchHeading" : "heading");
+    panel.setAttribute("aria-label", heading);
+    const rows = (values || []).map((value) => {
+      const date = new Date(value.finishedAt);
+      const dateText =
+        String(date.getFullYear()).padStart(4, "0") +
+        String(date.getMonth() + 1).padStart(2, "0") +
+        String(date.getDate()).padStart(2, "0");
+      const label = title
+        ? title(value, dateText)
+        : t("record", { steps: steps(value.path), date: dateText });
+      return { id: value.id, label, open: (button) => begin(value, button) };
+    });
+    view.list(
+      heading,
+      t(kind === "match" ? "matchEmpty" : "empty"),
+      rows,
+      !!record,
+    );
     paint();
   }
   for (const type of ["click", "keydown", "pointerdown", "pointerup"]) {
@@ -218,13 +187,19 @@ WorkTimeApp.games.createCompletionHistory = function ({
     { signal },
   );
   document.addEventListener("worktime:languagechange", render, { signal });
-  signal.addEventListener(
-    "abort",
-    () => {
-      pause();
-    },
-    { once: true },
-  );
+  function dispose() {
+    if (disposed) return;
+    disposed = true;
+    pause();
+    for (const [element, inert] of savedInert) element.inert = inert;
+    savedInert = [];
+    if (record) delete root.dataset.replaying;
+    record = null;
+    view.dispose();
+    transport.remove();
+    panel.remove();
+  }
+  signal.addEventListener("abort", dispose, { once: true });
   return {
     render,
     get active() {
@@ -235,9 +210,7 @@ WorkTimeApp.games.createCompletionHistory = function ({
       paint();
     },
     exit,
-    dispose() {
-      pause();
-    },
+    dispose,
   };
 };
 
@@ -334,7 +307,7 @@ WorkTimeApp.games.paintDetailNumbers = function (element, text) {
 WorkTimeApp.games.setIcon = function (element, name) {
   if (
     element.querySelector("svg > use")?.getAttribute("href") !==
-    "#ms-" + name
+    "#icon-" + name
   )
     element.replaceChildren(WorkTimeApp.games.createIcon(name));
 };
@@ -343,7 +316,7 @@ WorkTimeApp.games.paintCounter = function (element, value) {
   if (element.textContent !== text) element.textContent = text;
   const size = Math.min(1.5, 6.5 / Math.max(4, text.length)) + "rem";
   if (element.style.fontSize !== size) element.style.fontSize = size;
-  if (element.title !== text) element.title = text;
+  if (element.dataset.hintText !== text) element.dataset.hintText = text;
 };
 WorkTimeApp.games.createLevelPage = function (root, id, signal) {
   function node(parent, tag, className) {
@@ -377,7 +350,7 @@ WorkTimeApp.games.createLevelPage = function (root, id, signal) {
   page.setAttribute("aria-labelledby", title.id);
   const body = node(page, "div", "game-level-page-body");
   const categories = node(body, "div", "game-level-categories");
-  categories.setAttribute("role", "group");
+  WorkTimeApp.ui.native.setGroup(categories);
   categories.setAttribute("aria-labelledby", title.id);
   const entries = node(body, "div", "game-level-entries");
   entries.id = id + "-entries";
@@ -457,7 +430,7 @@ WorkTimeApp.games.createLevelPage = function (root, id, signal) {
     refresh() {
       title.textContent = WorkTimeApp.i18n.t("games.levelStatus.choose");
       const label = WorkTimeApp.i18n.t("games.levelStatus.returnGame");
-      back.title = label;
+      back.dataset.hintText = label;
       back.setAttribute("aria-label", label);
     },
   };
@@ -492,7 +465,7 @@ WorkTimeApp.games.paintLevelCard = function (
   let badge = button.querySelector(".game-level-badge");
   if (!badge) {
     button.classList.add("game-level-card");
-    badge = document.createElement("span");
+    badge = WorkTimeApp.ui.native.createBadge();
     badge.className = "game-level-badge";
     badge.setAttribute("aria-hidden", "true");
     button.replaceChildren(document.createTextNode(text), badge);
@@ -520,13 +493,12 @@ WorkTimeApp.games.paintLevelCard = function (
         ),
       );
     if (badgeState === "locked")
-      badge.innerHTML =
-        '<svg class="ui-icon" viewBox="0 0 16 16"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M5 7V5a3 3 0 0 1 6 0v2"/><rect x="3" y="7" width="10" height="7" rx="1.5"/></svg>';
+      badge.replaceChildren(WorkTimeApp.games.createIcon("lock"));
   }
   const name =
     label + " · " + WorkTimeApp.i18n.t("games.levelStatus." + status);
-  if (button.title !== name) {
-    button.title = name;
+  if (button.dataset.hintText !== name) {
+    button.dataset.hintText = name;
     button.setAttribute("aria-label", name);
   }
   button.dataset.levelStatus = status;
@@ -544,81 +516,8 @@ WorkTimeApp.games.createSelect = (options) => {
   });
 };
 /** Shared game controls and an in-place help screen that never reflows a board. */
-WorkTimeApp.games.createHelp = function ({
-  root,
-  controls,
-  signal,
-  text,
-  onChange,
-}) {
-  const t = (key) => WorkTimeApp.i18n.t("games." + key);
-  const button = WorkTimeApp.ui.native.createElement("button");
-  button.type = "button";
-  button.className = "game-button game-icon-button";
-  button.dataset.gameHelp = "";
-  button.append(WorkTimeApp.games.createIcon("help"));
-  button.setAttribute("aria-expanded", "false");
-  controls.append(button);
-  const panel = document.createElement("section");
-  panel.className = "game-help-screen";
-  panel.hidden = true;
-  panel.setAttribute("role", "dialog");
-  panel.setAttribute("aria-modal", "true");
-  const heading = document.createElement("h3");
-  const description = document.createElement("p");
-  const close = WorkTimeApp.ui.native.createElement("button");
-  close.type = "button";
-  close.className = "game-button";
-  close.dataset.gameHelpClose = "";
-  panel.append(heading, description, close);
-  root.append(panel);
-  let savedInert = [],
-    opened = false;
-  function refresh() {
-    button.title = t("help");
-    button.setAttribute("aria-label", t("help"));
-    panel.setAttribute("aria-label", t("help"));
-    heading.textContent = t("help");
-    description.textContent = text();
-    close.textContent = t("backToGame");
-  }
-  function toggle(value) {
-    if (opened === value) return;
-    opened = value;
-    panel.hidden = !value;
-    button.setAttribute("aria-expanded", String(value));
-    if (value) {
-      savedInert = [...root.children]
-        .filter((child) => child !== panel)
-        .map((child) => [child, child.inert]);
-      savedInert.forEach(([child]) => (child.inert = true));
-      onChange?.(true);
-      refresh();
-      close.focus({ preventScroll: true });
-    } else {
-      savedInert.forEach(([child, inert]) => (child.inert = inert));
-      savedInert = [];
-      onChange?.(false);
-      button.focus({ preventScroll: true });
-    }
-  }
-  button.addEventListener("click", () => toggle(true), { signal });
-  close.addEventListener("click", () => toggle(false), { signal });
-  panel.addEventListener(
-    "keydown",
-    (event) => {
-      if (event.key === "Escape" || event.key === "Tab") {
-        event.preventDefault();
-        event.stopPropagation();
-        if (event.key === "Escape") toggle(false);
-        else close.focus({ preventScroll: true });
-      }
-    },
-    { signal },
-  );
-  refresh();
-  return { refresh, isOpen: () => opened };
-};
+WorkTimeApp.games.createHelp = (...args) =>
+  WorkTimeApp.ui.createGameHelp(...args);
 
 /** A decorative, cancellable win effect shared by game sessions. */
 WorkTimeApp.games.createCelebration = function (signal) {
@@ -669,7 +568,8 @@ WorkTimeApp.games.createCelebration = function (signal) {
       layer.append(piece);
       piece.style.background =
         colors[(bounds ? Math.floor(i / 2) : i) % colors.length];
-      piece.style.borderRadius = bounds ? "1px" : i % 3 === 0 ? "50%" : "2px";
+      piece.style.borderRadius =
+        !bounds && i % 3 === 0 ? "50%" : "var(--ui-radius)";
       if (bounds) {
         piece.style.width = 5 + (i % 4) * 2 + "px";
         piece.style.height = 16 + (i % 5) * 3 + "px";
@@ -727,13 +627,8 @@ WorkTimeApp.games.createCelebration = function (signal) {
 WorkTimeApp.games.createPauseCover = (cover, signal) => {
   const content = document.createElement("div");
   content.className = "game-pause-content";
-  const icon = WorkTimeApp.games.createIcon("hourglass-pause");
-  icon.classList.add("game-pause-icon");
-  icon.setAttribute("aria-hidden", "true");
-  const caption = document.createElement("span");
-  caption.className = "game-pause-caption";
-  content.append(icon, caption);
   cover.prepend(content);
+  WorkTimeApp.ui.mountPauseContent(content, signal);
   const compat = WorkTimeApp.ui.animationCompat;
   const reduced = compat.preference();
   let previous = false,
@@ -758,7 +653,6 @@ WorkTimeApp.games.createPauseCover = (cover, signal) => {
   );
   const paint = (paused, label) => {
     if (signal.aborted) return;
-    caption.textContent = WorkTimeApp.i18n.t("games.pauseOverlay");
     if (paused !== previous) {
       clearMotion();
       if (!reduced.matches && !signal.aborted && !document.hidden) {
@@ -824,16 +718,13 @@ WorkTimeApp.games.createRestartCover = function ({
 }) {
   const content = document.createElement("div");
   content.className = "game-restart-content";
-  const heading = labels
-    ? document.createElement("h3")
-    : WorkTimeApp.games.createIcon("restart-alt");
-  heading.classList.add(labels ? "game-restart-message" : "game-restart-icon");
-  const actions = document.createElement("div");
-  actions.className = "game-restart-actions";
-  content.append(heading);
-  if (description) content.append(description);
-  content.append(actions);
   cover.append(content);
+  const { actions, setTitle } = WorkTimeApp.ui.mountRestartContent(
+    content,
+    signal,
+    !!labels,
+    description,
+  );
   const buttons = [cancel, accept];
   const places = buttons.map(() => document.createComment("restart action"));
   let showing = false;
@@ -868,7 +759,7 @@ WorkTimeApp.games.createRestartCover = function ({
     const copy = labels?.();
     const title = copy?.title ?? WorkTimeApp.i18n.t("games.restartNew");
     cover.setAttribute("aria-label", title);
-    if (copy) heading.textContent = title;
+    if (copy) setTitle(title);
     const buttonLabels = copy
       ? [copy.cancel, copy.accept]
       : ["games.restartCancel", "games.restartNew"].map((key) =>
@@ -902,4 +793,5 @@ WorkTimeApp.games.createRestartCover = function ({
   return paint;
 };
 
-WorkTimeApp.games.createRestartPrompt = WorkTimeApp.ui.createRestartPrompt;
+WorkTimeApp.games.createRestartPrompt = (...args) =>
+  WorkTimeApp.ui.createRestartPrompt(...args);

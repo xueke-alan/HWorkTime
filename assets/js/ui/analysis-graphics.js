@@ -330,9 +330,7 @@ WorkTimeApp.ui.createAnalysisGraphics = function ({
         day.work +
         '" tabindex="0" role="img" aria-label="' +
         esc(label) +
-        '"><title>' +
-        esc(label) +
-        '</title><rect class="analysis-axis-hit" x="1" y="1" width="' +
+        '"><rect class="analysis-axis-hit" x="1" y="1" width="' +
         Math.max(0, step - 2) +
         '" height="54" rx="3"/><g class="analysis-marker" aria-hidden="true">' +
         ["workedOvertime", "restOvertime", "recorded", "missing", "future"]

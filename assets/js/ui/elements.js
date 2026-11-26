@@ -75,7 +75,7 @@ WorkTimeApp.ui.createElements = function (document) {
     return (
       '<svg class="' +
       className +
-      '" aria-hidden="true"><use href="#ms-' +
+      '" aria-hidden="true"><use href="#icon-' +
       name +
       '"></use></svg>'
     );
@@ -91,8 +91,6 @@ WorkTimeApp.ui.createElements = function (document) {
   }
   function initialize() {
     for (const [id, name] of [
-      ["prevMonth", "previous"],
-      ["nextMonth", "next"],
       ["addTimeTemplate", "plus"],
       ["batchAddTimeTemplate", "plus"],
     ]) {

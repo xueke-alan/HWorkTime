@@ -21,7 +21,7 @@
 .game-sudoku .sudoku-difficulties .game-button {
   min-height: 3rem;
   padding: 0.25rem 0.1rem;
-  font-size: 0.8rem;
+  font-size: var(--ui-font-size, 0.8rem);
 }
 .sudoku-variants {
   display: grid;
@@ -35,7 +35,7 @@
 }
 @media (max-width: 540px) {
   .game-sudoku .sudoku-difficulties .game-button {
-    font-size: 0.65rem;
+    font-size: var(--ui-font-size, 0.65rem);
   }
   .sudoku-variants {
     grid-auto-rows: 4.5rem;
@@ -250,11 +250,6 @@ body .sudoku-cell:nth-of-type(9n) {
 body .sudoku-cell:nth-last-of-type(-n + 9) {
   --sudoku-grid-bottom: 0px;
 }
-/* Keep the keyboard focus cue inside the cell, clear of all grid lines. */
-body .sudoku-cell:focus-visible {
-  outline: 1px dashed var(--accent);
-  outline-offset: -5px;
-}
 .sudoku-digit,
 .sudoku-notes {
   position: relative;
@@ -374,7 +369,7 @@ body .sudoku-cell:focus-visible {
   text-align: center;
   background: var(--theme-surface-paper, var(--paper));
   border: 1px solid var(--line);
-  border-radius: var(--control-radius);
+  border-radius: var(--ui-radius);
 }
 .sudoku-cover h3,
 .sudoku-cover p {
@@ -436,9 +431,9 @@ body .sudoku-cell:focus-visible {
   height: 1.3rem;
 }
 .sudoku-actions .game-button[aria-pressed="true"] {
-  background: var(--accent-light);
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--ui-highlight, var(--accent-light));
+  border-color: var(--ui-accent, var(--accent));
+  color: var(--ui-accent, var(--accent));
 }
 .sudoku-keypad {
   display: grid;
@@ -450,7 +445,7 @@ body .sudoku-cell:focus-visible {
   min-width: 0;
   padding: 0;
   height: 2.9rem;
-  font: 650 1.3rem var(--font-numeric);
+  font: 650 var(--ui-font-size, 1.3rem) var(--font-numeric);
 }
 .sudoku-feedback {
   min-height: 1.4em;
@@ -528,7 +523,7 @@ body .sudoku-cell:focus-visible {
 .game-sudoku[data-layout="wide"] .sudoku-keypad .game-button {
   height: auto;
   aspect-ratio: 1;
-  font-size: 2rem;
+  font-size: var(--ui-font-size, 2rem);
 }
 .game-sudoku[data-layout="wide"] .sudoku-cell {
   font-size: clamp(1.4rem, 5cqw, 2.8rem);
@@ -577,21 +572,21 @@ body .sudoku-board.is-multi .sudoku-notes { font-size: clamp(0.3rem, calc(14cqw 
   .sudoku-session-meta { margin-inline-start: auto; justify-content: flex-end; }
 }
 
-.sudoku-mark-status { grid-column: 1 / -1; text-align: center; font-size: 0.8rem; }
+.sudoku-mark-status { grid-column: 1 / -1; text-align: center; font-size: var(--ui-font-size, 0.8rem); }
 
 
 
 .sudoku-branches { grid-column: 3; grid-row: 1 / 4; align-self: stretch; min-height: 0; overflow: auto; background: transparent; border: 0; }
-.sudoku-branches summary { padding: 0.5rem 0; color: var(--muted); font-size: 0.8rem; }
+.sudoku-branches summary { padding: 0.5rem 0; color: var(--ui-muted, var(--muted)); font-size: var(--ui-font-size, 0.8rem); }
 .sudoku-branch-list { position: relative; min-width: 100%; }
 .sudoku-branch-list svg { position: absolute; inset: 0; pointer-events: none; }
 .sudoku-branch-list path { fill: none; stroke: var(--muted); stroke-width: 1.5; }
 .sudoku-branch-list path.is-current-path { stroke: var(--accent); stroke-width: 3; }
-.sudoku-branch-list .game-button { position: absolute; display: flex; align-items: center; gap: 0; width: 32px; height: 32px; min-width: 32px; padding: 0; border: 0; border-radius: 50%; background: transparent; overflow: visible; }
+.sudoku-branch-list .game-button { position: absolute; display: flex; align-items: center; gap: 0; width: 32px; height: 32px; min-width: 32px; padding: 0; border: 0; border-radius: var(--ui-button-radius); background: transparent; overflow: visible; }
 .sudoku-branch-dot { display: block; flex: none; width: 14px; height: 14px; margin: 9px; border-radius: 50%; background: var(--paper); border: 2px solid var(--muted); box-sizing: border-box; }
-.sudoku-branch-label { position: absolute; left: 30px; white-space: nowrap; font-size: 0.7rem; color: var(--muted); }
+.sudoku-branch-label { position: absolute; left: 30px; white-space: nowrap; font-size: var(--ui-font-size, 0.7rem); color: var(--ui-muted, var(--muted)); }
 .sudoku-branch-list .is-active .sudoku-branch-dot { background: var(--accent); border-color: var(--accent); outline: none; }
-.sudoku-branch-list .is-active .sudoku-branch-label { color: var(--accent); font-weight: 700; }
+.sudoku-branch-list .is-active .sudoku-branch-label { color: var(--ui-accent, var(--accent)); font-weight: 700; }
 @media (min-width: 701px) {
  .sudoku-branches > summary { display: none; }
  .sudoku-branches > summary::-webkit-details-marker { display: none; }
@@ -615,7 +610,7 @@ body .sudoku-board.is-multi .sudoku-notes { font-size: clamp(0.3rem, calc(14cqw 
 .sudoku-branch-list [data-branch-status="confirmed"] .sudoku-branch-dot { background: var(--muted); }
 .sudoku-branch-info { position: sticky; bottom: 0; background: var(--paper); padding: 0.4rem 0; font-size: 0.75rem; }
 .sudoku-branch-info p { margin: 0.3rem 0; }
-.sudoku-branch-info .game-button { font-size: 0.75rem; min-height: 2rem; }
+.sudoku-branch-info .game-button { font-size: var(--ui-font-size, 0.75rem); min-height: 2rem; }
 
 .sudoku-branch-list .game-button:focus, .sudoku-branch-list .game-button:focus-visible { outline: none; box-shadow: none; }
 .sudoku-branch-list .game-button:focus-visible .sudoku-branch-dot { background: var(--accent); border-color: var(--accent); }
@@ -625,7 +620,7 @@ body .sudoku-board.is-multi .sudoku-notes { font-size: clamp(0.3rem, calc(14cqw 
 
 .sudoku-branch-list path { stroke-linecap: round; stroke-linejoin: round; }
 
-.sudoku-delete-popover { position: fixed; inset: auto; margin: 0; width: max-content; max-width: min(18rem, calc(100vw - 16px)); box-sizing: border-box; padding: 0.85rem; border: 1px solid var(--line); border-radius: 0.65rem; background: var(--paper); color: var(--ink); box-shadow: 0 4px 18px #0002; font-size: 0.85rem; }
+.sudoku-delete-popover { position: fixed; inset: auto; margin: 0; width: max-content; max-width: min(18rem, calc(100vw - 16px)); box-sizing: border-box; padding: 0.85rem; border: var(--ui-stroke) solid var(--line); border-radius: var(--ui-radius); background: var(--ui-surface, var(--paper)); color: var(--ui-text, var(--ink)); box-shadow: 0 4px 18px #0002; font-size: var(--ui-font-size, 0.85rem); }
 .sudoku-delete-popover p { margin: 0 0 0.75rem; }
 .sudoku-delete-popover-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
 .sudoku-delete-popover-actions .game-button { min-height: 2rem; padding: 0.35rem 0.7rem; }
@@ -633,4 +628,4 @@ body .sudoku-board.is-multi .sudoku-notes { font-size: clamp(0.3rem, calc(14cqw 
 @media (min-width: 701px) {
  .sudoku-branches { width: max-content; max-width: none; min-width: 0; }
 }
-.sudoku-branch-limit-popover { position: fixed; inset: auto; margin: 0; max-width: min(18rem,calc(100vw - 16px)); padding: .75rem 1rem; border: 1px solid var(--line); border-radius: .65rem; background: var(--paper); color: var(--ink); box-shadow: 0 4px 18px #0002; font-size: .85rem; }
+.sudoku-branch-limit-popover { position: fixed; inset: auto; margin: 0; max-width: min(18rem,calc(100vw - 16px)); padding: .75rem 1rem; border: var(--ui-stroke) solid var(--line); border-radius: var(--ui-radius); background: var(--ui-surface, var(--paper)); color: var(--ui-text, var(--ink)); box-shadow: 0 4px 18px #0002; font-size: var(--ui-font-size, .85rem); }

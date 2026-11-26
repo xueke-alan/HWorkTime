@@ -273,6 +273,13 @@ const WorkTimeDomainValidation = (() => {
     if (!["system", "full", "reduce"].includes(motionMode))
       fail("preferences.motionMode", "Invalid animation preference.");
     clean.preferences.motionMode = motionMode;
+    const showCalendarMascot = input.preferences.showCalendarMascot ?? true;
+    if (typeof showCalendarMascot !== "boolean")
+      fail(
+        "preferences.showCalendarMascot",
+        "Invalid calendar mascot preference.",
+      );
+    clean.preferences.showCalendarMascot = showCalendarMascot;
     const weatherDays = input.preferences.weatherDays ?? 5;
     if (![0, 3, 5, 7].includes(weatherDays))
       fail("preferences.weatherDays", "备份中的天气显示天数无效。");

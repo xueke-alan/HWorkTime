@@ -15,6 +15,6 @@
     "assets/js/services/application.js",
     "assets/js/services/derived.js",
     "assets/js/services/clock.js",
-    "scripts/type-contracts.js"
+    "scripts/verify/types/type-contracts.js"
   ]
 }

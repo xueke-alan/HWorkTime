@@ -48,13 +48,13 @@ WorkTimeApp.i18n = (() => {
   } catch {}
   let language = preference;
   let changing = false;
-  const sourceKeys = new Map(
-    Object.entries(catalogs["zh-CN"]).map(([key, value]) => [value, key]),
-  );
+  const sourceKeys = new Map();
   const englishSources = new Map();
   let fragments = [],
     contentFragments = {};
   function refreshSources() {
+    for (const [key, value] of Object.entries(catalogs["zh-CN"]))
+      sourceKeys.set(value, key);
     englishSources.clear();
     for (const catalog of Object.values(catalogs))
       for (const [key, value] of Object.entries(catalog))
@@ -82,7 +82,7 @@ WorkTimeApp.i18n = (() => {
   const parts = new Map();
   let requestedLanguage = language;
   async function moduleMessages(id, group) {
-    if (id === "zh-CN") return;
+    if (id !== "zh-CN") await moduleMessages("zh-CN", group);
     const key = group + "/" + id;
     if (!parts.has(key))
       parts.set(
@@ -201,7 +201,7 @@ WorkTimeApp.i18n = (() => {
   }
   function apply(root = document) {
     const nodes = root.querySelectorAll(
-      "[data-i18n-text],[data-i18n-title],[data-i18n-aria-label],[data-i18n-placeholder]",
+      "[data-i18n-text],[data-i18n-hint-text],[data-i18n-aria-label],[data-i18n-placeholder]",
     );
     for (const element of nodes) {
       if (element.dataset.i18nText) {
@@ -213,9 +213,13 @@ WorkTimeApp.i18n = (() => {
         ))
           if (texts[index]) texts[index].data = t(key);
       }
-      for (const name of ["title", "aria-label", "placeholder"]) {
+      for (const name of ["hint-text", "aria-label", "placeholder"]) {
         const key = element.getAttribute("data-i18n-" + name);
-        if (key) element.setAttribute(name, t(key));
+        if (key)
+          element.setAttribute(
+            name === "hint-text" ? "data-hint-text" : name,
+            t(key),
+          );
       }
     }
     document.documentElement.lang = language;

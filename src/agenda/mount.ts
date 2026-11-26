@@ -1,7 +1,8 @@
-import { installUI } from "../ui";
-import { createApp, reactive } from "vue";
-
-import AgendaEditor from "./AgendaEditor.vue";
+import { createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { flushSync } from "react-dom";
+import { ApplicationTheme } from "../ApplicationTheme";
+import { AgendaEditor } from "./AgendaEditor";
 
 export type Status = "pending" | "completed" | "in-progress" | "cancelled";
 export interface Draft {
@@ -17,16 +18,31 @@ export interface EditorOptions {
   changed: () => void;
 }
 export function mount(host: HTMLElement, options: EditorOptions) {
-  const draft = reactive(options.draft);
-  const view = reactive({ editing: false, busy: false, locked: false });
-  const app = createApp(AgendaEditor, { ...options, draft, view });
-  installUI(app);
-  app.mount(host);
+  const root = createRoot(host);
+  function update(view: { editing: boolean; busy: boolean; locked: boolean }) {
+    flushSync(() =>
+      root.render(
+        createElement(
+          ApplicationTheme,
+          null,
+          createElement(AgendaEditor, {
+            ...options,
+            draft: { ...options.draft },
+            view,
+            change(patch: Partial<Draft>) {
+              Object.assign(options.draft, patch);
+              options.changed();
+            },
+          }),
+        ),
+      ),
+    );
+  }
+  update({ editing: false, busy: false, locked: false });
   return {
-    draft,
-    view,
+    update,
     dispose() {
-      app.unmount();
+      root.unmount();
     },
   };
 }

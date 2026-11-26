@@ -4,10 +4,10 @@ dialog {
   max-width: min(900px, 94vw);
   width: 780px;
   max-height: 88vh;
-  color: var(--ink);
+  color: var(--ui-text, var(--ink));
 }
 .dialog-head {
-  border-bottom: 1px solid var(--line);
+  border-bottom: var(--ui-stroke) solid var(--line);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -17,7 +17,7 @@ dialog {
   max-height: 65vh;
 }
 .dialog-foot {
-  border-top: 1px solid var(--line);
+  border-top: var(--ui-stroke) solid var(--line);
   display: flex;
   justify-content: flex-end;
   gap: 9px;
@@ -58,7 +58,7 @@ dialog {
 }
 .import-history-item summary {
   cursor: pointer;
-  color: var(--accent);
+  color: var(--ui-accent, var(--accent));
 }
 .import-history-item pre {
   font-size: 11px;
@@ -76,18 +76,18 @@ dialog {
   padding: 30px 12px;
 }
 dialog {
-  border: 1px solid var(--theme-border-soft, #dbe6de);
-  background: #fff;
-  border-radius: 20px;
+  border: var(--ui-stroke) solid var(--theme-border-soft, #dbe6de);
+  background: var(--ui-surface, white);
+  border-radius: var(--ui-radius);
   box-shadow: 0 24px 80px rgba(var(--theme-rgb, 28, 66, 60), 0.188235);
 }
 dialog::backdrop {
-  background: rgba(64, 64, 64, 0.3);
+  background: var(--ui-control-surface, rgba(64, 64, 64, 0.3));
 }
 #runtimeFolderChange {
   width: 600px;
   max-width: calc(100vw - 32px);
-  border-radius: 18px;
+  border-radius: var(--ui-radius);
 }
 #runtimeFolderChange .dialog-head {
   justify-content: flex-start;
@@ -127,7 +127,7 @@ dialog::backdrop {
   min-height: 168px;
   padding: 20px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--ui-radius);
 }
 #runtimeFolderChange .folder-change-current > svg {
   justify-self: start;
@@ -142,9 +142,9 @@ dialog::backdrop {
   text-align: start;
 }
 #runtimeFolderChange .folder-change-label {
-  font-size: 11px;
+  font-size: var(--ui-font-size, 11px);
   font-weight: 400;
-  color: var(--muted);
+  color: var(--ui-muted, var(--muted));
   line-height: 1.5;
 }
 #runtimeFolderChange .folder-change-identity strong {
@@ -162,18 +162,14 @@ dialog::backdrop {
   width: 100%;
   min-height: 168px;
   padding: 20px;
-  border: 1px dashed var(--theme-border, var(--line));
-  border-radius: 12px;
+  border: var(--ui-stroke) dashed var(--theme-border, var(--line));
+  border-radius: var(--ui-button-radius);
   background: var(--theme-surface-subtle, #f7faf8);
   box-shadow: none;
 }
 #runtimeFolderChange .folder-change-picker:hover:not(:disabled) {
-  border-color: var(--accent);
-  background: var(--accent-light);
-}
-#runtimeFolderChange .folder-change-picker:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
+  border-color: var(--ui-accent, var(--accent));
+  background: var(--ui-highlight, var(--accent-light));
 }
 #runtimeFolderChange .folder-change-picker:disabled {
   opacity: 1;
@@ -203,8 +199,8 @@ dialog::backdrop {
   align-self: center;
   align-items: center;
   gap: 3px;
-  color: var(--accent);
-  font-size: 12px;
+  color: var(--ui-accent, var(--accent));
+  font-size: var(--ui-font-size, 12px);
   font-weight: 500;
 }
 #runtimeFolderChange .folder-change-select-action svg {
@@ -219,7 +215,7 @@ dialog::backdrop {
   gap: 10px;
   padding: 12px 18px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--ui-radius);
   cursor: pointer;
 }
 #runtimeFolderChange .folder-change-migration:has(:checked) {
@@ -249,7 +245,7 @@ dialog::backdrop {
   width: 22px;
   height: 22px;
   border: 1px solid var(--control-border);
-  border-radius: 6px;
+  border-radius: var(--ui-radius);
   background: var(--paper, #fff);
   box-shadow: var(--control-shadow);
   color: #fff;
@@ -268,10 +264,6 @@ dialog::backdrop {
 #runtimeFolderChange [data-migrate]:checked + .folder-change-check .ui-icon {
   opacity: 1;
 }
-#runtimeFolderChange [data-migrate]:focus-visible + .folder-change-check {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
 #runtimeFolderChange [data-migrate]:disabled {
   cursor: default;
 }
@@ -280,7 +272,7 @@ dialog::backdrop {
 }
 #runtimeFolderChange .folder-change-option-title {
   display: block;
-  font-size: 14px;
+  font-size: var(--ui-font-size, 14px);
   font-weight: 600;
   line-height: 1.6;
 }
@@ -293,7 +285,7 @@ dialog::backdrop {
 }
 #runtimeFolderChange .folder-change-feedback {
   padding: 14px 15px;
-  border-radius: 10px;
+  border-radius: var(--ui-radius);
   background: var(--theme-surface-subtle, #f7faf8);
   font-size: 12px;
   line-height: 1.8;
@@ -325,16 +317,16 @@ dialog::backdrop {
   height: 6px;
   margin-top: 10px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--ui-radius);
   overflow: hidden;
   accent-color: var(--accent);
 }
 #runtimeFolderChange [data-progress]::-webkit-progress-bar {
-  border-radius: 6px;
+  border-radius: var(--ui-radius);
   background: var(--line);
 }
 #runtimeFolderChange [data-progress]::-webkit-progress-value {
-  border-radius: 6px;
+  border-radius: var(--ui-radius);
   background: var(--accent);
 }
 #runtimeFolderChange .folder-change-stats:not(:empty) {
@@ -445,7 +437,7 @@ dialog::backdrop {
 .dialog-head {
   background: var(--theme-surface-paper, #f8fbf9);
   padding: 21px 24px;
-  border-color: var(--theme-border-soft, #e7eee9);
+  border-color: var(--ui-border, var(--theme-border-soft, #e7eee9));
 }
 .dialog-head h2 {
   font-size: 19px;
@@ -455,19 +447,19 @@ dialog::backdrop {
   width: 30px;
   height: 30px;
   padding: 0;
-  font-size: 20px;
+  font-size: var(--ui-font-size, 20px);
   line-height: 1;
   border: 0;
   background: var(--theme-surface-subtle, #eaf1ec);
-  color: var(--theme-text-muted, #789084);
-  border-radius: 50%;
+  color: var(--ui-muted, var(--theme-text-muted, #789084));
+  border-radius: var(--ui-button-radius);
 }
 .dialog-body {
   padding: 22px 24px;
 }
 .dialog-foot {
-  background: #fafcfb;
-  border-color: var(--theme-border-soft, #e7eee9);
+  background: var(--ui-control-surface, #fafcfb);
+  border-color: var(--ui-border, var(--theme-border-soft, #e7eee9));
   padding: 16px 24px;
 }
 .dialog-foot button {
@@ -481,73 +473,38 @@ dialog::backdrop {
 #restoreDialog {
   width: 560px;
 }
-.import-input-grid {
+.import-input-grid.hw-field {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 14px;
-  align-items: stretch;
-  margin: 14px 0 12px;
-}
-#pasteText {
-  height: 160px;
-  min-height: 160px;
-  resize: none;
-  padding-bottom: 4.428571rem;
-}
-.import-input-grid .import-paste-button {
-  --control-height: 3.142857rem;
-  --control-radius: 0.357143rem;
-  position: absolute;
-  bottom: 0.571429rem;
-  right: 1.571429rem;
+  grid-template-rows: minmax(0, 1fr);
+  margin: 0 0 12px;
   padding: 0;
+  overflow: hidden;
+  transition: border-color 0.16s;
 }
-.import-input-grid .import-paste-button .ui-icon {
-  width: var(--icon-size-small);
-  height: var(--icon-size-small);
+.import-input-grid.hw-field:hover {
+  border-color: var(--ui-hover-border, var(--theme-border));
 }
-.import-clipboard-notice {
-  position: absolute;
-  bottom: 0.571429rem;
-  right: 5.285715rem;
-  left: 0.571429rem;
-  height: 3.142857rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 0.571429rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 16%, white);
-  border-radius: 0.357143rem;
-  background: color-mix(in srgb, var(--accent) 10%, white);
-  color: var(--accent);
-  font-size: var(--text-body);
-  line-height: 1.3;
-  text-align: center;
+.import-input-grid.hw-field:focus-within {
+  border-color: var(--ui-accent, var(--accent));
 }
-.import-clipboard-notice[hidden] { display: none; }
-body #importDialog #pasteOAClipboard {
-  border: 1px solid color-mix(in srgb, var(--accent) 16%, white);
-  background: color-mix(in srgb, var(--accent) 4%, white);
-  color: var(--accent);
-  box-shadow: none;
-}
-body #importDialog #pasteOAClipboard:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--accent) 28%, white);
-  background: color-mix(in srgb, var(--accent) 8%, white);
+.import-input-grid > #pasteText {
+  border: 0;
+  background: transparent;
 }
 #importTable tbody tr:hover {
   background: var(--theme-surface-paper, #f9fcfa);
 }
 .import-history-item {
-  border-radius: 13px;
+  border-radius: var(--ui-radius);
   padding: 16px;
   border-color: var(--theme-border-soft, #e1eae3);
   background: #fcfefd;
 }
 .import-history-item .row button {
   padding: 5px 11px;
-  font-size: 12px;
+  font-size: var(--ui-font-size, 12px);
 }
 .import-history-item h3 {
   font-weight: 600;
@@ -562,7 +519,7 @@ body #importDialog #pasteOAClipboard:hover:not(:disabled) {
 .import-history-item pre {
   background: var(--theme-surface-subtle, #f0f5f1);
   border: 1px solid var(--theme-border-soft, #e2ebe3);
-  border-radius: 9px;
+  border-radius: var(--ui-radius);
   line-height: 1.75;
   color: var(--theme-text-muted, #5b7564);
 }
@@ -573,7 +530,7 @@ body #importDialog #pasteOAClipboard:hover:not(:disabled) {
     padding: 16px;
   }
   dialog {
-    border-radius: 16px;
+    border-radius: var(--ui-radius);
   }
   .dialog-head h2 {
     font-size: 18px;
@@ -614,14 +571,14 @@ body #importDialog #pasteOAClipboard:hover:not(:disabled) {
 .breakrow button.icon-only {
   width: 36px;
   height: 36px;
-  border-radius: 9px;
-  border-color: #eadbd7;
-  background: #fff8f6;
-  color: #a86155;
+  border-radius: var(--ui-button-radius);
+  border-color: var(--ui-control-border, #eadbd7);
+  background: var(--ui-control-surface, #fff8f6);
+  color: var(--ui-control-text, #a86155);
 }
 .breakrow button.icon-only:hover {
-  background: #fcebe6;
-  border-color: #dba99d;
+  background: var(--ui-hover-surface, #fcebe6);
+  border-color: var(--ui-hover-border, #dba99d);
 }
 .breakrow button.icon-only .ui-icon {
   width: 17px;
@@ -634,7 +591,7 @@ body #importDialog #pasteOAClipboard:hover:not(:disabled) {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  color: var(--accent);
+  color: var(--ui-accent, var(--accent));
 }
 .import-history-item details > summary::-webkit-details-marker,
 #sourceBody details > summary::-webkit-details-marker {
@@ -774,12 +731,12 @@ dialog select {
   }
 }
 .import-parse-status {
-  font-size: 12px;
+  font-size: var(--ui-font-size, 12px);
   line-height: 1.4;
-  color: var(--muted);
+  color: var(--ui-muted, var(--muted));
 }
 .import-parse-status[data-state="success"] {
-  color: var(--accent);
+  color: var(--ui-accent, var(--accent));
 }
 .import-parse-status[data-state="error"] {
   color: var(--red);
@@ -856,7 +813,7 @@ body .dialog-foot {
   padding: 1.142857rem 1.428571rem;
 }
 body dialog {
-  font-size: var(--text-body);
+  font-size: var(--ui-font-size, var(--text-body));
 }
 body dialog h2 {
   font-size: 1.357143rem;
@@ -868,7 +825,7 @@ body dialog small,
 body dialog .import-caption,
 body dialog .warnings,
 body #importTable {
-  font-size: var(--text-small);
+  font-size: var(--ui-font-size, var(--text-small));
 }
 body #settingsDialog {
   max-width: 94vw;
@@ -1049,7 +1006,7 @@ body #importDialog {
   content: "";
   position: absolute;
   inset: 0;
-  border: 1.5px solid currentColor;
+  background: currentColor;
   border-radius: 50%;
   pointer-events: none;
   animation: backup-ripple 450ms ease-out both;
@@ -1075,7 +1032,7 @@ body #importDialog {
 .schedule-editing-date { margin: 8px 0; font-size: 12px; color: var(--muted); }
 #scheduleRangeDialog, #scheduleListDialog, #scheduleDraftDialog { width: 520px; }
 #scheduleCustomDates[hidden], #scheduleNoEndLabel[hidden] { display: none; }
-#scheduleRangeChoice { width: 100%; min-height: var(--control-height); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+#scheduleRangeChoice { width: 100%; min-height: var(--control-height); color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: var(--ui-radius); padding: 8px; }
 #scheduleNoEndLabel { display: flex; align-items: center; margin-top: 10px; }
 #scheduleNoEnd { width: auto; }
 #scheduleList { display: grid; gap: 10px; }
@@ -1096,7 +1053,7 @@ body #importDialog {
   margin: 0;
   padding: 1rem;
   border: 1px solid var(--theme-border-soft, var(--line));
-  border-radius: var(--control-radius);
+  border-radius: var(--ui-radius);
   background: var(--theme-surface-subtle, var(--accent-light));
 }
 .schedule-summary-main { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; }
@@ -1108,7 +1065,7 @@ body #importDialog {
 .schedule-summary-main small { font-weight: 500; color: var(--muted); }
 .schedule-summary-breaks { display: grid; gap: 0.428571rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
 .schedule-summary-breaks > div { display: flex; flex-wrap: wrap; gap: 0.428571rem; }
-.schedule-break-chip { padding: 0.285714rem 0.571429rem; border-radius: 0.428571rem; background: #fff; color: var(--ink); font-size: var(--text-small); font-variant-numeric: tabular-nums; }
+.schedule-break-chip { padding: 0.285714rem 0.571429rem; border-radius: var(--ui-radius); background: var(--ui-surface, white); color: var(--ui-text, var(--ink)); font-size: var(--ui-font-size, var(--text-small)); font-variant-numeric: tabular-nums; }
 .schedule-range-picker { position: relative; }
 #scheduleRangeChoice.schedule-range-native { position: absolute; width: 1px; height: 1px; min-height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
 #scheduleRangeDialog #scheduleRangeTrigger {
@@ -1135,7 +1092,7 @@ body #importDialog {
   overscroll-behavior: contain;
   padding: 0.285714rem;
   border: 1px solid var(--theme-border-soft, var(--line));
-  border-radius: var(--control-radius);
+  border-radius: var(--ui-radius);
   background: var(--theme-surface-paper, #fff);
   box-shadow: 0 8px 24px rgba(var(--theme-rgb, 32, 59, 54), 0.14);
 }
@@ -1149,16 +1106,16 @@ body #storageNotice [hidden], body #restoreDialog [hidden] { display: none; }
   min-height: var(--control-height);
   padding: 0.571429rem 0.714286rem;
   border: 0;
-  border-radius: 0.428571rem;
+  border-radius: var(--ui-radius);
   background: transparent;
-  color: var(--ink);
+  color: var(--ui-text, var(--ink));
   text-align: left;
   font-weight: 500;
   box-shadow: none;
 }
 #scheduleRangeDialog #scheduleRangeOptions > button:hover,
-#scheduleRangeDialog #scheduleRangeOptions > button:focus-visible { background: var(--theme-surface-soft, var(--accent-light)); outline: 0; }
-#scheduleRangeDialog #scheduleRangeOptions > button[aria-selected="true"] { color: var(--accent); background: var(--accent-light); }
+#scheduleRangeDialog #scheduleRangeOptions > button:focus-visible { background: var(--theme-surface-soft, var(--ui-highlight, var(--accent-light))); outline: 0; }
+#scheduleRangeDialog #scheduleRangeOptions > button[aria-selected="true"] { color: var(--ui-accent, var(--accent)); background: var(--ui-highlight, var(--accent-light)); }
 #scheduleRangeOptions > button[aria-selected="true"]::after { content: "✓"; margin-inline-start: 0.571429rem; }
 #scheduleCustomDates { gap: 0.857143rem; }
 #scheduleNoEndLabel { margin: 0; gap: 0.571429rem; font-size: var(--text-small); color: var(--muted); }
@@ -1215,8 +1172,8 @@ body #scheduleRangeDialog { width: 900px; }
 }
 .schedule-card-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 0.571429rem; width: 100%; }
 .schedule-card-heading strong { font-size: var(--text-small); font-weight: 650; overflow-wrap: anywhere; }
-.schedule-card-hours { flex: none; color: var(--accent); font-weight: 650; font-variant-numeric: tabular-nums; }
-.schedule-card-details { display: flex; flex-wrap: wrap; gap: 0.285714rem 0.714286rem; width: 100%; color: var(--muted); font-variant-numeric: tabular-nums; }
+.schedule-card-hours { flex: none; color: var(--ui-accent, var(--accent)); font-weight: 650; font-variant-numeric: tabular-nums; }
+.schedule-card-details { display: flex; flex-wrap: wrap; gap: 0.285714rem 0.714286rem; width: 100%; color: var(--ui-muted, var(--muted)); font-variant-numeric: tabular-nums; }
 .schedule-card-details > span:first-child { color: var(--ink); white-space: nowrap; }
 .schedule-card-breaks { overflow-wrap: anywhere; }
 @media (max-width: 720px) {
@@ -1243,7 +1200,7 @@ body #scheduleRangeDialog { width: 900px; }
 #templateImportPreview article {
   padding: 0.571429rem 0.714286rem;
   border: 1px solid var(--line);
-  border-radius: var(--control-radius);
+  border-radius: var(--ui-radius);
   overflow-wrap: anywhere;
 }
 #templateImportPreview article span {

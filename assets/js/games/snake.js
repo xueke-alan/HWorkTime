@@ -152,32 +152,28 @@ WorkTimeApp.games.register({
     const stage = node("div", "snake-stage", root);
     const board = node("div", "snake-board", stage);
     board.tabIndex = 0;
-    board.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(board);
     const canvas = node("canvas", "", board);
     canvas.setAttribute("aria-hidden", "true");
     const ctx = canvas.getContext("2d");
     const cover = node("div", "snake-cover", board);
     const paintPauseCover = WorkTimeApp.games.createPauseCover(cover, signal);
-    const coverTitle = node("h3", "", cover);
-    const coverHint = node("p", "", cover);
-    const coverActions = node("div", "snake-cover-actions", cover);
-    const cancel = button(coverActions, "cancel", () => {
-      confirming = null;
-      paused = state.status === "playing";
-      render();
-      pauseButton.focus();
-    });
-    const start = button(coverActions, "start", () => {
-      if (confirming) newGame(confirming);
-      else if (["won", "lost"].includes(state.status)) newGame(state.mode);
-      else begin();
-    });
-    const paintRestartCover = WorkTimeApp.games.createRestartCover({
-      cover: cover,
-      cancel: cancel,
-      accept: start,
+    const coverView = WorkTimeApp.ui.mountSessionCover(
+      cover,
+      "snake",
       signal,
-    });
+      (id) => {
+        if (disposed || suspended || signal.aborted) return;
+        if (id === "cancel") {
+          confirming = null;
+          paused = state.status === "playing";
+          render();
+          pauseButton.focus();
+        } else if (confirming) newGame(confirming);
+        else if (["won", "lost"].includes(state.status)) newGame(state.mode);
+        else begin();
+      },
+    );
     const pad = node("div", "snake-pad", sidebar);
     const arrows = {
       up: "arrow-upward",
@@ -259,7 +255,7 @@ WorkTimeApp.games.register({
         stopLoop();
         confirming = mode;
         render();
-        cancel.focus();
+        coverView.focus("cancel");
       } else newGame(mode);
     }
     function newGame(mode) {
@@ -317,9 +313,9 @@ WorkTimeApp.games.register({
         pauseButton,
         pauseName === "pause" ? "pause" : "play-arrow",
       );
-      pauseButton.title = t(pauseName);
+      pauseButton.dataset.hintText = t(pauseName);
       pauseButton.setAttribute("aria-label", t(pauseName));
-      restart.title = t("restart");
+      restart.dataset.hintText = t("restart");
       restart.setAttribute("aria-label", t("restart"));
       padButtons.forEach((b) =>
         b.setAttribute("aria-label", t(b.dataset.snakeAction)),
@@ -341,36 +337,47 @@ WorkTimeApp.games.register({
       cover.inert = reveal < 1;
       root.dataset.impact = String(!!impact);
       cover.dataset.counting = String(countdown > 0);
-      coverActions.hidden = countdown > 0;
-      coverHint.hidden = countdown > 0;
-      cancel.hidden = !confirming;
-      cancel.textContent = t("cancel");
-      coverTitle.textContent =
-        countdown > 0
-          ? String(Math.ceil(countdown / 600))
-          : t(confirming ? "confirm" : paused ? "paused" : state.status);
-      coverHint.textContent = t(
-        confirming
-          ? "confirmHint"
-          : state.status === "lost" || state.status === "won"
-            ? "result"
-            : "readyHint",
-        { score: state.score },
-      );
-      start.textContent = t(
-        confirming || ["lost", "won"].includes(state.status)
-          ? "restart"
-          : paused
-            ? "resume"
-            : "start",
-      );
+      if (!cover.hidden)
+        coverView.display({
+          confirming: !!confirming,
+          title:
+            countdown > 0
+              ? String(Math.ceil(countdown / 600))
+              : t(confirming ? "confirm" : paused ? "paused" : state.status),
+          detail:
+            countdown > 0
+              ? undefined
+              : t(
+                  confirming
+                    ? "confirmHint"
+                    : ["lost", "won"].includes(state.status)
+                      ? "result"
+                      : "readyHint",
+                  { score: state.score },
+                ),
+          actions:
+            countdown > 0
+              ? []
+              : [
+                  ...(confirming ? [{ id: "cancel", label: t("cancel") }] : []),
+                  {
+                    id: "start",
+                    label: t(
+                      confirming || ["lost", "won"].includes(state.status)
+                        ? "restart"
+                        : paused
+                          ? "resume"
+                          : "start",
+                    ),
+                  },
+                ],
+        });
       warning.hidden = !saveFailed;
       warning.textContent = t("saveFailed");
       board.setAttribute(
         "aria-label",
         t("board", { score: state.score, length: state.body.length }),
       );
-      paintRestartCover(confirming);
       readColors();
       draw(1);
     }
@@ -700,11 +707,7 @@ WorkTimeApp.games.register({
       if (direction) {
         event.preventDefault();
         if (!event.repeat) turn(direction);
-      } else if (
-        (event.code === "Space" &&
-          (event.target === board || event.target === container)) ||
-        event.key.toLowerCase() === "p"
-      ) {
+      } else if (event.key.toLowerCase() === "p") {
         event.preventDefault();
         if (!event.repeat) togglePause();
       }

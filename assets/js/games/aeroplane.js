@@ -96,6 +96,9 @@ WorkTimeApp.games.register({
       parent.append(n);
       return n;
     }
+    const workspace = el("div", "aero-workspace");
+    const side = el("aside", "aero-sidebar", undefined, workspace);
+    const renderControls = WorkTimeApp.ui.mountAeroplaneControls(side, signal);
     function render(
       active = document.activeElement?.getAttribute("data-aero-action"),
     ) {
@@ -103,23 +106,13 @@ WorkTimeApp.games.register({
       const previousPlayer =
         root.querySelector(".aero-dice")?.dataset.dicePlayer;
       const previousChoices = root.querySelector(".aero-plane-choices");
-      const workspace =
-        root.querySelector(".aero-workspace") ?? el("div", "aero-workspace");
-      const side =
-        workspace.querySelector(".aero-sidebar") ??
-        el("aside", "aero-sidebar", undefined, workspace);
-      const playerCards = [...side.querySelectorAll(".aero-player")];
-      const previousSeats = Boolean(root.querySelector(".aero-switch"));
-      side
-        .querySelectorAll(":scope > :not(.aero-player)")
-        .forEach((node) => node.remove());
       workspace.querySelector(".aero-board-wrap")?.remove();
       root.toggleAttribute("data-visual-busy", busy);
       const boardWrap = el("div", "aero-board-wrap", undefined, workspace);
       workspace.prepend(boardWrap);
       side.inert = false;
       const board = el("div", "aero-board", undefined, boardWrap);
-      board.setAttribute("role", "group");
+      WorkTimeApp.ui.native.setGroup(board);
       board.setAttribute("aria-label", t("board"));
       const art = svg(
         "svg",
@@ -328,93 +321,53 @@ WorkTimeApp.games.register({
           allowed() && human() && state.phase === "roll",
         );
       }
-      for (let p = 0; p < 4; p++) {
-        const row =
-          playerCards[p] ??
-          el("div", `aero-player aero-${R.colors[p]}`, undefined, side);
-        const color = t(R.colors[p]);
-        const kind = setup ? seats[p] : state.seats[p];
-        row.ariaCurrent =
-          !setup && p === (rollingPlayer ?? state.turn) && state.phase !== "won"
-            ? "true"
-            : null;
-        if (!playerCards[p] || previousSeats !== setup) {
-          row.replaceChildren();
-          el("span", "aero-player-dot", undefined, row).ariaHidden = "true";
-          const details = el("div", "aero-player-details", undefined, row);
-          el("strong", "", color, details);
-          el("span", "aero-player-kind", t(kind), details);
-          if (setup) {
-            const toggle = button(row, "", "seat-" + p);
-            toggle.className = "aero-switch";
-            toggle.setAttribute("role", "switch");
-            toggle.setAttribute("aria-label", `${color} ${t("human")}`);
-            toggle.setAttribute("aria-checked", String(kind === "human"));
-          } else el("span", "aero-progress", undefined, row);
-        }
-        if (!setup) {
-          const arrived = state.pieces
-            .slice(p * 4, p * 4 + 4)
-            .filter((n) => n === R.END).length;
-          const progress = row.querySelector(".aero-progress");
-          if (progress.textContent !== `${arrived}/4`)
-            progress.textContent = `${arrived}/4`;
-        }
-      }
-      const feedback = el("div", "aero-feedback", undefined, side);
-      if (setup) {
-        button(side, t("start"), "start", !seats.includes("human"));
-      } else {
-        let message = "";
-        if (state.phase === "won")
-          message = t("winner", { color: t(R.colors[state.winner]) });
-        else if (busy) message = t(human() ? "wait" : "thinking");
-        else if (allowed() && human() && state.phase === "move")
-          message = t("choose", { color: t(R.colors[state.turn]) });
-        if (message) {
-          const status = el("p", "aero-status", message, feedback);
-          status.setAttribute("role", "status");
-        }
-        if (state.phase === "move" && human()) {
-          const choices = el(
-            "div",
-            "aero-plane-choices aero-" +
-              R.colors[state.turn] +
-              (!previousChoices && allowed() ? " aero-choices-enter" : ""),
-            undefined,
-            feedback,
-          );
-          for (const i of moves) {
-            const b = button(choices, "✈ " + (i + 1), "plane-" + i, !allowed());
-            b.setAttribute(
-              "aria-label",
-              root
-                .querySelector(`[data-plane="${state.turn * 4 + i}"]`)
+      const choosing = !setup && state.phase === "move" && human();
+      const enabled = allowed();
+      const message = setup
+        ? ""
+        : state.phase === "won"
+          ? t("winner", { color: t(R.colors[state.winner]) })
+          : busy
+            ? t(human() ? "wait" : "thinking")
+            : choosing && enabled
+              ? t("choose", { color: t(R.colors[state.turn]) })
+              : "";
+      renderControls({
+        setup,
+        startable: seats.includes("human"),
+        error,
+        message,
+        choiceColor: R.colors[state.turn],
+        choosing,
+        enabled,
+        entering: !previousChoices && enabled,
+        choices: choosing
+          ? moves.map((index) => ({
+              index,
+              label: board
+                .querySelector(`[data-plane="${state.turn * 4 + index}"]`)
                 .getAttribute("aria-label"),
-            );
-          }
-        }
-        button(side, t("exit"), "restart");
-      }
-      if (error) {
-        const warning = el("div", "aero-warning", t(error), side);
-        warning.setAttribute("role", "alert");
-        button(warning, t("retry"), "retry");
-      }
+            }))
+          : [],
+        seats: R.colors.map((color, p) => ({
+          color,
+          kind: (setup ? seats : state.seats)[p],
+          current:
+            !setup &&
+            p === (rollingPlayer ?? state.turn) &&
+            state.phase !== "won",
+          arrived: state.pieces
+            .slice(p * 4, p * 4 + 4)
+            .filter((n) => n === R.END).length,
+        })),
+        dialog: restarting ? boardWrap : null,
+      });
       if (restarting) {
-        const panel = el("div", "aero-dialog", undefined, boardWrap);
-        panel.setAttribute("role", "dialog");
-        panel.setAttribute("aria-modal", "true");
-        panel.setAttribute("aria-labelledby", "aero-dialog-title");
-        panel.setAttribute("aria-describedby", "aero-dialog-message");
-        el("h3", "", t("exit"), panel).id = "aero-dialog-title";
-        el("p", "", t("confirm"), panel).id = "aero-dialog-message";
-        const actions = el("div", "aero-dialog-actions", undefined, panel);
-        const cancel = button(actions, t("cancel"), "close");
-        button(actions, t("exit"), "confirm");
         board.inert = true;
         side.inert = true;
-        cancel.focus({ preventScroll: true });
+        boardWrap
+          .querySelector('[data-aero-action="close"]')
+          .focus({ preventScroll: true });
       } else if (active)
         root
           .querySelector(`[data-aero-action="${active}"]:not(:disabled)`)

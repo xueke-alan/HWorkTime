@@ -10,4 +10,4 @@ texts and generated exercises, with or without modification, for any purpose,
 provided this notice is retained. THE CONTENT IS PROVIDED "AS IS", WITHOUT
 WARRANTY OF ANY KIND.
 
-Rebuild with: node scripts/generate-typing.cjs
+Rebuild with: node scripts/typing/generate-typing.cjs

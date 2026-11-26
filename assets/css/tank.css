@@ -115,7 +115,7 @@
   max-width: 100%;
   aspect-ratio: 240 / 208;
   border: 8px solid #82847e;
-  border-radius: 8px;
+  border-radius: var(--ui-radius);
   overflow: hidden;
   background: #101311;
   color: #fff3c6;
@@ -166,12 +166,12 @@
 }
 .tank-cover .game-button {
   min-width: 9rem;
-  background: #e2bf72;
-  color: #252b20;
-  border-color: #e2bf72;
+  background: var(--ui-control-surface, #e2bf72);
+  color: var(--ui-control-text, #252b20);
+  border-color: var(--ui-control-border, #e2bf72);
 }
 .tank-cover .game-button:hover {
-  background: #f0d490;
+  background: var(--ui-hover-surface, #f0d490);
 }
 .tank-results {
   max-width: 100%;
@@ -265,7 +265,7 @@
   padding: 0;
   height: 35px;
   min-width: 35px;
-  font-size: 1.2rem;
+  font-size: var(--ui-font-size, 1.2rem);
   touch-action: none;
 }
 .tank-pad [data-dir="0"] {
@@ -418,7 +418,7 @@
 .tank-stage-grid .tank-editor-card {
   padding: 0.3rem;
   font-family: inherit;
-  font-size: clamp(0.65rem, 1.6vw, 1rem);
+  font-size: var(--ui-font-size, clamp(0.65rem, 1.6vw, 1rem));
   line-height: 1.4;
   white-space: normal;
   overflow-wrap: anywhere;

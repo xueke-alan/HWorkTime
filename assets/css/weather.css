@@ -22,11 +22,10 @@ body .editor #dateInfoPanel.weather-panel { position: relative; padding: 1rem 1.
 .weather-forecast-tabs { display: flex; gap: 0.35rem; flex-shrink: 0; align-items: baseline; }
 .weather-forecast-tabs button + button::before { content: "/"; color: var(--muted); margin-inline-end: 0.35rem; font-weight: 400; }
 /* Forecast tabs are text actions; they do not inherit ordinary button geometry. */
-body #dateInfoPanel .weather-forecast-tabs button.ui-text-action { display: inline-flex; justify-content: center; gap: 0.357143rem; height: auto; min-height: 0; max-height: none; min-width: 0; padding: 0; font-family: inherit; font-size: 0.75rem; font-weight: 500; line-height: 1.3; align-items: baseline; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--muted); cursor: pointer; white-space: nowrap; }
-body #dateInfoPanel .weather-forecast-tabs button[aria-selected="true"] { color: var(--accent); font-weight: 700; }
+body #dateInfoPanel .weather-forecast-tabs button.ui-text-action { display: inline-flex; justify-content: center; gap: 0.357143rem; height: auto; min-height: 0; max-height: none; min-width: 0; padding: 0; font-family: inherit; font-size: var(--ui-font-size, 0.75rem); font-weight: 500; line-height: 1.3; align-items: baseline; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--ui-muted, var(--muted)); cursor: pointer; white-space: nowrap; }
+body #dateInfoPanel .weather-forecast-tabs button[aria-selected="true"] { color: var(--ui-accent, var(--accent)); font-weight: 700; }
 body #dateInfoPanel .weather-forecast-tabs button[aria-selected="false"] { color: var(--theme-text-faint, #a5b7b0); }
 body #dateInfoPanel .weather-forecast-tabs button .button-label { translate: none; line-height: inherit; }
-.weather-forecast-tabs button:focus-visible, .weather-forecast [role="tabpanel"]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .weather-hourly, .weather-daily { display: flex; flex: 1; min-height: 0; overflow-x: auto; overflow-y: hidden; overscroll-behavior: contain; scrollbar-width: thin; border: 0; border-radius: 0; }
 .weather-forecast [hidden] { display: none; }
 .weather-hour, .weather-day { position: relative; display: flex; flex-direction: column; justify-content: center; text-align: center; gap: 0.25rem; padding: 0.3rem; flex: 0 0 3.4rem; min-width: 0; border: 0; font-variant-numeric: tabular-nums; }
@@ -40,7 +39,7 @@ body #dateInfoPanel .weather-forecast-tabs button .button-label { translate: non
 .weather-day { padding-inline: 0.08rem; font-size: clamp(0.85rem, 4.2cqi, 1.05rem); line-height: 1.35; white-space: nowrap; }
 .weather-day-temperatures { display: flex; flex-direction: column; gap: 0.1rem; line-height: 1.3; }
 .weather-day-icon { display: block; width: 32px; height: 32px; margin-inline: auto; flex-shrink: 0; }
-.weather-day-icon img { display: block; width: 100%; height: 100%; }
+.weather-day-icon svg { display: block; width: 100%; height: 100%; }
 .weather-day-low { color: var(--theme-text-strong, #526b66); }
 .weather-day time, .weather-day span:last-child { color: var(--theme-text-strong, #526b66); font-size: inherit; }
 .weather-day > .weather-day-uv:last-child { font-size: 0.8em; line-height: 1.3; }
@@ -63,9 +62,9 @@ body #dateInfoPanel.weather-panel .weather-time { font-size: 0.68rem; line-heigh
   min-width: 0;
   overflow: hidden;
   flex: 0 1 auto;
-  color: var(--muted);
+  color: var(--ui-muted, var(--muted));
   align-self: flex-end;
-  font-size: 0.68rem;
+  font-size: var(--ui-font-size, 0.68rem);
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;

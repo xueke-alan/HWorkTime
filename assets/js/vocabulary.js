@@ -19,6 +19,7 @@ WorkTimeApp.ui.vocabulary = (() => {
     if (disposed) return Promise.resolve();
     pending ||= (async () => {
       await Promise.all([
+        WorkTimeApp.ui.loadVocabularyViews(),
         WorkTimeApp.i18n.loadModule("vocabulary"),
         WorkTimeApp.services.vocabularyIdle.load(),
         WorkTimeApp.services.assets
@@ -112,7 +113,7 @@ WorkTimeApp.ui.vocabulary = (() => {
       } catch {
         if (disposed) return;
         if (entry) {
-          entry.title = t("retry");
+          entry.dataset.hintText = t("retry");
           const description = entry.querySelector("span");
           if (description) description.textContent = t("retry");
         }

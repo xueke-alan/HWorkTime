@@ -38,6 +38,7 @@
       alignInk = false,
       animateInitial = true,
       animateWhole = false,
+      animateWholeOnLengthChange = false,
       preserveText = false,
       integerDigits = 0,
       reserveSign = false,
@@ -69,6 +70,7 @@
       unit,
       alignInk,
       animateWhole,
+      animateWholeOnLengthChange,
       preserveText,
       integerDigits,
       reserveSign,
@@ -116,9 +118,15 @@
         !document.hidden &&
         (animateInitial || old?.number != null) &&
         oldValue !== number;
+      const rollWhole =
+        animateWhole ||
+        (animate &&
+          animateWholeOnLengthChange &&
+          old?.number != null &&
+          oldValue.length !== number.length);
       const pending = [];
       const leadingNumber = number.match(/^([+-]?)(\d+)/);
-      if (!animateWhole && leadingNumber) {
+      if (!rollWhole && leadingNumber) {
         for (
           let count = leadingNumber[2].length;
           count < integerDigits;
@@ -136,12 +144,12 @@
           visual.append(sign);
         }
       }
-      for (const [index, digit] of (animateWhole
+      for (const [index, digit] of (rollWhole
         ? [number]
         : [...number]
       ).entries()) {
         if (reserveSign && index === 0 && leadingNumber?.[1]) continue;
-        if (!animateWhole && !/\d/.test(digit)) {
+        if (!rollWhole && !/\d/.test(digit)) {
           const punctuation = document.createElement("span");
           punctuation.textContent = digit === " " ? "\u00a0" : digit;
           visual.append(punctuation);
@@ -151,14 +159,14 @@
           index < newDot
             ? oldDot - (newDot - index)
             : oldDot + (index - newDot);
-        const before = animateWhole
+        const before = rollWhole
           ? oldValue
           : /\d/.test(oldValue[oldIndex] || "")
             ? oldValue[oldIndex]
             : "0";
         const column = document.createElement("span");
         column.className = "summary-number-column";
-        if (animateWhole) column.classList.add("summary-number-word");
+        if (rollWhole) column.classList.add("summary-number-word");
         const track = document.createElement("span");
         track.className = "summary-number-track";
         const row = (text) => {

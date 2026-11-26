@@ -42,61 +42,60 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
     if (registerBindings) bindings.push(() => (e.textContent = t(key)));
     return e;
   }
+  const readerIcons = {
+    exit: "chevron-left",
+    sidebar: "right-panel-close",
+    shelf: "library-books",
+    fullscreen: "expand-content",
+    minimize: "horizontal-rule",
+    expand: "expand-content",
+    all: "apps",
+    recent: "history",
+    favorites: "heart",
+    unread: "book-5",
+    reading: "menu-book",
+    finished: "check",
+    choose: "folder-plus",
+    importFolder: "folder",
+    reconnect: "link",
+    refresh: "restart-alt",
+    cancel: "close",
+    newGroup: "add",
+    groups: "folder",
+    stats: "bar-chart",
+    export: "download",
+    restore: "upload-simple",
+    exportNotes: "file-text",
+    continue: "play-arrow",
+    toc: "list",
+    bookmarks: "bookmark",
+    bookmark: "bookmark-simple",
+    notes: "pencil-simple",
+    note: "note",
+    search: "search",
+    thumbnails: "grid-4x4",
+    settings: "sliders-horizontal",
+    previous: "chevron-left",
+    next: "chevron-right",
+    back: "undo",
+    previousChapter: "skip-previous",
+    nextChapter: "skip-next",
+    highlight: "highlighter",
+    copy: "copy",
+    more: "more-horiz",
+  };
   function button(parent, key, action, id) {
     const e = node("button", "reader-button", parent);
-    const paths = {
-      exit: "m14 6-6 6 6 6",
-      sidebar: "M3 4h18v16H3ZM9 4v16",
-      shelf: "M4 4v16M9 4v16M14 5l5-1 3 15-5 1Z",
-      fullscreen: "M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5",
-      minimize: "M5 17h14",
-      expand: "M8 3H3v5M16 3h5v5M21 16v5h-5M8 21H3v-5",
-      all: "M3 3h7v7H3ZM14 3h7v7h-7ZM3 14h7v7H3ZM14 14h7v7h-7Z",
-      recent: "M12 8v5l3 2M21 12a9 9 0 1 1-3-6.7M21 3v6h-6",
-      favorites: "M12 21 3.5 12.5a5 5 0 0 1 7-7L12 7l1.5-1.5a5 5 0 0 1 7 7Z",
-      unread: "M4 3h16v18H4ZM8 7h8M8 11h8",
-      reading:
-        "M12 5v16M3 3h3a9 9 0 0 1 6 2 9 9 0 0 1 6-2h3v16h-3a9 9 0 0 0-6 2 9 9 0 0 0-6-2H3Z",
-      finished: "M5 12l4 4L19 6",
-      choose: "M3 7V4h6l2 3h10v13H3ZM12 10v7M8.5 13.5h7",
-      importFolder: "M3 7V4h6l2 3h10v13H3ZM12 10v7m-3-3 3 3 3-3",
-      reconnect: "M9 8H6a4 4 0 0 0 0 8h3M15 8h3a4 4 0 0 1 0 8h-3M8 12h8",
-      refresh: "M20 7a9 9 0 1 0 1 8M21 2v6h-6",
-      cancel: "m6 6 12 12M18 6 6 18",
-      newGroup: "M12 5v14M5 12h14",
-      groups: "M3 7V4h6l2 3h10v13H3Z",
-      stats: "M4 20V10M12 20V4M20 20v-7",
-      export: "M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5",
-      restore: "M12 16V4m-5 5 5-5 5 5M4 16v5h16v-5",
-      exportNotes: "M5 3h10l4 4v14H5ZM9 11h6M9 15h6",
-      continue: "m9 5 11 7-11 7Z",
-      toc: "M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1",
-      bookmarks: "M6 3h12v18l-6-4-6 4Z",
-      bookmark: "M6 3h12v18l-6-4-6 4ZM9 9h6M12 6v6",
-      notes: "m4 16 12-12 4 4L8 20H4ZM13 7l4 4",
-      note: "M5 3h14v18H5ZM8 8h8M8 12h8M8 16h5",
-      search: "M20 20l-5-5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0",
-      thumbnails: "M4 3h6v8H4ZM14 3h6v8h-6ZM4 15h6v6H4ZM14 15h6v6h-6Z",
-      settings: "M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6",
-      previous: "m14 6-6 6 6 6",
-      next: "m10 6 6 6-6 6",
-      back: "M9 5 3 11l6 6M3 11h12a6 6 0 0 1 6 6v3",
-      previousChapter: "M5 5v14m14-14L9 12l10 7Z",
-      nextChapter: "M19 5v14M5 5l10 7-10 7Z",
-      highlight: "m5 15 10-12 6 6L9 19H3ZM3 21h18",
-      copy: "M8 8h13v13H8ZM16 8V3H3v13h5",
-      more: "M5 12h.01M12 12h.01M19 12h.01",
-    };
-    if (paths[key]) {
-      const svg = node("span", "reader-glyph", e);
-      svg.innerHTML =
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' +
-        paths[key] +
+    if (readerIcons[key]) {
+      const glyph = node("span", "reader-glyph", e);
+      glyph.innerHTML =
+        '<svg fill="currentColor" aria-hidden="true"><use href="#icon-' +
+        readerIcons[key] +
         '"/></svg>';
     }
     label(node("span", "reader-button-label", e), key);
     const accessible = () => {
-      e.title = e.ariaLabel = t(key);
+      e.dataset.hintText = e.ariaLabel = t(key);
     };
     accessible();
     if (registerBindings) bindings.push(accessible);
@@ -168,7 +167,9 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
   );
   bookActionsSummary.ariaLabel = t("more");
   bindings.push(
-    () => (bookActionsSummary.title = bookActionsSummary.ariaLabel = t("more")),
+    () =>
+      (bookActionsSummary.dataset.hintText = bookActionsSummary.ariaLabel =
+        t("more")),
   );
   const bookActionsMenu = node("div", "reader-menu", bookActions);
   const addBookmark = button(bookActionsMenu, "bookmark", async () => {
@@ -355,6 +356,7 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
   );
   const libraryScroll = node("div", "reader-library-content", libraryMain);
   const shelf = node("div", "reader-books", libraryScroll);
+  const shelfView = toolbarView.mountShelf(shelf);
   shelf.id = "readerBooks";
   const emptyAction = button(
     libraryScroll,
@@ -399,7 +401,7 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
   viewport.ariaLabel = t("title");
   const selectionBar = node("div", "reader-selection", readingMain);
   selectionBar.hidden = true;
-  selectionBar.setAttribute("role", "group");
+  WorkTimeApp.ui.native.setGroup(selectionBar);
   const selectedText = node("span", "reader-selection-text", selectionBar);
   const highlightColor = field(selectionBar, "color", "color");
   highlightColor.value = "#ffe08a";
@@ -665,7 +667,7 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
     const entry = document.getElementById("readerOpen");
     if (!entry) return;
     delete entry.dataset.hint;
-    entry.title = entry.ariaLabel = t("title");
+    entry.dataset.hintText = entry.ariaLabel = t("title");
     if (presentation === "mini") {
       entry.setAttribute("role", "tab");
       entry.removeAttribute("aria-haspopup");
@@ -707,7 +709,7 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
         (a, b) => (b.lastRead || 0) - (a.lastRead || 0),
       )[0];
     miniTitle.textContent = recent?.title || t("title");
-    miniTitle.title = miniTitle.textContent;
+    miniTitle.dataset.hintText = miniTitle.textContent;
     miniEmpty.hidden =
       !miniSettings.hidden || !!snap.current || snap.loading || mounting;
     miniViewport.hidden = !snap.current && !snap.loading && !mounting;
@@ -1031,7 +1033,7 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
           selectCategory("all", group),
         );
         b.querySelector(".reader-button-label").textContent = group;
-        b.title = b.ariaLabel = group;
+        b.dataset.hintText = b.ariaLabel = group;
         b.classList.add("reader-nav-button");
         b.setAttribute("aria-pressed", String(groupFilter.value === group));
         node(
@@ -1051,17 +1053,6 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
     standalonePanel.hidden = panelName !== "stats";
     shelf.hidden = filters.hidden = panelName === "stats";
     emptyAction.hidden = panelName === "stats" || books.length > 0;
-  }
-  function groupOptions(e, state, includeAll) {
-    const value = e.value;
-    e.replaceChildren();
-    const first = node("option", "", e, t(includeAll ? "all" : "ungrouped"));
-    first.value = "";
-    for (const name of state.groups) {
-      const option = node("option", "", e, name);
-      option.value = name;
-    }
-    e.value = value;
   }
   function renderShelf(snap) {
     const signature = JSON.stringify([
@@ -1089,12 +1080,7 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
     const active = document.activeElement,
       focusedBook = active?.closest(".reader-book"),
       focusedId = focusedBook?.dataset.bookId;
-    const focusedControl = focusedBook
-      ? [...focusedBook.querySelectorAll("button,select")].indexOf(active)
-      : -1;
-    const focusedMenu = active?.closest(".reader-card-more");
     shelfSignature = signature;
-    shelf.replaceChildren();
     shelf.dataset.view = snap.settings.view;
 
     const query = shelfQuery.value.trim().toLocaleLowerCase();
@@ -1118,103 +1104,20 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
             : (b.lastRead || 0) - (a.lastRead || 0),
     );
     bookCount.textContent = t("bookCount").replace("{n}", books.length);
-    if (!books.length)
-      node(
-        "p",
-        "reader-empty",
-        shelf,
-        t(Object.keys(snap.state.books).length ? "noResults" : "chooseHint"),
-      );
-    for (const book of books) {
-      const card = node("article", "reader-book", shelf);
-      card.dataset.bookId = book.id;
-      const coverButton = node("button", "reader-book-open", card);
-      coverButton.type = "button";
-      coverButton.disabled = !snap.entries.has(book.id);
-      coverButton.ariaLabel = book.title;
-      coverButton.onclick = () => void open(book.id);
-      const cover = node("div", "reader-cover", coverButton);
-      cover.style.setProperty(
-        "--book-hue",
-        String(parseInt(book.id.slice(0, 4), 16) % 360),
-      );
-      const url = snap.covers.get(book.id);
-      if (url) {
-        const image = node("img", "", cover);
-        image.src = url;
-        image.alt = book.title;
-        image.loading = "lazy";
-      } else {
-        node("span", "reader-cover-format", cover, book.format.toUpperCase());
-        node("strong", "", cover, book.title);
-        node("span", "reader-cover-author", cover, book.author);
-      }
-      const info = node("div", "reader-book-info", coverButton);
-      node("h4", "", info, book.title);
-      node("p", "", info, book.author || book.format.toUpperCase());
-      const meter = node("progress", "", info);
-      meter.max = 1;
-      meter.value = book.progress || 0;
-      meter.ariaLabel = t("progress");
-      node(
-        "small",
-        "",
-        info,
-        t(book.status) +
-          " · " +
-          Math.round((book.progress || 0) * 100) +
-          "%" +
-          (snap.entries.has(book.id) ? "" : " · " + t("unavailable")),
-      );
-      const tools = node("div", "reader-book-tools", card);
-      const favorite = node(
-        "button",
-        "reader-button reader-heart",
-        tools,
-        book.favorite ? "♥" : "♡",
-      );
-      favorite.type = "button";
-      favorite.ariaLabel = t("favorite");
-      favorite.setAttribute("aria-pressed", String(!!book.favorite));
-      favorite.onclick = () =>
-        controller.updateBook(book.id, { favorite: !book.favorite });
-      const more = node("details", "reader-card-more", tools);
-      const summary = label(node("summary", "reader-more", more), "more");
-      summary.ariaLabel = t("more");
-      summary.title = t("more");
-      const menu = node("div", "reader-menu", more);
-      const groupLabel = node("label", "reader-field", menu);
-      label(node("span", "", groupLabel), "groups");
-      const group = node("select", "", groupLabel);
-      group.ariaLabel = t("groups");
-      groupOptions(group, snap.state, false);
-      group.value = book.group || "";
-      group.onchange = () =>
-        controller.updateBook(book.id, { group: group.value });
-      const stateLabel = node("label", "reader-field", menu);
-      label(node("span", "", stateLabel), "progress");
-      const state = node("select", "", stateLabel);
-      state.ariaLabel = t("progress");
-      for (const key of ["unread", "reading", "finished"]) {
-        const option = node("option", "", state, t(key));
-        option.value = key;
-      }
-      state.value = book.status;
-      state.onchange = () =>
-        controller.updateBook(book.id, { status: state.value });
-    }
-    if (focusedId) {
-      const nextCard = shelf.querySelector(`[data-book-id="${focusedId}"]`);
-      if (focusedMenu && nextCard)
-        nextCard.querySelector("details").open = true;
-      if (focusedControl >= 0)
-        nextCard
-          ?.querySelectorAll("button,select")
-          [focusedControl]?.focus({ preventScroll: true });
-      else if (focusedMenu)
-        nextCard?.querySelector("summary")?.focus({ preventScroll: true });
-      if (!nextCard) shelfQuery.focus({ preventScroll: true });
-    }
+    shelfView.render({
+      books: books.map((book) => ({
+        ...book,
+        cover: snap.covers.get(book.id),
+        available: snap.entries.has(book.id),
+      })),
+      groups: snap.state.groups,
+      empty: Object.keys(snap.state.books).length ? "noResults" : "chooseHint",
+      text: t,
+      open,
+      update: (id, changes) => controller.updateBook(id, changes),
+    });
+    if (focusedId && !books.some((book) => book.id === focusedId))
+      shelfQuery.focus({ preventScroll: true });
   }
   function settingUI(snap, parent) {
     const s = snap.settings,
@@ -1625,7 +1528,7 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
       event.target.closest(".reader-mini-settings")
     )
       return;
-    if (["ArrowRight", "PageDown", " "].includes(event.key)) {
+    if (["ArrowRight", "PageDown"].includes(event.key)) {
       event.preventDefault();
       void controller.next(1);
     }
@@ -1680,7 +1583,7 @@ WorkTimeApp.ui.createReaderWorkspace = (mountToolbar) => {
       e.metaKey
     )
       return;
-    if (["ArrowRight", "PageDown", " "].includes(e.key)) {
+    if (["ArrowRight", "PageDown"].includes(e.key)) {
       e.preventDefault();
       void controller.next(1);
     }

@@ -18,8 +18,8 @@ VCT：100 个独立的无禁手连续威胁局面。使用固定随机种子产�
 实战中白方优先抢胜或挡直接成五，沿主变化时采用证明中的应手。
 偏离主变化时由 Rapfi 搜索应手，引擎超时或不可用时使用限量威胁搜索。
 
-可复现来源：scripts/gomoku-curated.json
-重新打包：node scripts/pack-gomoku.cjs
-全题验证：node scripts/verify-gomoku.cjs --rules
-重新筛题：node scripts/build-gomoku.cjs 105，然后 node scripts/finalize-gomoku.cjs
-浏览器验证（离线源码/发布产物）：scripts/verify-gomoku.cjs
+可复现来源：scripts/gomoku/gomoku-curated.json
+重新打包：node scripts/gomoku/pack-gomoku.cjs
+全题验证：node scripts/verify/games/verify-gomoku.cjs --rules
+重新筛题：node scripts/gomoku/build-gomoku.cjs 105，然后 node scripts/gomoku/finalize-gomoku.cjs
+浏览器验证（离线源码/发布产物）：scripts/verify/games/verify-gomoku.cjs

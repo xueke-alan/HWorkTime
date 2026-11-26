@@ -105,22 +105,26 @@ WorkTimeApp.games.register({
     );
     const stage = node("div", "jump-stage", layout);
     stage.tabIndex = 0;
-    stage.setAttribute("role", "group");
+    WorkTimeApp.ui.native.setGroup(stage);
     const canvas = node("canvas", "", stage);
     canvas.setAttribute("aria-hidden", "true");
     const ctx = canvas.getContext("2d");
     const cover = node("div", "jump-cover", stage);
     const paintPauseCover = WorkTimeApp.games.createPauseCover(cover, signal);
-    const heading = node("h3", "", cover);
-    const description = node("p", "", cover);
-    const play = button(cover, "start", () => {
-      if (mode === "playing") {
-        paused = false;
-        sync();
-        stage.focus();
-        loop();
-      } else start();
-    });
+    const coverView = WorkTimeApp.ui.mountSessionCover(
+      cover,
+      "jump",
+      signal,
+      () => {
+        if (signal.aborted) return;
+        if (mode === "playing") {
+          paused = false;
+          sync();
+          stage.focus();
+          loop();
+        } else start();
+      },
+    );
     const chargeBar = node("div", "jump-charge", stage);
     chargeBar.setAttribute("aria-hidden", "true");
     const chargeFill = node("span", "", chargeBar);
@@ -177,22 +181,31 @@ WorkTimeApp.games.register({
       });
       const isPaused = paused || suspended;
       pauseButton.disabled = mode !== "playing";
-      pauseButton.title = t(isPaused ? "resume" : "pause");
-      pauseButton.setAttribute("aria-label", pauseButton.title);
+      pauseButton.dataset.hintText = t(isPaused ? "resume" : "pause");
+      pauseButton.setAttribute("aria-label", pauseButton.dataset.hintText);
       WorkTimeApp.games.setIcon(pauseButton, isPaused ? "play-arrow" : "pause");
-      restart.title = t("restart");
-      restart.setAttribute("aria-label", restart.title);
+      restart.dataset.hintText = t("restart");
+      restart.setAttribute("aria-label", restart.dataset.hintText);
       paintPauseCover(mode === "playing" && isPaused, t("paused"));
       cover.hidden = mode === "playing" && !isPaused;
       cover.dataset.ended = String(mode === "over");
-      heading.textContent =
-        mode === "over" ? String(state.score) : t(isPaused ? "paused" : "name");
-      description.textContent = t(mode === "over" ? "result" : "intro", {
-        best,
-      });
-      play.textContent = t(
-        mode === "over" ? "restart" : isPaused ? "resume" : "start",
-      );
+      if (!cover.hidden)
+        coverView.display({
+          confirming: false,
+          title:
+            mode === "over"
+              ? String(state.score)
+              : t(isPaused ? "paused" : "name"),
+          detail: t(mode === "over" ? "result" : "intro", { best }),
+          actions: [
+            {
+              id: "start",
+              label: t(
+                mode === "over" ? "restart" : isPaused ? "resume" : "start",
+              ),
+            },
+          ],
+        });
       feedback.textContent = gainText || t("instruction");
       sceneHint = t("sceneHint");
       warning.textContent = saveFailed ? t("saveFailed") : "";
@@ -396,7 +409,7 @@ WorkTimeApp.games.register({
             else gainText = t("short");
             saveBest();
             sync(false);
-            if (mode === "over") play.focus({ preventScroll: true });
+            if (mode === "over") coverView.focus("start");
           }
         }
       }

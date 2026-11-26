@@ -25,8 +25,8 @@ body .editor.is-analysis-mode #dayEditor { display: none !important; }
 .analysis-observation { font-size: 16px; line-height: 1.65; margin-bottom: 8px; white-space: pre-line; text-wrap: pretty; }
 .analysis-sidebar-muted { color: var(--muted); font-size: 12px; line-height: 1.65; }
 .analysis-focus-dates { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
-.analysis-focus-dates > button { padding: 5px 10px; font-size: 12px; min-height: 30px; }
-.analysis-focus-dates > button[aria-pressed="true"] { background: var(--theme-surface-subtle); color: var(--accent); border-color: var(--accent); }
+.analysis-focus-dates > button { padding: 5px 10px; font-size: var(--ui-font-size, 12px); min-height: 30px; }
+.analysis-focus-dates > button[aria-pressed="true"] { background: var(--theme-surface-subtle); color: var(--ui-accent, var(--accent)); border-color: var(--ui-accent, var(--accent)); }
 .analysis-focus-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; }
 .analysis-focus-heading > span { color: var(--muted); font-size: 11px; }
 .analysis-focus-times { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 10px 0; font-size: clamp(20px, 2.1vw, 27px); font-variant-numeric: tabular-nums; }
@@ -88,7 +88,7 @@ body .editor.is-analysis-mode #dayEditor { display: none !important; }
   padding: 10px 4px;
   align-content: start;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--ui-radius);
   background: var(--theme-surface-subtle, color-mix(in srgb, var(--accent) 3%, var(--paper)));
 }
 .analysis-metric-group-Overtime {
@@ -176,17 +176,13 @@ body .editor.is-analysis-mode #dayEditor { display: none !important; }
   white-space: nowrap;
   text-align: right;
   cursor: pointer;
-  color: var(--accent);
+  color: var(--ui-accent, var(--accent));
 }
 .analysis-date-disclosure button::before {
   content: "▸ ";
 }
 .analysis-date-disclosure button[aria-expanded="true"]::before {
   content: "▾ ";
-}
-.analysis-date-disclosure button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 .analysis-date-disclosure p:not([hidden]) {
   position: absolute;
@@ -503,7 +499,7 @@ body .editor.is-analysis-mode #dayEditor { display: none !important; }
 .analysis-timeline-legend i {
   width: 14px;
   height: 5px;
-  border-radius: 2px;
+  border-radius: var(--ui-radius);
   background: var(--line);
 }
 .analysis-timeline-legend [data-state="workedOvertime"] i {

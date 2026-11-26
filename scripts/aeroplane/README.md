@@ -1,6 +1,6 @@
 # 飞行棋：本地模型、训练与验收
 
-网页游戏入口为「飞行棋」。四个席位可分别设为真人或电脑，至少一位真人；红方先行。支持简单、普通、困难、同屏多人、暂停、自动续局和游戏存档导入导出。模型随项目分发，直接打开 `index.html` 即可游玩。
+网页游戏入口为「飞行棋」。四个席位可分别设为真人或电脑，至少一位真人；红方先行。支持简单、普通、困难、同屏多人、暂停、自动续局。模型随项目分发，直接打开 `index.html` 即可游玩。
 
 ## 棋盘与规则
 
@@ -45,14 +45,14 @@ npm run aeroplane:test
 ## 验证
 
 ```powershell
-node scripts/verify-aeroplane.cjs --unit
-node scripts/verify-aeroplane.cjs
-node scripts/verify-aeroplane.cjs _site
+node scripts/verify/games/verify-aeroplane.cjs --unit
+node scripts/verify/games/verify-aeroplane.cjs
+node scripts/verify/games/verify-aeroplane.cjs _site
 npm run check
 npm run lint
 npm run check:format
 ```
 
-验证包括规则边界、飞跃线与可撞中点重合、随机完整对局、真实模型与 Worker 数值一致性、存档导入导出和合并、四席配置、六语言、主题、桌面和手机布局、动画取消、模型故障重试，以及源码和发布产物的本地文件入口、HTTP 与使用后的断网重载。
+验证包括规则边界、飞跃线与可撞中点重合、随机完整对局、真实模型与 Worker 数值一致性、存档校验与恢复、四席配置、六语言、主题、桌面和手机布局、动画取消、模型故障重试，以及源码和发布产物的本地文件入口、HTTP 与使用后的断网重载。
 
 规则、推理和训练工具均为本项目独立实现，权重由本工具实际训练，无第三方权重依赖。首次通过在线页面离线游玩前，需要联网打开游戏并完成一次模型计算，以准备浏览器缓存；本地文件入口直接使用随包资源。

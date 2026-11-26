@@ -1,4 +1,5 @@
-import { nextTick, shallowRef } from "vue";
+import { controllerState } from "../controller-state";
+import { flushSync } from "react-dom";
 export interface Metric {
   key: string;
   label: string;
@@ -16,10 +17,14 @@ interface MetricGroup {
   items: Metric[];
 }
 type Paint = (el: HTMLElement, markup: string, delay: number) => void;
-export const metrics = shallowRef<{ groups: MetricGroup[]; paint: Paint }>();
+export const metrics = controllerState<{
+  value?: { groups: MetricGroup[]; paint: Paint };
+}>({});
 export function renderAnalysisMetrics(groups: MetricGroup[], paint: Paint) {
-  metrics.value = { groups, paint };
+  flushSync(() => {
+    metrics.state.value = { groups, paint };
+  });
 }
 export function afterAnalysisRender(callback: () => void) {
-  void nextTick(callback);
+  queueMicrotask(callback);
 }

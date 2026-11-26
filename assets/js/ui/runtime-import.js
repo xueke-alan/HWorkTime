@@ -26,8 +26,8 @@ WorkTimeApp.ui.createRuntimeImport = function ({
   progressBar.max = 1;
   progressBar.value = 0;
   progressBar.hidden = true;
-  const errors = document.createElement("details");
-  const errorLabel = document.createElement("summary");
+  const errors = WorkTimeApp.ui.native.createElement("details");
+  const errorLabel = WorkTimeApp.ui.native.createElement("summary");
   const errorList = document.createElement("ul");
   errors.append(errorLabel, errorList);
   errors.hidden = true;

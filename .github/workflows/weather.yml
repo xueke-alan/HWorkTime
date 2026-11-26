@@ -10,7 +10,7 @@ on:
     branches: [main]
     paths:
       - .github/workflows/weather.yml
-      - scripts/fetch_weather.py
+      - scripts/weather/fetch_weather.py
       - assets/data/weather-locations.json
 permissions:
   contents: write
@@ -30,12 +30,12 @@ jobs:
         with:
           python-version: "3.12"
       - name: Check collector syntax
-        run: python -m py_compile scripts/fetch_weather.py
+        run: python -m py_compile scripts/weather/fetch_weather.py
       - name: Fetch office weather
         id: weather
         env:
           BAIDU_MAP_AK: ${{ secrets.BAIDU_MAP_AK }}
-        run: python scripts/fetch_weather.py
+        run: python scripts/weather/fetch_weather.py
       - name: Commit weather snapshot
         if: steps.weather.outputs.changed == 'true'
         env:
