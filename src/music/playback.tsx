@@ -37,8 +37,7 @@ function ScrollingName({
       const scrolling =
         visible &&
         container.clientWidth > 0 &&
-        width > container.clientWidth + 1 &&
-        document.documentElement.dataset.reducedMotion !== "true";
+        width > container.clientWidth + 1;
       const signature = [width, container.clientWidth, scrolling].join("/");
       if (signature === last) return;
       last = signature;

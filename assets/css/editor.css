@@ -1331,9 +1331,6 @@ body #dayPreview .preview-totals small {
   pointer-events: none;
   transition-delay: 0s, 180ms;
 }
-:where(html[data-reduced-motion="true"]) .editor .day-action-row #plannedOvertimeArea {
-  transition: none;
-}
 .editor .day-action-row {
   align-items: center;
 }
@@ -1688,7 +1685,7 @@ body .workspace > .editor #settingsDialog.settings-sidebar-pane[open] {
 }
 body .editor #settingsForm .dialog-foot { padding: 0.571429rem 1rem; }
 body .editor #settingsForm .settings-requirement { margin-top: 0.428571rem; }
-body .editor.is-settings-open > .notification-tabs { flex: none; }
+body .editor.is-settings-open  .notification-tabs { flex: none; }
 @media(max-width:1150px) {
   body .workspace > .editor.is-settings-open { height: 80dvh; min-height: 32rem; }
 }
@@ -1834,17 +1831,17 @@ body .editor #settingsForm .requirements-unit {
 
 /* Page settings share the editor area while the lower tabs remain available. */
 body .workspace > .editor.is-vocabulary-open { display: flex; flex-direction: column; overflow: hidden; }
-body .editor.is-vocabulary-open:not(.is-settings-open):not(.is-page-settings-open) > :is(.editor-content, #agendaEditor) { display: none !important; }
-body .editor.is-vocabulary-open:not(.is-settings-open):not(.is-page-settings-open) > .date-info-area { display: flex; position: static; inset: auto; z-index: auto; flex: 1 1 0; height: auto; min-height: 0; max-height: none; overflow: hidden; border: 0; border-radius: 0; box-shadow: none; pointer-events: auto; }
+body .editor.is-vocabulary-open:not(.is-settings-open):not(.is-page-settings-open)  :is(.editor-content, #agendaEditor) { display: none !important; }
+body .editor.is-vocabulary-open:not(.is-settings-open):not(.is-page-settings-open)  .date-info-area { display: flex; position: static; inset: auto; z-index: auto; flex: 1 1 0; height: auto; min-height: 0; max-height: none; overflow: hidden; border: 0; border-radius: 0; box-shadow: none; pointer-events: auto; }
 body .editor.is-vocabulary-open .agenda-drawer-grip { display: none !important; }
 body .editor.is-vocabulary-open:is(.is-settings-open, .is-page-settings-open) > .date-info-area { display: none !important; }
-body .editor.is-vocabulary-open > .notification-tabs { flex: none; }
+body .editor.is-vocabulary-open  .notification-tabs { flex: none; }
 body .editor.is-vocabulary-open #toolsPanel { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; padding: 0; }
 body .editor #vocabularyPanel { min-width: 0; min-height: 0; flex: 1; overflow-y: auto; }
 @media (max-width: 1150px) {
   body .workspace > .editor.is-vocabulary-open { height: 80dvh; min-height: 32rem; }
 }
-body .editor.is-page-settings-open > .editor-content { display: none !important; }
+body .editor.is-page-settings-open  .editor-content { display: none !important; }
 body .editor .page-settings-pane[hidden] { display: none !important; }
 body .editor .page-settings-pane { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
 body .editor .page-settings-header { display: flex; flex: none; width: 100%; margin: 0; }
@@ -2323,7 +2320,6 @@ body .editor #dayForm #dayLeaveDone {
 body .editor #dayForm #dayLeaveDone:hover {
   background: color-mix(in srgb, var(--accent) 14%, var(--paper));
 }
-:where(html:where([data-reduced-motion="true"])) body .editor #dayForm :is(#dayLeaveLabel, .day-action-row > :not(#dayLeaveArea), #dayLeaveFull, #dayLeaveDone, #dayLeaveFull > *, #dayLeaveDone > *) { transition: none; }
 body #dayPreview .preview-totals strong small { display: inline; margin: 0; font-size: 0.75em; }
 body #dayPreview #previewAverage { margin-top: 0.15rem; }
 
@@ -2366,10 +2362,6 @@ body .editor #dayForm #clearManual.is-planned-reset:hover {
   pointer-events: none;
   animation: backup-ripple 450ms ease-out both;
 }
-:where(html:where([data-reduced-motion="true"])) :is(#dayShareTemplates, #batchShareTemplates).is-copying .template-share-icon-slot::after {
-    animation: none;
-    opacity: 0;
-  }
 
 body .editor #dayForm #plannedOvertimeToggle:disabled {
   color: var(--muted);
@@ -2403,7 +2395,6 @@ body .workspace > .editor.is-settings-open { display: flex; flex-direction: colu
   margin: 0;
   pointer-events: none;
 }
-:where(html[data-reduced-motion="true"]) #batchBar:not(.hidden) .batch-toolbar { animation: none; }
 .batch-toolbar {
   --batch-toolbar-height: var(--action-control-height);
   position: absolute;
@@ -2558,7 +2549,4 @@ body .editor #batchForm .batch-input-section[data-input-mode="overtime"] .batch-
   opacity: 0;
   visibility: hidden;
   transition-delay: 0s, 200ms;
-}
-:where(html[data-reduced-motion="true"]) body .editor #batchForm :is(.batch-time-fields, #batchNextField, .batch-template-area) {
-  transition: none;
 }

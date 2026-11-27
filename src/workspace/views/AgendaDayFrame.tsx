@@ -1,10 +1,11 @@
+import { SidebarHeader } from "../SidebarLayout";
 import Button from "antd/es/button";
 export default function AgendaDayFrame() {
   return (
     <>
-      <div className="editor-day-header editor-mode-header agenda-heading">
+      <SidebarHeader className="editor-day-header editor-mode-header agenda-heading">
         <div id="agendaDate" className="editor-date"></div>
-      </div>
+      </SidebarHeader>
       <div className="agenda-day-toolbar" hidden data-ui="toolbar">
         <Button
           data-ui="button"

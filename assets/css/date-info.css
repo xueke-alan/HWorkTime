@@ -6,7 +6,7 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-body .editor > .notification-tabs {
+body .editor  .notification-tabs {
   position: relative;
   top: auto;
   bottom: auto;
@@ -19,7 +19,7 @@ body .editor > .notification-tabs {
   border-bottom: 0;
   background: var(--theme-surface-paper, #fbfdfb);
 }
-body .editor > .notification-tabs .notification-tab {
+body .editor  .notification-tabs .notification-tab {
   position: relative;
   display: grid;
   place-items: center;
@@ -38,8 +38,8 @@ body .editor > .notification-tabs .notification-tab {
   color: var(--ui-accent, var(--accent));
   line-height: 1;
 }
-body .editor > .notification-tabs .notification-tab::before,
-body .editor > .notification-tabs .notification-tab::after {
+body .editor  .notification-tabs .notification-tab::before,
+body .editor  .notification-tabs .notification-tab::after {
   content: "";
   position: absolute;
   top: 0;
@@ -48,10 +48,10 @@ body .editor > .notification-tabs .notification-tab::after {
   height: 8px;
   pointer-events: none;
 }
-body .editor > .notification-tabs .notification-tab::before {
+body .editor  .notification-tabs .notification-tab::before {
   right: 100%;
 }
-body .editor > .notification-tabs .notification-tab::after {
+body .editor  .notification-tabs .notification-tab::after {
   left: 100%;
   background: radial-gradient(
     circle at 100% 100%,
@@ -59,13 +59,13 @@ body .editor > .notification-tabs .notification-tab::after {
     var(--theme-surface-paper, #f6faf7) 8px
   );
 }
-body .editor > .notification-tabs .notification-tab svg {
+body .editor  .notification-tabs .notification-tab svg {
   position: relative;
   z-index: 1;
   display: block;
   vertical-align: initial;
 }
-body .editor > .notification-tabs .notification-tab::before {
+body .editor  .notification-tabs .notification-tab::before {
   inset: 0 -8px auto;
   width: calc(100% + 16px);
   height: 100%;
@@ -78,10 +78,10 @@ body .editor > .notification-tabs .notification-tab::before {
   border-radius: 0;
   box-shadow: none;
 }
-body .editor > .notification-tabs .notification-tab::after {
+body .editor  .notification-tabs .notification-tab::after {
   content: none;
 }
-body .editor > .notification-tabs .notification-tab.date-tab-group-start {
+body .editor  .notification-tabs .notification-tab.date-tab-group-start {
   margin-inline-start: auto;
 }
 body .editor .date-info-area {
@@ -153,24 +153,23 @@ body .editor #dateInfoPanel {
   margin: 0;
   overflow-wrap: anywhere;
 }
-body .editor > .notification-tabs button.notification-tab {
+body .editor  .notification-tabs button.notification-tab {
   font-size: var(--ui-font-size, 1rem);
   transition: color 0.15s;
 }
-body .editor > .notification-tabs .notification-tab::before {
+body .editor  .notification-tabs .notification-tab::before {
   opacity: 0;
 }
 body
-  .editor
-  > .notification-tabs
+  .editor .notification-tabs
   .notification-tab[aria-selected="true"]::before {
   opacity: 1;
 }
-body .editor > .notification-tabs .notification-tab[aria-selected="false"],
-body .editor > .notification-tabs .notification-tab[aria-haspopup="dialog"] {
+body .editor  .notification-tabs .notification-tab[aria-selected="false"],
+body .editor  .notification-tabs .notification-tab[aria-haspopup="dialog"] {
   color: var(--ui-muted, var(--muted));
 }
-body .editor > .notification-tabs .notification-tab:hover {
+body .editor  .notification-tabs .notification-tab:hover {
   background: transparent;
   color: var(--ui-accent, var(--accent));
 }
@@ -196,18 +195,18 @@ body .editor > .notification-tabs .notification-tab:hover {
     font-size: clamp(12px, calc(0.625vw - 0px), 16px);
   }
 }
-body .editor > .notification-tabs {
+body .editor  .notification-tabs {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
 }
-body .editor > .notification-tabs::-webkit-scrollbar {
+body .editor  .notification-tabs::-webkit-scrollbar {
   display: none;
 }
-body .editor > .notification-tabs {
+body .editor  .notification-tabs {
   padding: 0 1rem 0.214286rem;
 }
-body .editor > .notification-tabs button.notification-tab {
+body .editor  .notification-tabs button.notification-tab {
   min-height: 0;
   max-height: none;
   margin: 0;
@@ -218,17 +217,16 @@ body .editor > .notification-tabs button.notification-tab {
   box-shadow: none;
   overflow: visible;
 }
-body .editor > .notification-tabs .notification-tab[aria-selected="true"] {
+body .editor  .notification-tabs .notification-tab[aria-selected="true"] {
   color: var(--ui-accent, var(--accent));
 }
 body
-  .editor
-  > .notification-tabs
+  .editor .notification-tabs
   .notification-tab[aria-selected="false"]:hover::before,
-body .editor > .notification-tabs .notification-tab[aria-haspopup="dialog"]:is(:hover, :focus-visible)::before {
+body .editor  .notification-tabs .notification-tab[aria-haspopup="dialog"]:is(:hover, :focus-visible)::before {
   opacity: 0.45;
 }
-body .editor > .notification-tabs .notification-tab:focus-visible {
+body .editor  .notification-tabs .notification-tab:focus-visible {
   border-radius: var(--ui-radius);
   outline: 0;
 }
@@ -279,14 +277,14 @@ body #dateInfoPanel .history-event-content {
   text-decoration: none;
   border-radius: var(--ui-radius);
 }
-body .editor > .notification-tabs {
+body .editor  .notification-tabs {
   --tab-icon-size: 1rem;
   justify-content: flex-start;
   align-items: stretch;
   gap: 0.285714rem;
   padding-inline: 0.714286rem;
 }
-body .editor > .notification-tabs button.notification-tab {
+body .editor  .notification-tabs button.notification-tab {
   height: auto;
   width: 2.357143rem;
   min-width: 0;
@@ -295,7 +293,7 @@ body .editor > .notification-tabs button.notification-tab {
   display: grid;
   place-items: center;
 }
-body .editor > .notification-tabs .notification-tab svg {
+body .editor  .notification-tabs .notification-tab svg {
   width: var(--tab-icon-size);
   height: var(--tab-icon-size);
   flex: none;
@@ -310,10 +308,6 @@ body .editor > .notification-tabs .notification-tab svg {
   opacity: 0;
   transform: scale(.75);
 }
-:where(html:where([data-reduced-motion="true"])) .music-entry-icon > .headphones-icon,
-  :where(html:where([data-reduced-motion="true"])) .music-entry-icon > .music-equalizer {
-    transition: none;
-  }
 .work-countdown {
   position: relative;
   isolation: isolate;
@@ -387,9 +381,6 @@ body .editor > .notification-tabs .notification-tab svg {
     opacity: 0.65;
   }
 }
-:where(html:where([data-reduced-motion="true"])) .countdown-scenery * {
-    animation: none;
-  }
 body #countdownFocusToggle {
   position: absolute;
   top: 0.75rem;
@@ -422,9 +413,6 @@ body #countdownFocusToggle:focus-visible {
 body #countdownFocusToggle:focus-visible .ui-icon {
   transform: scale(1.12);
 }
-:where(html:where([data-reduced-motion="true"])) body #countdownFocusToggle {
-    transition: none;
-  }
 body.is-countdown-focused {
   overflow: hidden;
 }
@@ -514,10 +502,6 @@ body.is-countdown-focused .countdown-end {
     opacity: 1;
   }
 }
-:where(html:where([data-reduced-motion="true"])) .work-countdown.is-rest .countdown-rest-icon,
-  :where(html:where([data-reduced-motion="true"])) .countdown-rest-steam {
-    animation: none;
-  }
 .countdown-message {
   color: color-mix(in srgb, var(--muted) 65%, white);
   font-size: 1.714286rem;
@@ -553,7 +537,7 @@ body.is-countdown-focused .countdown-end {
   line-height: 1.15;
 }
 
-body .editor > .notification-tabs .notification-badge {
+body .editor  .notification-tabs .notification-badge {
   position: absolute;
   top: calc(50% - var(--tab-icon-size) / 2 + 2px);
   left: calc(50% + var(--tab-icon-size) / 2 - 5px);
@@ -566,7 +550,7 @@ body .editor > .notification-tabs .notification-badge {
   z-index: 2;
   pointer-events: none;
 }
-body .editor > .notification-tabs .notification-badge[data-tone="error"] {
+body .editor  .notification-tabs .notification-badge[data-tone="error"] {
   background: var(--ui-danger-surface, #c44d45);
 }
 

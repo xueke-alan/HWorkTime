@@ -79,8 +79,7 @@ async function verifyWorkspaceMenubar(page) {
         panel = rect(".work-main"),
         footer = rect(".work-main > footer"),
         summary = rect(".summary-sidebar"),
-        oaEntryElement = document.querySelector(".summary-sidebar > .oa-entry"),
-        oaEntry = oaEntryElement.getBoundingClientRect(),
+        oaEntry = rect(".summary-sidebar > .oa-entry"),
         oaActions = rect("#oaRecordActions"),
         calendar = rect(".work-body > section"),
         editor = rect(".editor");
@@ -128,9 +127,9 @@ async function verifyWorkspaceMenubar(page) {
           rect(".workspace-views").left - rect(".month-controls").right,
         viewsWrapped:
           rect(".workspace-views").top >= rect(".month-controls").bottom,
-        oaWidthDifference:
-          oaActions.width -
-          parseFloat(getComputedStyle(oaEntryElement, "::after").inlineSize),
+        oaWidth: oaActions.width,
+        oaExpectedWidth: Math.round((oaEntry.width * 0.85) / 2) * 2,
+        oaHeight: oaActions.height,
         oaInsetDifference:
           oaActions.left - oaEntry.left - (oaEntry.right - oaActions.right),
         summary: summary.top,
@@ -149,7 +148,12 @@ async function verifyWorkspaceMenubar(page) {
     assert.equal(calendarBorder > 0, width > 1150);
     assert.ok(Math.abs(bounds.gap) <= 1, JSON.stringify({ width, bounds }));
     assert.ok(bounds.footerInset <= 2, JSON.stringify({ width, bounds }));
-    assert.ok(Math.abs(bounds.oaWidthDifference) <= 1, JSON.stringify(bounds));
+    assert.equal(
+      bounds.oaWidth,
+      bounds.oaExpectedWidth,
+      JSON.stringify(bounds),
+    );
+    assert.equal(bounds.oaHeight, 38, JSON.stringify(bounds));
     assert.ok(Math.abs(bounds.oaInsetDifference) <= 1, JSON.stringify(bounds));
     if (width > 850)
       assert.ok(
@@ -270,7 +274,9 @@ async function verifyControlTheme(page) {
       style.fontSize,
       style.borderTopColor,
       getComputedStyle(
-        document.getElementById("motionTrigger").closest(".preference-select"),
+        document
+          .getElementById("languageTrigger")
+          .closest(".preference-select"),
       ).borderRadius,
     ];
   });

@@ -6,6 +6,7 @@ import SummarySidebar from "./workspace/SummarySidebar";
 import WorkEditor from "./workspace/WorkEditor";
 import WorkspaceDialogs from "./workspace/WorkspaceDialogs";
 import "./styles/workspace.css";
+import "./styles/sidebar-layout.css";
 const menubar = <WorkspaceMenubar />;
 const sidebar = <SummarySidebar />;
 const calendar = <CalendarPanel />;

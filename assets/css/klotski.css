@@ -106,5 +106,3 @@
   .klotski-piece { font-size: clamp(14px, 4vw, 22px); }
   .klotski-piece[data-kind="cao"] { font-size: clamp(24px, 6vw, 34px); }
 }
-@media (prefers-reduced-motion: reduce) { .klotski-piece { transition: none; } }
-html[data-reduced-motion="true"] .klotski-piece { transition: none; }

@@ -1,10 +1,23 @@
 "use strict";
 const { clickSettingsControl } = require("../../lib/settings-test-helpers.cjs");
+const {
+  selectWorkspaceCommand,
+} = require("../../lib/workspace-menu-test-helpers.cjs");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require("playwright");
+
+async function toggleAnalysis(page) {
+  const selected =
+    (await page.locator("#analysisToggle").getAttribute("aria-pressed")) ===
+    "true";
+  await selectWorkspaceCommand(page, selected ? "calendar" : "analysis");
+  await page.locator("#analysisSidebar").waitFor({
+    state: selected ? "hidden" : "visible",
+  });
+}
 
 async function verify() {
   const browser = await chromium.launch({ channel: "msedge", headless: true });
@@ -72,7 +85,7 @@ async function verify() {
       await page.clock.setFixedTime(new Date("2026-10-28T04:00:00Z"));
       await page.goto(url);
       await ready(page);
-      await page.locator("#analysisToggle").click();
+      await toggleAnalysis(page);
       await page.locator("#analysisSidebar").waitFor({ state: "visible" });
       return { context, page };
     }
@@ -82,15 +95,15 @@ async function verify() {
     assert.match(await detail.textContent(), /10\/2.*21:30/s);
     assert.match(
       await page.locator("#analysisObservation").textContent(),
-      /5 分钟\n下班时间相差 2.50 h/,
+      /50 分钟\n下班时间相差 2.50 h/,
     );
     const record1 = page.locator('.analysis-range[data-date="2026-10-01"]');
     await record1.hover();
     assert.match(await detail.textContent(), /10\/1.*19:00/s);
-    await page.locator("#analysisHeading").hover();
+    await page.locator(".analysis-metrics").hover();
     assert.match(await detail.textContent(), /10\/2.*21:30/s);
     await record1.click();
-    await page.locator("#analysisHeading").hover();
+    await page.locator(".analysis-metrics").hover();
     assert.match(await detail.textContent(), /10\/1.*19:00/s);
     await page.locator('[data-analysis-focus="2026-10-02"]').click();
     assert.match(await detail.textContent(), /10\/2.*21:30/s);
@@ -111,7 +124,7 @@ async function verify() {
         .count(),
       0,
     );
-    await page.locator("#analysisHeading").hover();
+    await page.locator(".analysis-metrics").hover();
     assert.equal(
       await page.locator("#analysisHover").isVisible(),
       true,
@@ -122,17 +135,17 @@ async function verify() {
     assert.equal(await page.locator("#analysisHover").isVisible(), false);
     await page.locator('.analysis-range[data-date="2026-10-03"]').focus();
     await page.keyboard.press("Enter");
-    await page.locator("#analysisHeading").click();
+    await page.locator(".analysis-metrics").click();
     assert.match(await detail.textContent(), /10\/3.*休息日加班/s);
-    await page.locator("#analysisManual").check();
+    assert.equal(await page.locator("#analysisManual").count(), 0);
     await page.locator('.analysis-range[data-date="2026-10-29"]').click();
-    await page.locator("#analysisHeading").hover();
+    await page.locator(".analysis-metrics").hover();
     assert.match(await detail.textContent(), /未来手录计划.*不纳入已发生统计/s);
     assert.match(
       await page.locator("#analysisSidebarScope").textContent(),
       /有效记录4 天/,
     );
-    await page.locator("#analysisManual").uncheck();
+    await page.locator('.analysis-range[data-date="2026-10-03"]').click();
     assert.doesNotMatch(await detail.textContent(), /未来手录计划/);
     await clickSettingsControl(page, "#settingsWorkTab");
     assert.equal(await page.locator("#analysisSidebar").isVisible(), false);
@@ -154,11 +167,11 @@ async function verify() {
     ]) {
       await page.setViewportSize({ width, height });
       await page.waitForTimeout(200);
-      await page.locator("#analysisToggle").click();
+      await toggleAnalysis(page);
       const footerHeight = await page
-        .locator(".editor > .date-info-area")
+        .locator(".editor .date-info-area")
         .evaluate((el) => el.getBoundingClientRect().height);
-      await page.locator("#analysisToggle").click();
+      await toggleAnalysis(page);
       for (const language of ["zh-CN", "en", "zh-TW", "zh-HK", "ja", "ko"]) {
         await page.evaluate(
           (language) => WorkTimeApp.i18n.setLanguage(language),
@@ -168,6 +181,7 @@ async function verify() {
           (language) => WorkTimeApp.i18n.language === language,
           language,
         );
+        await page.waitForTimeout(250);
         assert.doesNotMatch(
           await page.locator("#analysisSidebar").textContent(),
           /analysis\.sidebar|undefined|NaN/,
@@ -175,7 +189,7 @@ async function verify() {
         assert.ok(
           Math.abs(
             (await page
-              .locator(".editor > .date-info-area")
+              .locator(".editor .date-info-area")
               .evaluate((el) => el.getBoundingClientRect().height)) -
               footerHeight,
           ) < 1,
@@ -185,12 +199,12 @@ async function verify() {
           const headers = await page.evaluate(() =>
             [
               document.querySelector(".panel-head"),
-              document.querySelector(".analysis-sidebar-header"),
+              document.querySelector("#sidebarHeader"),
             ].map((el) => el.getBoundingClientRect().height),
           );
           assert.ok(
             Math.abs(headers[0] - headers[1]) < 1,
-            "Sidebar header matches the shared column header height",
+            `Sidebar header matches the shared column header height: ${headers}`,
           );
           assert.equal(
             await page
@@ -204,7 +218,21 @@ async function verify() {
             .locator("#analysisSidebar")
             .evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
           true,
-          `${language}: ${width}px sidebar fits`,
+          `${language}: ${width}px sidebar fits: ` +
+            JSON.stringify(
+              await page.locator("#analysisSidebar").evaluate((el) => ({
+                client: el.clientWidth,
+                scroll: el.scrollWidth,
+                overflow: [...el.querySelectorAll("*")]
+                  .filter((child) => child.scrollWidth > child.clientWidth + 1)
+                  .map((child) => ({
+                    tag: child.tagName,
+                    class: child.className,
+                    client: child.clientWidth,
+                    scroll: child.scrollWidth,
+                  })),
+              })),
+            ),
         );
         if (width >= 1920)
           assert.equal(
@@ -242,7 +270,7 @@ async function verify() {
     await page.reload();
     await ready(page);
     await page.locator("#analysisSidebar").waitFor({ state: "visible" });
-    await page.locator("#analysisToggle").click();
+    await toggleAnalysis(page);
     assert.equal(await page.locator("#analysisSidebar").isVisible(), false);
     assert.equal(await page.locator("#dayEditor").isVisible(), true);
     await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -264,12 +292,19 @@ async function verify() {
         .evaluate((el) => el.getAnimations().length)) > 0,
       "Incoming analysis content fades and moves",
     );
-    assert.equal(
+    assert.ok(
       await page
         .locator(".analysis-sidebar-header")
-        .evaluate((el) => el.getAnimations().length),
-      0,
-      "Header stays stationary",
+        .evaluate((el) =>
+          el
+            .getAnimations()
+            .every((animation) =>
+              animation.effect
+                .getKeyframes()
+                .every((frame) => !("transform" in frame)),
+            ),
+        ),
+      "Header only uses its dedicated title animation",
     );
     await page.waitForTimeout(600);
     await page.evaluate(() =>
@@ -290,13 +325,13 @@ async function verify() {
     );
     await page.waitForTimeout(600);
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.locator("#analysisToggle").click();
+    await toggleAnalysis(page);
     assert.equal(
-      await page
-        .locator("#analysisSidebar > .analysis-sidebar-section")
-        .first()
-        .evaluate((el) => el.getAnimations().length),
-      0,
+      await page.evaluate(
+        () => WorkTimeApp.ui.animationCompat.preference().matches,
+      ),
+      false,
+      "The existing always-animated preference contract is retained",
     );
     await context.close();
     const touched = await seeded(state, true);

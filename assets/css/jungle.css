@@ -66,13 +66,6 @@
 @keyframes jungle-thinking-spin {
   to { transform: rotate(360deg); }
 }
-:where(html:where([data-reduced-motion="true"])) .jungle-thinking-icon,
-:where(html:where([data-reduced-motion="true"])) .jungle-thinking-gear {
-  animation: none !important;
-}
-:where(html:where([data-reduced-motion="true"])) .jungle-thinking {
-  transition: none;
-}
 .jungle-setup .jungle-actions { margin-top: .25rem; }
 .game-jungle .jungle-setup [data-jungle-action="start"] { min-height: 3rem; padding-inline: 1.5rem; }
 .game-jungle .jungle-choice-row [data-jungle-action="human-1"] { --game-button-edge: #b4504060; --game-button-fill: #b4504010; --game-button-hover: #ad3734; --game-button-hover-ink: #fff; color: var(--jungle-red); }
@@ -103,7 +96,6 @@
 .jungle-result-actions .game-button { min-width: 0; white-space: normal; justify-content: center; padding: .65rem .35rem; }
 .jungle-result-actions [data-jungle-action="result-restart"] { background: #e9edd5; color: #354d41; border-color: #b8c396; }
 @keyframes jungle-result-pop { from { opacity: 0; transform: translateY(12px) scale(.85) rotate(-3deg); } to { opacity: 1; transform: translateY(0) scale(1) rotate(0); } }
-html[data-reduced-motion="true"] .jungle-result-card { animation: none; }
 .game-jungle[data-rotating="true"] .jungle-board { pointer-events: none; will-change: transform; }
 .game-jungle[data-rotating="true"] .jungle-controls,
 .game-jungle[data-rotating="true"] .jungle-controls > * { will-change: transform; }
@@ -135,7 +127,6 @@ html[data-reduced-motion="true"] .jungle-result-card { animation: none; }
 @keyframes jungle-trail-draw { from { stroke-dashoffset: 1; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
 @keyframes jungle-trail-head { from { opacity: 0; transform: scale(.75); } to { opacity: 1; transform: scale(1); } }
 .jungle-board[data-moving="true"] > .jungle-last-move :is(.jungle-trail-origin, .jungle-trail-line, .jungle-trail-head) { animation-play-state: paused; }
-html[data-reduced-motion="true"] .jungle-last-move :is(.jungle-trail-origin, .jungle-trail-line, .jungle-trail-head) { animation: none; }
 .jungle-board[data-moving="true"] > .jungle-last-move { visibility: hidden; }
 .jungle-cell { position: relative; padding: 0; border: 0; border-inline-end: 1px solid #687c5426; border-block-end: 1px solid #687c5426; min-width: 0; min-height: 0; background: var(--jungle-cell-fill, transparent); color: var(--ink); cursor: pointer; touch-action: manipulation; font: inherit; -webkit-tap-highlight-color: transparent; }
 /* Board cells keep their terrain/highlight fill instead of global button surfaces. */
@@ -172,9 +163,6 @@ html[data-reduced-motion="true"] .jungle-last-move :is(.jungle-trail-origin, .ju
 @keyframes jungle-bite-breathe { 0%, 100% { opacity: .5; transform: scale(.98); } 50% { opacity: .68; transform: scale(1.02); } }
 @keyframes jungle-bite-upper { 0%, 100% { transform: translateY(-.5px); } 50% { transform: translateY(1px); } }
 @keyframes jungle-bite-lower { 0%, 100% { transform: translateY(.5px); } 50% { transform: translateY(-1px); } }
-html[data-reduced-motion="true"] .jungle-capture-indicator,
-html[data-reduced-motion="true"] .jungle-capture-indicator .jungle-bite-upper,
-html[data-reduced-motion="true"] .jungle-capture-indicator .jungle-bite-lower { animation: none; }
 .game-jungle .jungle-cell:focus-visible { z-index: 3; border-radius: var(--ui-radius); }
 .jungle-controls { flex: 0 0 244px; display: grid; grid-template-rows: auto minmax(max-content, 1fr) auto; gap: 1.25rem; height: var(--jungle-panel-height); box-sizing: border-box; min-width: 0; padding: .5rem 0; }
 .jungle-objective { display: grid; align-content: start; gap: .4rem; overflow-wrap: anywhere; }

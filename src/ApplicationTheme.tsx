@@ -9,7 +9,6 @@ import ko from "antd/es/locale/ko_KR";
 import {
   useLayoutEffect,
   useMemo,
-  useState,
   useSyncExternalStore,
   type PropsWithChildren,
 } from "react";
@@ -60,7 +59,6 @@ export function useLanguage() {
 interface Palette {
   dark: boolean;
   accent: string;
-  motion: boolean;
 }
 let palette: Palette | undefined;
 let observer: MutationObserver | undefined;
@@ -73,15 +71,8 @@ function measurePalette() {
   const accent = getComputedStyle(document.body)
     .getPropertyValue("--ui-accent")
     .trim();
-  const motion = root.dataset.reducedMotion !== "true";
-  if (
-    palette &&
-    dark === palette.dark &&
-    accent === palette.accent &&
-    motion === palette.motion
-  )
-    return;
-  palette = { dark, accent, motion };
+  if (palette && dark === palette.dark && accent === palette.accent) return;
+  palette = { dark, accent };
   for (const listener of paletteListeners) listener();
 }
 function readPalette(): Palette {
@@ -94,12 +85,7 @@ function observePalette(listener: () => void) {
     for (const element of [document.documentElement, document.body])
       observer.observe(element, {
         attributes: true,
-        attributeFilter: [
-          "class",
-          "style",
-          "data-theme",
-          "data-reduced-motion",
-        ],
+        attributeFilter: ["class", "style", "data-theme"],
       });
     measurePalette();
   }
@@ -130,16 +116,7 @@ function DocumentThemeTokens() {
 
 export function ApplicationTheme({ children }: PropsWithChildren) {
   const language = useLanguage();
-  const {
-    dark,
-    accent,
-    motion: motionEnabled,
-  } = useSyncExternalStore(observePalette, readPalette);
-  // Ant inserts its motion provider the first time motion is disabled. Establish
-  // that provider before mounting controls so preference changes keep their DOM.
-  const [ready, setReady] = useState(false);
-  useLayoutEffect(() => setReady(true), []);
-  const motion = ready && motionEnabled;
+  const { dark, accent } = useSyncExternalStore(observePalette, readPalette);
   const tokens = useMemo(
     () => ({
       algorithm: [
@@ -155,7 +132,7 @@ export function ApplicationTheme({ children }: PropsWithChildren) {
         borderRadiusOuter: borderRadius,
         focusOutline: false,
         controlOutlineWidth: 0,
-        motion,
+        motion: true,
       },
       components: {
         Button: {
@@ -171,13 +148,13 @@ export function ApplicationTheme({ children }: PropsWithChildren) {
         },
       },
     }),
-    [dark, accent, motion],
+    [dark, accent],
   );
   return (
     <ConfigProvider
       locale={locales[language] ?? zhCN}
       theme={tokens}
-      wave={{ disabled: !motion, showEffect: showInsetWave }}
+      wave={{ showEffect: showInsetWave }}
       select={{
         suffixIcon: <CaretDownIcon size="1em" />,
         menuItemSelectedIcon: <CheckIcon size="1em" />,
@@ -188,7 +165,7 @@ export function ApplicationTheme({ children }: PropsWithChildren) {
       getPopupContainer={popupContainer}
     >
       <DocumentThemeTokens />
-      {ready && children}
+      {children}
     </ConfigProvider>
   );
 }

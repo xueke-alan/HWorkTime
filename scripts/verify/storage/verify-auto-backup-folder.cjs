@@ -63,6 +63,12 @@ async function main() {
         window.folderTest.permission = "granted";
         return "granted";
       };
+      const remove = FileSystemDirectoryHandle.prototype.removeEntry;
+      FileSystemDirectoryHandle.prototype.removeEntry = function (...args) {
+        if (window.folderTest.failRemove)
+          throw new DOMException("Cannot delete backup", "NotAllowedError");
+        return remove.apply(this, args);
+      };
       const create = FileSystemFileHandle.prototype.createWritable;
       FileSystemFileHandle.prototype.createWritable = function (...args) {
         if (window.folderTest.failWrite)
@@ -143,7 +149,9 @@ async function main() {
         await collect(backupDir);
         return result;
       });
-    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.goto(
+      process.argv[3] || `http://127.0.0.1:${server.address().port}/index.html`,
+    );
     await ready();
     await page.locator("#onboardingDialog[open]").waitFor();
     assert.equal(downloads.length, 0, "missing root never downloads");
@@ -294,16 +302,115 @@ async function main() {
     assert.ok(
       (await files()).every((file) => file.name.startsWith("automatic/day/")),
     );
-    await page.evaluate(() =>
-      document.getElementById("backupBeforeRestore").click(),
-    );
+    await page.evaluate(() => WorkTimeApp.ui.confirmations.restore.backup());
     await page.waitForFunction(
-      () => !document.querySelector("#backupBeforeRestore").disabled,
+      () => !WorkTimeApp.ui.confirmations.restore.backupBusy,
     );
     assert.equal(downloads.length, 0);
     assert.equal(
       (await files()).filter((file) => file.name.startsWith("manual/")).length,
       1,
+    );
+    const retention = await page.evaluate(async () => {
+      const runtime = WorkTimeApp.services.runtimeFolder;
+      const backups = await runtime.getDirectory("backups");
+      const automatic = await backups.getDirectoryHandle("automatic");
+      const result = {};
+      for (const [kind, limit] of [
+        ["hour", 72],
+        ["day", 14],
+      ]) {
+        const directory = await automatic.getDirectoryHandle(kind);
+        // Start with only fixtures, created in reverse chronological order.
+        for await (const [name] of directory.entries())
+          await directory.removeEntry(name);
+        const names = [];
+        for (let index = limit + 2; index >= 0; index--) {
+          const stamp = new Date(Date.UTC(2020, 0, 1, index))
+            .toISOString()
+            .slice(0, 19)
+            .replace(/[-:]/g, "")
+            .replace("T", "-");
+          const name = `fixture-${stamp}-${crypto.randomUUID()}.json`;
+          names.unshift(name);
+          const file = await directory.getFileHandle(name, { create: true });
+          const stream = await file.createWritable();
+          await stream.write("{}");
+          await stream.close();
+        }
+        const note = await directory.getFileHandle("notes.json", {
+          create: true,
+        });
+        const noteStream = await note.createWritable();
+        await noteStream.write("keep me");
+        await noteStream.close();
+        await directory.getDirectoryHandle("nested-20190101-000000.json", {
+          create: true,
+        });
+        const entries = async () => {
+          const values = [];
+          for await (const [name] of directory.entries()) values.push(name);
+          return values.sort();
+        };
+        const before = await entries();
+        window.folderTest.failWrite = true;
+        await runtime
+          .write("backup-20261028-120000.json", "{}", { kind })
+          .catch(() => {});
+        window.folderTest.failWrite = false;
+        const afterFailedWrite = await entries();
+        window.folderTest.failRemove = true;
+        let cleanupFailed = false;
+        try {
+          await runtime.write("backup-20261028-120000.json", "{}", { kind });
+        } catch {
+          cleanupFailed = true;
+        }
+        window.folderTest.failRemove = false;
+        const afterFailedCleanup = await entries();
+        await runtime.write("backup-20261028-120001.json", "{}", { kind });
+        const after = await entries();
+        result[kind] = {
+          before,
+          afterFailedWrite,
+          cleanupFailed,
+          preservedNewBackup: afterFailedCleanup.some((name) =>
+            name.startsWith("backup-20261028-120000-"),
+          ),
+          count: after.length - 2,
+          retainedFixtures: names.filter((name) => after.includes(name)),
+          expectedFixtures: names.slice(-(limit - 2)),
+          preservedOtherEntries:
+            after.includes("notes.json") &&
+            after.includes("nested-20190101-000000.json"),
+        };
+      }
+      return result;
+    });
+    for (const [kind, limit] of [
+      ["hour", 72],
+      ["day", 14],
+    ]) {
+      const result = retention[kind];
+      assert.deepEqual(
+        result.afterFailedWrite,
+        result.before,
+        `${kind}: failed writes must not prune old backups`,
+      );
+      assert.equal(result.cleanupFailed, true);
+      assert.equal(result.preservedNewBackup, true);
+      assert.equal(result.count, limit);
+      assert.deepEqual(
+        result.retainedFixtures,
+        result.expectedFixtures,
+        `${kind}: retain newest by archive time, not insertion order`,
+      );
+      assert.equal(result.preservedOtherEntries, true);
+    }
+    assert.equal(
+      (await files()).filter((file) => file.name.startsWith("manual/")).length,
+      1,
+      "automatic retention must preserve manual backups",
     );
     await page.evaluate(() => {
       window.folderTest.failSave = true;
@@ -427,7 +534,7 @@ async function main() {
     await ready();
     await status("storageFailed");
     await page.waitForFunction(
-      () => !document.querySelector("#backupBeforeRestore").disabled,
+      () => !WorkTimeApp.ui.confirmations.restore.backupBusy,
     );
     assert.equal(
       downloads.length,
@@ -442,7 +549,7 @@ async function main() {
     );
     assert.deepEqual(errors, []);
     console.log(
-      "Archive folder selection, persistence, permission retry, failure recovery, manual folder writes, no downloads, languages and narrow layout verified.",
+      "Archive folder selection, persistence, permission retry, failure recovery, hour/day retention (72/14), oldest-first pruning, manual folder writes, no downloads, languages and narrow layout verified.",
     );
     await context.close();
   } finally {

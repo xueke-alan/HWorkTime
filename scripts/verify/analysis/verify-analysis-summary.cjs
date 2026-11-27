@@ -152,8 +152,8 @@ async function verify() {
       "2026-10-08",
     ]);
     assert.deepEqual(
-      result.base.lateCounts.map((item) => item.count),
-      [4, 3, 2],
+      result.base.departureDistribution.map((item) => item.count),
+      [2, 0, 1, 2],
     );
     assert.equal(
       result.included.count,
@@ -216,7 +216,7 @@ async function verify() {
     );
     await page.locator("#analysisToggle").click();
     assert.equal(await page.locator(".analysis-metric-group").count(), 5);
-    assert.equal(await page.locator(".analysis-metric").count(), 18);
+    assert.equal(await page.locator(".analysis-metric").count(), 21);
     assert.equal(
       await page
         .locator('[data-key="totalOvertime"] .analysis-metric-value')
@@ -225,7 +225,7 @@ async function verify() {
     );
     assert.equal(
       await page
-        .locator('[data-key="late1260"] .analysis-metric-value')
+        .locator('[data-key="departure2200"] .analysis-metric-value')
         .getAttribute("data-value"),
       "2",
     );

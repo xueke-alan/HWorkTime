@@ -1,14 +1,25 @@
+import { SidebarHeader } from "../workspace/SidebarLayout";
 import Button from "antd/es/button";
+import Card from "antd/es/card";
+import Descriptions from "antd/es/descriptions";
+import Typography from "antd/es/typography";
 import { Fragment } from "react";
 import { useLanguage } from "../ApplicationTheme";
 import { sidebar, type SidebarView } from "./sidebar";
 function Rows({ rows }: { rows: SidebarView["scope"] }) {
-  return rows.map((row) => (
-    <div key={row.label} className="analysis-sidebar-row">
-      <span>{row.label}</span>
-      <strong>{row.value}</strong>
-    </div>
-  ));
+  return (
+    <Descriptions
+      className="analysis-sidebar-rows"
+      size="small"
+      column={1}
+      colon={false}
+      items={rows.map((row) => ({
+        key: row.label,
+        label: row.label,
+        children: row.value,
+      }))}
+    />
+  );
 }
 export default function AnalysisSidebar() {
   useLanguage();
@@ -22,25 +33,45 @@ export default function AnalysisSidebar() {
       hidden
       aria-labelledby="analysisSidebarTitle"
     >
-      <header className="analysis-sidebar-header">
+      <SidebarHeader className="analysis-sidebar-header">
         <p id="analysisSidebarMonth" className="calendar-today-number">
           {view?.month}
         </p>
         <h2 id="analysisSidebarTitle" className="calendar-today-weekday">
           {t("analysis.sidebarShortTitle")}
         </h2>
-      </header>
-      <section className="analysis-sidebar-section" data-ui="panel">
-        <h3>{t("analysis.sidebarObservation")}</h3>
-        <p id="analysisObservation" className="analysis-observation">
+      </SidebarHeader>
+      <Card
+        className="analysis-sidebar-section"
+        size="small"
+        role="region"
+        aria-labelledby="analysisObservationTitle"
+      >
+        <Typography.Title level={3} id="analysisObservationTitle">
+          {t("analysis.sidebarObservation")}
+        </Typography.Title>
+        <Typography.Paragraph
+          id="analysisObservation"
+          className="analysis-observation"
+        >
           {view?.observation}
-        </p>
-        <p id="analysisObservationContext" className="analysis-sidebar-muted">
+        </Typography.Paragraph>
+        <Typography.Paragraph
+          id="analysisObservationContext"
+          className="analysis-sidebar-muted"
+        >
           {view?.context}
-        </p>
-      </section>
-      <section className="analysis-sidebar-section" data-ui="panel">
-        <h3>{t("analysis.sidebarFocus")}</h3>
+        </Typography.Paragraph>
+      </Card>
+      <Card
+        className="analysis-sidebar-section"
+        size="small"
+        role="region"
+        aria-labelledby="analysisFocusTitle"
+      >
+        <Typography.Title level={3} id="analysisFocusTitle">
+          {t("analysis.sidebarFocus")}
+        </Typography.Title>
         <div
           id="analysisFocusDates"
           className="analysis-focus-dates"
@@ -87,22 +118,31 @@ export default function AnalysisSidebar() {
                 ))}
               </div>
               <Rows rows={focus.rows} />
-              <p className="analysis-sidebar-muted analysis-focus-source">
+              <Typography.Paragraph className="analysis-sidebar-muted analysis-focus-source">
                 {focus.source}
-              </p>
+              </Typography.Paragraph>
             </>
           ) : (
             t("analysis.sidebarNoFocus")
           )}
         </div>
-      </section>
-      <section className="analysis-sidebar-section" data-ui="panel">
-        <h3>{t("analysis.sidebarScope")}</h3>
+      </Card>
+      <Card
+        className="analysis-sidebar-section"
+        size="small"
+        role="region"
+        aria-labelledby="analysisScopeTitle"
+      >
+        <Typography.Title level={3} id="analysisScopeTitle">
+          {t("analysis.sidebarScope")}
+        </Typography.Title>
         <div id="analysisSidebarScope" className="analysis-sidebar-scope">
           {view && <Rows rows={view.scope} />}
-          <p className="analysis-sidebar-muted">{view?.comparison}</p>
+          <Typography.Paragraph className="analysis-sidebar-muted">
+            {view?.comparison}
+          </Typography.Paragraph>
         </div>
-      </section>
+      </Card>
     </section>
   );
 }

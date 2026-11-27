@@ -45,7 +45,7 @@ body .work-layout > .workspace {
   grid-template-columns: minmax(0, 1fr) var(--editor-sidebar-width);
 }
 body .workspace > .work-main {
-  --calendar-inline-gutter: 12px;
+  --workspace-inline-gutter: 15px;
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -55,7 +55,7 @@ body .workspace > .work-main {
 body .work-main > .calendar-footer {
   flex: none;
   margin: 0;
-  padding-inline: var(--calendar-inline-gutter);
+  padding-inline: var(--workspace-inline-gutter);
 }
 .work-body {
   flex: 1;
@@ -70,6 +70,10 @@ body .work-body > .panel {
   border-radius: 0;
   box-shadow: none;
   background: transparent;
+}
+body .work-body > .summary-sidebar,
+body .work-body > section.panel :is(.calendar, .weekdays) {
+  padding-inline: var(--workspace-inline-gutter);
 }
 @media (max-width: 1150px) {
   .work-body {

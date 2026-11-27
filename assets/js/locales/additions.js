@@ -1,5 +1,17 @@
 "use strict";
 (() => {
+  const labels = {
+    "zh-CN": "等下班",
+    "zh-TW": "等下班",
+    "zh-HK": "等下班",
+    en: "Awaiting clock-out",
+    ja: "退勤待ち",
+    ko: "퇴근 대기",
+  };
+  for (const [language, label] of Object.entries(labels))
+    WorkTimeApp.data.locales[language]["status.waitingForEnd"] = label;
+})();
+(() => {
   const messages = {
     "zh-CN": ["显示虚拟形象", "让小猫抬头", "未能保存虚拟形象设置"],
     "zh-TW": ["顯示虛擬形象", "讓小貓抬頭", "無法儲存虛擬形象設定"],
@@ -1815,8 +1827,8 @@ for (const [language, text] of Object.entries({
       "悬停日期，或聚焦数据点后用方向键浏览，查看上下班与加班详情",
       "加班",
       "加班",
-      "已记录 · 无加班",
-      "无纳入记录",
+      "无加班",
+      "无记录",
       "未来日期",
       "最长 {count} · {range}",
       "上下班双轨时间趋势，共用日期横轴，各有独立的时间纵轴；缺失日期断线，菱形表示晚于21:00下班。中位数显示在各轨标题旁。",
@@ -1958,7 +1970,7 @@ for (const [language, value] of Object.entries({
   const messages = {
     "zh-CN": [
       "本月作息",
-      "作息分析",
+      "分析",
       "包含手录数据",
       "每日上下班时间",
       "● 上班",
@@ -1990,7 +2002,7 @@ for (const [language, value] of Object.entries({
     ],
     "zh-TW": [
       "本月作息",
-      "作息分析",
+      "分析",
       "包含手動資料",
       "每日上下班時間",
       "● 上班",
@@ -2022,7 +2034,7 @@ for (const [language, value] of Object.entries({
     ],
     "zh-HK": [
       "本月作息",
-      "作息分析",
+      "分析",
       "包含手動資料",
       "每日上下班時間",
       "● 上班",
@@ -3791,7 +3803,7 @@ for (const [language, labels] of Object.entries({
   "zh-CN": [
     "上班",
     "下班",
-    "晚下班频率",
+    "下班分布",
     "加班",
     "较上月变化",
     "19:00 后",
@@ -3816,7 +3828,7 @@ for (const [language, labels] of Object.entries({
   "zh-TW": [
     "上班",
     "下班",
-    "晚下班頻率",
+    "下班分布",
     "加班",
     "較上月變化",
     "19:00 後",
@@ -3841,7 +3853,7 @@ for (const [language, labels] of Object.entries({
   "zh-HK": [
     "上班",
     "下班",
-    "晚下班頻率",
+    "下班分布",
     "加班",
     "較上月變化",
     "19:00 後",
@@ -3866,7 +3878,7 @@ for (const [language, labels] of Object.entries({
   en: [
     "Arrival",
     "Departure",
-    "Late departures",
+    "Departure distribution",
     "Overtime",
     "Change from last month",
     "After 19:00",
@@ -3891,7 +3903,7 @@ for (const [language, labels] of Object.entries({
   ja: [
     "出勤",
     "退勤",
-    "遅い退勤の頻度",
+    "退勤時間帯",
     "残業",
     "前月との差",
     "19:00 より後",
@@ -3916,7 +3928,7 @@ for (const [language, labels] of Object.entries({
   ko: [
     "출근",
     "퇴근",
-    "늦은 퇴근 빈도",
+    "퇴근 시간 분포",
     "초과 근무",
     "지난달 대비",
     "19:00 이후",
@@ -3963,6 +3975,109 @@ for (const [language, labels] of Object.entries({
     "moreHours",
     "fewerHours",
     "comparisonPeriod",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["analysis." + key] = labels[index];
+  });
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "{start}–{end}",
+    "工作日下班时间：{start}（含）至 {end}（不含）",
+    "{start} 后",
+    "工作日下班时间：{start} 及以后，包含跨午夜下班",
+    "班次下班",
+  ],
+  "zh-TW": [
+    "{start}–{end}",
+    "工作日下班時間：{start}（含）至 {end}（不含）",
+    "{start} 後",
+    "工作日下班時間：{start} 及以後，包含跨午夜下班",
+    "班次下班",
+  ],
+  "zh-HK": [
+    "{start}–{end}",
+    "工作日下班時間：{start}（含）至 {end}（不含）",
+    "{start} 後",
+    "工作日下班時間：{start} 及以後，包括跨午夜下班",
+    "班次下班",
+  ],
+  en: [
+    "{start}–{end}",
+    "Recorded workday departures from {start} (inclusive) to {end} (exclusive)",
+    "{start}+",
+    "Recorded workday departures at or after {start}, including after midnight",
+    "Scheduled end",
+  ],
+  ja: [
+    "{start}–{end}",
+    "勤務日の退勤時間：{start} 以上、{end} 未満",
+    "{start} 以降",
+    "勤務日の退勤時間：{start} 以降。日付をまたぐ退勤を含みます",
+    "所定退勤",
+  ],
+  ko: [
+    "{start}–{end}",
+    "근무일 퇴근 시간: {start} 이상, {end} 미만",
+    "{start} 이후",
+    "근무일 퇴근 시간: {start} 이상, 자정 이후 퇴근 포함",
+    "정규 퇴근",
+  ],
+})) {
+  [
+    "departureRange",
+    "departureRangeHint",
+    "departureAfter",
+    "departureAfterHint",
+    "scheduledDeparture",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["analysis." + key] = labels[index];
+  });
+}
+
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "日均加班",
+    "每个已记录工作日的平均加班时长变化",
+    "21点后占比",
+    "21:00 后下班的工作日占比变化",
+  ],
+  "zh-TW": [
+    "日均加班",
+    "每個已記錄工作日的平均加班時長變化",
+    "21點後占比",
+    "21:00 後下班的工作日占比變化",
+  ],
+  "zh-HK": [
+    "日均加班",
+    "每個已記錄工作日的平均加班時長變化",
+    "21點後佔比",
+    "21:00 後下班的工作日佔比變化",
+  ],
+  en: [
+    "Daily overtime",
+    "Change in average overtime per recorded workday",
+    "After 21:00",
+    "Change in the share of recorded workdays ending after 21:00",
+  ],
+  ja: [
+    "日平均残業",
+    "記録のある勤務日あたりの平均残業時間の差",
+    "21時以降の割合",
+    "21:00 より後に退勤した勤務日の割合の差",
+  ],
+  ko: [
+    "일평균 초과 근무",
+    "기록된 근무일당 평균 초과 근무 시간 변화",
+    "21시 이후 비율",
+    "21:00 이후 퇴근한 근무일 비율 변화",
+  ],
+})) {
+  [
+    "compact.dailyOvertimeChange",
+    "dailyOvertimeChange",
+    "compact.lateRatioChange",
+    "lateRatioChange",
   ].forEach((key, index) => {
     WorkTimeApp.data.locales[language]["analysis." + key] = labels[index];
   });
@@ -4035,74 +4150,6 @@ for (const [language, labels] of Object.entries({
   });
 }
 
-for (const [language, labels] of Object.entries({
-  "zh-CN": [
-    "动画效果",
-    "跟随系统",
-    "始终动画",
-    "减少动画",
-    "系统当前要求减少动画；选择“始终动画”可恢复本站动效。",
-    "系统当前允许展示动画。",
-    "动画设置未保存，将在本次使用中生效。",
-  ],
-  "zh-TW": [
-    "動畫效果",
-    "跟隨系統",
-    "一律播放",
-    "減少動畫",
-    "系統目前要求減少動畫；選擇「一律播放」可恢復本站動態效果。",
-    "系統目前允許顯示動畫。",
-    "動畫設定未儲存，僅於本次使用生效。",
-  ],
-  "zh-HK": [
-    "動畫效果",
-    "跟隨系統",
-    "一律播放",
-    "減少動畫",
-    "系統目前要求減少動畫；選擇「一律播放」可恢復本站動態效果。",
-    "系統目前允許顯示動畫。",
-    "動畫設定未儲存，僅於本次使用生效。",
-  ],
-  en: [
-    "Animation effects",
-    "Follow system",
-    "Always animate",
-    "Reduce motion",
-    "The system currently requests reduced motion. Choose “Always animate” to restore this site’s effects.",
-    "The system currently allows animations.",
-    "Animation preference could not be saved; it applies for this session.",
-  ],
-  ja: [
-    "アニメーション",
-    "システムに従う",
-    "常に表示",
-    "動きを減らす",
-    "システムは動きを減らす設定です。「常に表示」でこのサイトのアニメーションを有効にできます。",
-    "システムはアニメーションを許可しています。",
-    "設定を保存できませんでした。このセッションでのみ適用されます。",
-  ],
-  ko: [
-    "애니메이션 효과",
-    "시스템 설정 따르기",
-    "항상 표시",
-    "동작 줄이기",
-    "시스템이 동작 줄이기를 요청하고 있습니다. ‘항상 표시’를 선택하면 이 사이트의 효과를 복원합니다.",
-    "시스템이 애니메이션을 허용하고 있습니다.",
-    "설정을 저장하지 못했습니다. 이번 세션에만 적용됩니다.",
-  ],
-})) {
-  [
-    "label",
-    "system",
-    "full",
-    "reduce",
-    "systemReduced",
-    "systemFull",
-    "failed",
-  ].forEach((key, index) => {
-    WorkTimeApp.data.locales[language]["motion." + key] = labels[index];
-  });
-}
 for (const [language, labels] of Object.entries({
   "zh-CN": [
     "切换到热力图",

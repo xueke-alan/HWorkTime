@@ -6,11 +6,7 @@ import { useLanguage } from "../ApplicationTheme";
 import { showCalendarMascot } from "./CalendarMascot";
 
 type PreferenceKey =
-  | "language"
-  | "motionMode"
-  | "weatherDays"
-  | "pageTheme"
-  | "showCalendarMascot";
+  "language" | "weatherDays" | "pageTheme" | "showCalendarMascot";
 type PreferenceValue = string | number | boolean;
 function usePreference<T extends PreferenceValue>(
   key: PreferenceKey,
@@ -58,8 +54,6 @@ function usePreference<T extends PreferenceValue>(
 const currentTheme = () =>
   WorkTimeApp.services.preferences.page.state.pageTheme || "green";
 const currentLanguage = () => WorkTimeApp.i18n.preference;
-const currentMotion = () =>
-  WorkTimeApp.services.preferences.page.state.motionMode ?? "full";
 const currentWeather = () =>
   WorkTimeApp.services.preferences.page.state.weatherDays ?? 5;
 
@@ -187,11 +181,6 @@ export function WeatherSetting() {
     currentLanguage,
     service.saveLanguage,
   );
-  const motion = usePreference(
-    "motionMode",
-    currentMotion,
-    service.saveMotionMode,
-  );
   const weather = usePreference(
     "weatherDays",
     currentWeather,
@@ -208,16 +197,6 @@ export function WeatherSetting() {
         options={WorkTimeApp.i18n.languages.map(({ id, name }) => ({
           value: id,
           label: name,
-        }))}
-      />
-      <PreferenceSelect
-        id="motionTrigger"
-        label={t("motion.label")}
-        error={t("motion.failed")}
-        setting={motion}
-        options={["system", "full", "reduce"].map((value) => ({
-          value,
-          label: t("motion." + value),
         }))}
       />
       <PreferenceSelect

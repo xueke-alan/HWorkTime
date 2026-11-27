@@ -189,7 +189,6 @@ body .agenda-chip-time.ui-aligned-text { display: block; }
   }
   .agenda-chip:is(:hover, :focus-visible) .agenda-resize-handle::after { opacity: 0.55; transform: translateY(-50%) scaleY(1); }
 }
-:where(html:where([data-reduced-motion="true"])) .agenda-resize-handle::after { transition: none; }
 body.agenda-is-dragging.agenda-is-resizing, body.agenda-is-dragging.agenda-is-resizing * { cursor: ew-resize !important; }
 .agenda-drag-preview.agenda-resize-preview { position: fixed; inset: 0; width: auto; height: auto; background: none; box-shadow: none; opacity: 1; }
 .agenda-resize-preview > .agenda-resize-segment { position: fixed; pointer-events: none; opacity: 1; transition: none; }
@@ -1138,11 +1137,6 @@ body .agenda-editor .agenda-editor-footer #agendaDraft {
   font-weight: 500;
   line-height: 1.6;
 }
-:where(html:where([data-reduced-motion="true"])) .agenda-item,
-  :where(html:where([data-reduced-motion="true"])) .agenda-form input,
-  :where(html:where([data-reduced-motion="true"])) .agenda-form textarea {
-    transition: none;
-  }
 @media (max-width: 540px) {
   :is(.agenda-chip, .agenda-more) { font-size: 10px; }
   .agenda-chip {

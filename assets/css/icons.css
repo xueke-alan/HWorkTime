@@ -47,7 +47,7 @@ body .summary-sidebar .sidebar-import-history .import-history-item .row button .
   width: var(--icon-size-small);
   height: var(--icon-size-small);
 }
-body .editor > .notification-tabs {
+body .editor  .notification-tabs {
   --tab-icon-size: var(--icon-size-tab);
 }
 body #oaShortcut .oa-icon-slot {

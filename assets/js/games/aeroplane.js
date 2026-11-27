@@ -86,10 +86,7 @@ WorkTimeApp.games.register({
       !error &&
       state.phase !== "won";
     const human = () => state.seats[state.turn] === "human";
-    const reduced = () =>
-      document.documentElement.dataset.reducedMotion === "true" ||
-      (WorkTimeApp.ui.animationCompat?.preference().matches ??
-        matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const reduced = () => WorkTimeApp.ui.animationCompat.preference().matches;
     function svg(tag, attrs, parent) {
       const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
       for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, String(v));

@@ -18,6 +18,6 @@ async function clickSettingsControl(page, selector) {
     return;
   }
   if (!open) await selectWorkspaceCommand(page, "pageSettingsOpen");
-  await page.locator(tab).click();
+  await page.locator('[data-settings-tab="' + tab.slice(1) + '"]').click();
 }
 module.exports = { clickSettingsControl };

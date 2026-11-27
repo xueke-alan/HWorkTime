@@ -1,3 +1,4 @@
+import { createWorkspaceSelect } from "./select";
 import { mountSummary } from "./SummaryCards";
 import PickerGrid from "./views/PickerGrid";
 import ScheduleChoices from "./views/ScheduleChoices";
@@ -26,9 +27,11 @@ function viewFor(host: HTMLElement) {
 }
 export const { state: oaActions, useSnapshot: useOAActions } = controllerState({
   back: "",
+  yearMode: false,
   clipboardNotice: false,
 });
 export const workspaceViews = {
+  createWorkspaceSelect,
   mountSummary,
   AgendaDisplay(
     host: HTMLElement,

@@ -60,7 +60,7 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     actions.render();
     if (transition.sidebarTransition) actions.closeImport();
     if (wasYearMode !== model.yearMode && $("settingsPane").hidden) {
-      const content = document.querySelector(".editor > .editor-content");
+      const content = document.querySelector(".editor .editor-content");
       WorkTimeApp.ui.motion?.stop(content);
       WorkTimeApp.ui.motion?.play(
         content,

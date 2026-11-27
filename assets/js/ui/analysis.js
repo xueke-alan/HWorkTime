@@ -48,7 +48,7 @@ WorkTimeApp.ui.createAnalysis = function ({
     canAnimate,
     preference: motionPreference,
   } = renderer;
-  function metric(label, value, context, dates = []) {
+  function metric(label, value, context, dates = [], display = null) {
     const nextDay = t("nextDay") + " ",
       extended = value.startsWith(nextDay);
     const ratio = value.split(" / "),
@@ -74,8 +74,8 @@ WorkTimeApp.ui.createAnalysis = function ({
           "</span>";
     return {
       key: label,
-      label: t("compact." + label),
-      title: t(label),
+      label: display?.label ?? t("compact." + label),
+      title: display?.title ?? t(label),
       context,
       numeric:
         '<span class="analysis-metric-next">' +
@@ -83,8 +83,7 @@ WorkTimeApp.ui.createAnalysis = function ({
         "</span>" +
         valueMarkup,
       dates: dates.map(date),
-      dateCount: number(dates.length),
-      dateHint: t("allDates", { count: dates.length }),
+      remainingDateCount: number(Math.max(0, dates.length - 2)),
     };
   }
   function positionTooltip() {
@@ -406,6 +405,22 @@ WorkTimeApp.ui.createAnalysis = function ({
         : ".analysis-range";
     lastSize = size;
     syncMarkup(plot, chart(currentData, width, height));
+    const svg = plot.querySelector(".analysis-plot"),
+      matrix = svg.getScreenCTM(),
+      anchor = Number(svg.dataset.legendX),
+      marker = $("analysisDetails").querySelector(
+        ".analysis-chart-legend .analysis-legend-dot",
+      ),
+      // Match the centers of the first legend dot and the first date's endpoints.
+      inset =
+        (matrix
+          ? matrix.a * anchor + matrix.e - svg.getBoundingClientRect().left
+          : anchor) -
+        marker.getBoundingClientRect().width / 2;
+    $("analysisDetails").style.setProperty(
+      "--analysis-legend-inset",
+      inset + "px",
+    );
     const previous = selectedDate;
     selectedDate = null;
     selectDate(previous);
@@ -545,6 +560,18 @@ WorkTimeApp.ui.createAnalysis = function ({
       });
     const restDays = data.days.filter((day) => !day.work);
     const maximum = metrics.maximumOvertime;
+    const scheduledEnds = [
+      ...new Set(
+        metrics.calendarDays
+          .filter((day) => day.work)
+          .map((day) => day.workEnd),
+      ),
+    ];
+    const scheduledEnd = scheduledEnds.length === 1 ? scheduledEnds[0] : null;
+    const scheduledLabel =
+      scheduledEnd !== null && scheduledEnd < 1230
+        ? clock(scheduledEnd)
+        : t("scheduledDeparture");
     const groups = [
       group("Arrival", [
         extremeMetric("earliest", earliest),
@@ -558,13 +585,28 @@ WorkTimeApp.ui.createAnalysis = function ({
       ]),
       group(
         "Late",
-        metrics.lateCounts.map(({ threshold, count }) =>
-          metric(
-            "late" + threshold,
+        metrics.departureDistribution.map(({ key, start, end, count }) => {
+          const values = {
+            start: start === null ? scheduledLabel : clock(start),
+            end: end === null ? "" : clock(end),
+          };
+          return metric(
+            key,
             metrics.count ? number(count) : "—",
             percent(count),
-          ),
-        ),
+            [],
+            {
+              label: t(
+                end === null ? "departureAfter" : "departureRange",
+                values,
+              ),
+              title: t(
+                end === null ? "departureAfterHint" : "departureRangeHint",
+                values,
+              ),
+            },
+          );
+        }),
       ),
       group("Overtime", [
         metric(
@@ -610,9 +652,29 @@ WorkTimeApp.ui.createAnalysis = function ({
             "",
           ),
           metric(
+            "dailyOvertimeChange",
+            change(
+              comparison.dailyOvertimeChange,
+              "hours",
+              "moreHours",
+              "fewerHours",
+            ),
+            "",
+          ),
+          metric(
             "ratioChange",
             change(
               comparison.overtimeRatioChange,
+              "points",
+              "morePoints",
+              "fewerPoints",
+            ),
+            "",
+          ),
+          metric(
+            "lateRatioChange",
+            change(
+              comparison.lateRatioChange,
               "points",
               "morePoints",
               "fewerPoints",

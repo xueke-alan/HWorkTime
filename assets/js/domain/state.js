@@ -21,7 +21,6 @@ const WorkTimeDomainState = (() => {
       preferences: {
         pageTheme: "green",
         language: "auto",
-        motionMode: "full",
         showCalendarMascot: true,
         lastAutoBackupDate: null,
         lastAutoBackupHour: null,

@@ -11,7 +11,8 @@
   };
   const tabStorageKey = "worktime.dateInfo.activeTab";
   let date = "",
-    active = "notifications";
+    active = "notifications",
+    tabController = null;
   try {
     active = localStorage.getItem(tabStorageKey) || active;
   } catch {}
@@ -29,10 +30,10 @@
     } catch {}
   }
   const notices = document.getElementById("editorInfo"),
-    bar = document.querySelector(".editor>.notification-tabs"),
+    bar = document.querySelector(".editor .notification-tabs"),
     area = document.querySelector(".date-info-area"),
     panel = document.getElementById("dateInfoPanel");
-  bar.setAttribute("role", "tablist");
+
   bar.setAttribute("aria-label", WorkTimeApp.i18n.t("copy.b0f0d53b40"));
   WorkTimeApp.services.dateInfo.register({
     id: "notifications",
@@ -128,21 +129,34 @@
   const dateHeader = node("div", undefined, "date-context-header");
   const dateHeading = node("time", "", "date-context-date");
   const dateSwitch = node("div", undefined, "date-context-switch");
-  dateSwitch.setAttribute("role", "tablist");
-  dateSwitch.setAttribute("aria-label", WorkTimeApp.i18n.t("copy.15245b56da"));
-  for (const [id, label] of [
-    ["festivals", WorkTimeApp.i18n.t("copy.860caf9fd7")],
-    ["history", WorkTimeApp.i18n.t("copy.be78b20585")],
-    ["almanac", WorkTimeApp.i18n.t("copy.e393811f90")],
-  ]) {
-    const button = node("button", undefined, "ui-text-action");
-    button.append(node("span", label, "button-label"));
-    button.type = "button";
-    button.id = "date-context-" + id;
-    button.dataset.view = id;
-    button.setAttribute("role", "tab");
-    button.setAttribute("aria-controls", "dateInfoPanel");
-    dateSwitch.append(button);
+  const dateViewLabel = node(
+    "label",
+    WorkTimeApp.i18n.t("copy.15245b56da"),
+    "sr-only",
+  );
+  dateViewLabel.id = "dateContextLabel";
+  const dateViewSelect = node("select");
+  dateViewSelect.id = "dateContextView";
+  dateViewSelect.hidden = true;
+  dateSwitch.append(dateViewLabel, dateViewSelect);
+  let dateSelectView = null,
+    dateSelectScope = null;
+  function syncDateSelect() {
+    const options = [
+      ["festivals", "copy.860caf9fd7"],
+      ["history", "copy.be78b20585"],
+      ["almanac", "copy.e393811f90"],
+    ].filter(([id]) => id !== "almanac" || WorkTimeApp.i18n.config.almanac);
+    dateViewLabel.textContent = WorkTimeApp.i18n.t("copy.15245b56da");
+    dateViewSelect.replaceChildren(
+      ...options.map(([value, key]) => {
+        const option = node("option", WorkTimeApp.i18n.t(key));
+        option.value = value;
+        return option;
+      }),
+    );
+    dateViewSelect.value = selectedDateView;
+    dateSelectView?.sync();
   }
   dateHeader.append(dateHeading, dateSwitch);
   dateHeader.hidden = true;
@@ -593,21 +607,13 @@
       WorkTimeApp.ui.motion?.play(surface(view));
     }
     renderedView = view;
-    for (const b of bar.children) {
-      if (b.id === "musicOpen") {
-        if (WorkTimeApp.ui.music.isMini) {
-          b.setAttribute("aria-selected", String(active === "music"));
-          b.tabIndex = active === "music" ? 0 : -1;
-        }
-        continue;
-      }
-      const on =
-        b.dataset.tab === active ||
-        (b.dataset.tab === "tools" && toolIds.includes(active)) ||
-        (b.dataset.tab === "history" && dateViews.includes(active));
-      b.setAttribute("aria-selected", String(on));
-      b.tabIndex = on ? 0 : -1;
-    }
+    tabController?.select(
+      toolIds.includes(active)
+        ? "tools"
+        : dateViews.includes(active)
+          ? "history"
+          : active,
+    );
     notices.hidden = active !== "notifications";
     panel.hidden =
       active === "notifications" ||
@@ -634,11 +640,8 @@
         ? WorkTimeApp.i18n.date(date)
         : date;
     dateHeading.dateTime = date;
-    for (const button of dateSwitch.children) {
-      const on = button.dataset.view === active;
-      button.setAttribute("aria-selected", String(on));
-      button.tabIndex = on ? 0 : -1;
-    }
+    dateViewSelect.value = selectedDateView;
+    dateSelectView?.sync();
     area.classList.toggle("has-date-info", active !== "notifications");
     WorkTimeApp.services.weather?.setDemand("details", active === "weather");
     WorkTimeApp.ui.music.refresh();
@@ -657,7 +660,7 @@
       return;
     panel.setAttribute(
       "aria-labelledby",
-      (grouped ? "date-context-" : "date-tab-") + active,
+      grouped ? dateViewLabel.id : "date-tab-" + active,
     );
     panel.classList.toggle("countdown-panel", active === "countdown");
     panel.classList.toggle("almanac-panel", active === "almanac");
@@ -914,7 +917,16 @@
       beijingDate(Date.parse(record.validAt)) === today
     )
       code = record.current.weatherCode ?? code;
-    const icon = WorkTimeApp.ui.weather?.iconFor(code) || "cloud";
+    const symbols = {
+      "clear-day": "sun",
+      "partly-cloudy-day": "cloud-sun",
+      cloudy: "cloud",
+      rain: "weather-rain",
+      snow: "weather-snow",
+      fog: "weather-fog",
+      thunderstorms: "weather-thunder",
+    };
+    const icon = symbols[WorkTimeApp.ui.weather?.iconFor(code)] || "cloud";
     use.setAttribute("href", "#icon-" + icon);
   }
   function refreshTabs() {
@@ -974,11 +986,11 @@
         tabs.push({
           id: "music",
           label: WorkTimeApp.ui.musicText("title"),
-          controls: "musicDialog",
+          controls: "musicPanel",
           icon: "music",
         });
     }
-    WorkTimeApp.ui.renderWorkspaceTabs(bar, tabs, (id) => {
+    tabController = WorkTimeApp.ui.renderWorkspaceTabs(bar, tabs, (id) => {
       if (id === "music") {
         WorkTimeApp.ui.music.open();
         return;
@@ -1025,6 +1037,8 @@
     exitCountdownFocus(false);
     disposed = true;
     directory.dispose();
+    dateSelectScope?.abort();
+    dateSelectView = null;
     events.dispose();
     WorkTimeApp.ui.renderWorkspaceTabs(bar, null);
     synchronizeTimer();
@@ -1053,34 +1067,21 @@
     if (!disposed) return;
     disposed = false;
     renderedView = null;
-    for (const button of dateSwitch.children) {
-      const id = button.dataset.view;
-      events.handler(button, "onclick", () => {
-        active = selectedDateView = id;
-        rememberTab();
-        render();
-        panel.scrollTop = 0;
-      });
-      events.handler(button, "onkeydown", (event) => {
-        if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
-          return;
-        event.preventDefault();
-        const available = [...dateSwitch.children].filter(
-          (button) => !button.hidden,
-        );
-        const position = available.indexOf(button);
-        const index =
-          event.key === "Home"
-            ? 0
-            : event.key === "End"
-              ? available.length - 1
-              : (position +
-                  (event.key === "ArrowRight" ? 1 : available.length - 1)) %
-                available.length;
-        available[index].click();
-        available[index].focus();
-      });
-    }
+    syncDateSelect();
+    dateSelectScope = new AbortController();
+    dateSelectView = WorkTimeApp.ui.workspaceViews.createWorkspaceSelect({
+      host: dateSwitch,
+      select: dateViewSelect,
+      label: dateViewLabel,
+      signal: dateSelectScope.signal,
+      prefix: "date-context-select",
+    });
+    events.listen(dateViewSelect, "change", () => {
+      active = selectedDateView = dateViewSelect.value;
+      rememberTab();
+      render();
+      panel.scrollTop = 0;
+    });
     badgeObserver.observe(notices, {
       subtree: true,
       childList: true,
@@ -1111,23 +1112,9 @@
     });
     const hideAlmanac = !WorkTimeApp.i18n.config.almanac;
     bar.setAttribute("aria-label", WorkTimeApp.i18n.t("copy.b0f0d53b40"));
-    dateSwitch.setAttribute(
-      "aria-label",
-      WorkTimeApp.i18n.t("copy.15245b56da"),
-    );
     if (hideAlmanac && active === "almanac")
       active = selectedDateView = defaultDateView;
-    for (const button of dateSwitch.children) {
-      const id = button.dataset.view;
-      button.hidden = hideAlmanac && id === "almanac";
-      button.querySelector("span").textContent = WorkTimeApp.i18n.t(
-        {
-          history: "copy.be78b20585",
-          festivals: "copy.860caf9fd7",
-          almanac: "copy.e393811f90",
-        }[id],
-      );
-    }
+    syncDateSelect();
     updateFocusButton();
     refreshTabs();
     rememberTab();
@@ -1179,7 +1166,7 @@
       );
     },
     selectTab(id) {
-      const button = [...bar.children].find((item) => item.dataset.tab === id);
+      const button = bar.querySelector('[data-tab="' + id + '"]');
       if (button && !disposed) button.click();
     },
     refreshLanguage,

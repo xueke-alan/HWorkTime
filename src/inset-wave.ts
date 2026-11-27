@@ -11,15 +11,7 @@ export const showInsetWave: ShowWaveEffect = (target, { component, event }) => {
 };
 
 export function playInsetWave(target: HTMLElement, event: MouseEvent) {
-  const motionPreference = document.documentElement.dataset.reducedMotion;
-  if (
-    motionPreference === "true" ||
-    (motionPreference === undefined &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches) ||
-    !target.isConnected ||
-    typeof target.animate !== "function"
-  )
-    return;
+  if (!target.isConnected || typeof target.animate !== "function") return;
 
   activeWaves.get(target)?.();
   const needsAnchor = getComputedStyle(target).position === "static";

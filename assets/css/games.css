@@ -68,10 +68,6 @@
   line-height: 1.5;
   text-align: center;
 }
-html[data-reduced-motion="true"] .game-idle-cover {
-  transition: none;
-  transform: none;
-}
 .games-panel[hidden],
 .game-shell[hidden] {
   display: none !important;
@@ -259,11 +255,3 @@ body .game-shell .workspace-toolbar .workspace-toolbar-action:disabled {
     padding: 8px;
   }
 }
-:where(html:where([data-reduced-motion="true"])) .game-button,
-  :where(html:where([data-reduced-motion="true"])) .game-menu-entry,
-  :where(html:where([data-reduced-motion="true"])) body .game-session .game-select-options > .game-button > .button-label {
-    transition: none;
-  }
-:where(html:where([data-reduced-motion="true"])) .game-shell .game-button:is(:hover, :active), :where(html:where([data-reduced-motion="true"])) .games-panel .game-menu-entry:is(:hover, :active), :where(html:where([data-reduced-motion="true"])) body .game-session .game-select-options > .game-button:hover > .button-label {
-    transform: none;
-  }

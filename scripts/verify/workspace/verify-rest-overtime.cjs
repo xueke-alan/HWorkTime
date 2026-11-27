@@ -111,6 +111,15 @@ async function verify() {
     }
     for (const date of ["2026-10-17", "2026-10-18", "2026-10-10"])
       assert.equal(await card(date).locator(".pill.overtime").count(), 0);
+    const backgrounds = (date) =>
+      card(date).evaluate((node) =>
+        ["::before", "::after"].map(
+          (pseudo) => getComputedStyle(node, pseudo).backgroundImage,
+        ),
+      );
+    for (const date of ["2026-10-01", "2026-10-17", "2026-10-24", "2026-10-25"])
+      assert.deepEqual(await backgrounds(date), ["none", "none"], date);
+    assert.match((await backgrounds("2026-10-02"))[0], /national-day\.svg/);
     assert.equal(await card("2026-10-24").locator(".overtime-plan").count(), 1);
     assert.equal(
       await card("2026-10-24").locator(".day-planned-label").textContent(),
@@ -287,13 +296,7 @@ async function verify() {
     await view.waitForFunction(
       () => !document.querySelector(".calendar-artwork-outgoing"),
     );
-    assert.equal(
-      await card("2026-10-31").evaluate(
-        (node) => getComputedStyle(node, "::before").opacity,
-      ),
-      "0.24",
-      "Release the reveal at the illustration's resting opacity",
-    );
+    assert.deepEqual(await backgrounds("2026-10-31"), ["none", "none"]);
     // A selected date becomes unavailable when the business day advances.
     await view.clock.setFixedTime(new Date("2026-10-24T04:00:00Z"));
     await view.evaluate(() => window.dispatchEvent(new Event("focus")));

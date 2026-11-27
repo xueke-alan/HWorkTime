@@ -218,13 +218,6 @@
 @keyframes gomoku-thinking-spin {
   to { transform: rotate(360deg); }
 }
-:where(html:where([data-reduced-motion="true"])) .gomoku-thinking-icon,
-:where(html:where([data-reduced-motion="true"])) .gomoku-thinking-gear {
-  animation: none !important;
-}
-:where(html:where([data-reduced-motion="true"])) .gomoku-thinking {
-  transition: none;
-}
 .gomoku-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

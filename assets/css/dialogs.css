@@ -1011,15 +1011,6 @@ body #importDialog {
   pointer-events: none;
   animation: backup-ripple 450ms ease-out both;
 }
-:where(html:where([data-reduced-motion="true"])) #oaShortcut .oa-link-icon,
-  :where(html:where([data-reduced-motion="true"])) #oaShortcut .oa-paperclip {
-    transition: none;
-    transition-delay: 0ms;
-  }
-:where(html:where([data-reduced-motion="true"])) #oaShortcut.is-completing .oa-icon-slot::after {
-    animation: none;
-    opacity: 0;
-  }
 #oaShortcut .hold-progress {
   stroke-width: 2.2;
 }

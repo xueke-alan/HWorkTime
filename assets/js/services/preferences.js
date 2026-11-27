@@ -156,11 +156,6 @@ WorkTimeApp.services.preferences = (() => {
       saveBackupAt(date, automatic) {
         return savePreference({ lastBackupAt: date, ...automatic });
       },
-      saveMotionMode(motionMode) {
-        if (!["system", "full", "reduce"].includes(motionMode))
-          throw Error("Invalid animation preference");
-        return savePreference({ motionMode });
-      },
       saveCalendarMascot(showCalendarMascot) {
         if (typeof showCalendarMascot !== "boolean")
           throw Error("Invalid calendar mascot preference");

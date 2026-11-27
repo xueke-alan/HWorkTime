@@ -155,9 +155,22 @@ const WorkTimeDomainStatistics = (() => {
         ? overtimeMinutes / (overtimeDays.length || 1)
         : null,
       maximumOvertime,
-      lateCounts: [1140, 1200, 1260].map((threshold) => ({
-        threshold,
-        count: days.filter((day) => day.end > threshold).length,
+      departureDistribution: [
+        { key: "departureScheduled", start: null, end: 1230 },
+        { key: "departure2030", start: 1230, end: 1260 },
+        { key: "departure2100", start: 1260, end: 1320 },
+        { key: "departure2200", start: 1320, end: null },
+      ].map((interval) => ({
+        ...interval,
+        count: days.filter((day) => {
+          const start =
+            interval.start ?? timeMin(scheduleForDate(state, day.date).workEnd);
+          return (
+            start !== null &&
+            day.end >= start &&
+            (interval.end === null || day.end < interval.end)
+          );
+        }).length,
       })),
       medianStart: median("start"),
       medianEnd: median("end"),
@@ -213,6 +226,10 @@ const WorkTimeDomainStatistics = (() => {
       averageEndChange: comparable
         ? current.averageEnd - previous.averageEnd
         : null,
+      dailyOvertimeChange: comparable
+        ? current.overtimeMinutes / current.count -
+          previous.overtimeMinutes / previous.count
+        : null,
       overtimeRatioChange: comparable
         ? 100 *
           (current.overtimeDays / current.count -
@@ -220,6 +237,11 @@ const WorkTimeDomainStatistics = (() => {
         : null,
       overtimeMinutesChange: comparable
         ? current.overtimeMinutes - previous.overtimeMinutes
+        : null,
+      lateRatioChange: comparable
+        ? 100 *
+          (current.lateDays / current.count -
+            previous.lateDays / previous.count)
         : null,
     };
   }

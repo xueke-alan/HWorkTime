@@ -243,6 +243,25 @@ WorkTimeApp.services.vocabularyIdle = (() => {
       verification = false;
     }
     if (!allowed(token)) return;
+    // A hydrated index already accounts for every word/example and accent.
+    // Replaying cache hits through the speech pool can take hours for a large
+    // library and leave the footer showing an old preparation phase throughout.
+    const progress = cache.progress();
+    if (
+      cache.state.indexStatus === "ready" &&
+      progress.progressExact &&
+      progress.audioTotal > 0 &&
+      progress.generatedTotal === progress.audioTotal
+    ) {
+      queue = [];
+      queueIndex = 0;
+      queueNeedsRefresh = false;
+      total = progress.audioTotal;
+      preparation = "";
+      release();
+      notify("complete");
+      return;
+    }
     if (!queue || queueNeedsRefresh) {
       preparation = "buildingQueue";
       notify();
@@ -364,11 +383,6 @@ WorkTimeApp.services.vocabularyIdle = (() => {
       schedule();
       return;
     }
-    if (!interactionAllowed()) {
-      notify("waiting");
-      schedule();
-      return;
-    }
     if (
       !verification &&
       state === "complete" &&
@@ -376,6 +390,11 @@ WorkTimeApp.services.vocabularyIdle = (() => {
       queueIndex >= queue.length
     ) {
       schedule(10000);
+      return;
+    }
+    if (!interactionAllowed()) {
+      notify("waiting");
+      schedule();
       return;
     }
     running = true;
@@ -654,7 +673,7 @@ WorkTimeApp.services.vocabularyIdle = (() => {
           ["loading", "generating"].includes(
             WorkTimeApp.services.vocabularySpeech?.status,
           ),
-        completed: finishedAudio.size,
+        completed: state === "complete" ? total : finishedAudio.size,
         total,
         verifyingCache: verification,
         ...(WorkTimeApp.services.vocabularyAudioCache?.progress(

@@ -1,0 +1,298 @@
+/* Permanent right sidebar: header, scrollable view area, function area. */
+body .workspace > .editor {
+  --editor-gutter: 15px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}
+body .editor > .sidebar-header {
+  background: var(--paper, #fff);
+}
+body .editor > .sidebar-header {
+  flex: none;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  height: var(--column-header-height, 68px);
+  min-height: var(--column-header-height, 68px);
+  border-bottom: 1px solid var(--line);
+  overflow: hidden;
+}
+body .editor .sidebar-header > [data-sidebar-heading] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0 15px;
+  border: 0;
+  text-align: center;
+  background: transparent;
+  font: 650 20px/1.3 var(--font-ui);
+}
+/* The mixed numeric/CJK font has more space below its visible strokes. */
+body
+  .editor
+  .sidebar-header
+  > [data-sidebar-heading]
+  > :is(.editor-date, h2, p) {
+  position: relative;
+  top: 2px;
+}
+body
+  .editor
+  .sidebar-header
+  :is(.editor-date, h2, .calendar-today-number, .calendar-today-weekday) {
+  margin: 0;
+  font: inherit;
+  line-height: 1.3;
+  text-align: center;
+  transform: none;
+  translate: none;
+}
+body .editor .sidebar-header > [hidden] {
+  display: none !important;
+}
+body .editor .sidebar-header #editorDate {
+  font-size: 24px;
+}
+body .editor .sidebar-header #editorDate .calendar-today-date {
+  gap: 0.2em;
+}
+body .editor .sidebar-header #editorDate .calendar-today-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2ch;
+}
+body .editor .sidebar-header #editorDate .year-month-day {
+  width: 2ch;
+}
+body
+  .editor
+  .sidebar-header
+  #editorDate
+  .has-word-month
+  .year-month-month:not(.year-month-day) {
+  width: auto;
+}
+body .editor .sidebar-header #editorDate .year-month-day .summary-number-digit {
+  text-align: center;
+}
+body
+  .editor
+  .sidebar-header
+  #editorDate
+  .calendar-today-number
+  > .summary-number {
+  transform: none;
+}
+body .editor .sidebar-header #editorDate .calendar-date-divider {
+  width: 0.45em;
+  height: 0.9em;
+  align-self: center;
+  /* Align with the visible digit strokes, rather than the taller line box. */
+  transform: translateY(-0.0625em);
+}
+body .editor > .sidebar-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+body .editor .editor-content {
+  --editor-gutter: 15px;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 15px;
+}
+body .editor #dayEditor {
+  flex: 1;
+  min-height: 100%;
+}
+body .editor #analysisSidebar {
+  margin: 0;
+}
+body .editor #analysisSidebar .analysis-sidebar-section {
+  margin-inline: 0;
+  margin-top: 0;
+}
+body
+  .editor
+  #analysisSidebar
+  .analysis-sidebar-section
+  + .analysis-sidebar-section {
+  margin-top: 12px;
+}
+body .editor #analysisSidebar .analysis-sidebar-section:last-child {
+  margin-bottom: 0;
+}
+body .editor .page-settings-body,
+body .editor #settingsForm .dialog-body,
+body .editor #personalSettingsForm .personal-settings-fields {
+  padding-inline: 15px;
+}
+body .editor .settings-tab-commands[hidden] {
+  display: none !important;
+}
+body .editor .settings-option-tabs {
+  flex: none;
+  padding-inline: 15px;
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+body .editor .settings-option-tabs > .ant-tabs-nav {
+  margin: 0;
+}
+body .editor .settings-option-tabs > .ant-tabs-content-holder {
+  display: none;
+}
+body .editor .settings-option-tabs .ant-tabs-tab {
+  padding: 10px 8px;
+  font-size: 14px;
+}
+body .editor .settings-option-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--ui-accent);
+  text-shadow: none;
+}
+body .editor .settings-option-tabs .ant-tabs-ink-bar {
+  background: var(--ui-accent);
+}
+body .editor > .sidebar-functions {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 clamp(260px, 29.166667%, 320px);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+body .editor .sidebar-functions > .date-info-area {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+}
+body .editor .date-info-area > :is(#editorInfo, #dateInfoPanel, .tools-panel) {
+  padding-inline: 15px;
+}
+body .editor .date-context-header {
+  padding-inline: 15px;
+}
+body .editor .date-context-header::after {
+  inset-inline: 15px;
+}
+body .editor .date-context-switch {
+  min-width: 0;
+  max-width: 50%;
+}
+body .editor .date-context-switch > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+body .editor .date-context-select-trigger {
+  min-width: 90px;
+  width: 100%;
+}
+body .editor .notification-tabs {
+  flex: none;
+  display: block;
+  min-height: 0;
+  box-sizing: border-box;
+  background: var(--theme-surface-paper);
+}
+.function-tabs-host,
+.function-tabs.ant-tabs {
+  height: 100%;
+  min-width: 0;
+}
+.function-tabs.ant-tabs {
+  color: var(--muted);
+  font-family: var(--font-ui);
+}
+.function-tabs.ant-tabs > .ant-tabs-content-holder {
+  display: none;
+}
+.function-tabs.ant-tabs > .ant-tabs-nav {
+  height: 100%;
+  margin: 0;
+}
+.function-tabs .ant-tabs-nav-wrap {
+  flex: 1;
+}
+.function-tabs .ant-tabs-nav-list {
+  width: 100%;
+}
+.function-tabs .ant-tabs-tab {
+  flex: 1;
+  justify-content: center;
+  padding: 0;
+  min-width: 0;
+  margin: 0;
+}
+body .editor .function-tabs .notification-tab {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+  color: var(--muted);
+  background: transparent;
+  margin: 0;
+}
+body .editor .function-tabs .notification-tab::before,
+body .editor .function-tabs .notification-tab::after {
+  content: none;
+}
+.function-tab-icon {
+  display: flex;
+}
+.function-tab-icon svg {
+  width: 14px;
+  height: 14px;
+}
+body .editor .function-tabs .ant-tabs-tab-active .notification-tab {
+  color: var(--ui-accent);
+  background: var(--theme-surface-subtle);
+}
+.function-tabs .ant-tabs-ink-bar {
+  background: var(--ui-accent);
+}
+body .editor.is-vocabulary-open:not(.is-page-settings-open) > .sidebar-content {
+  display: none;
+}
+body
+  .editor.is-vocabulary-open:not(.is-page-settings-open)
+  > .sidebar-functions {
+  flex: 1;
+}
+body .agenda-mode .editor > .sidebar-functions {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+body
+  .agenda-mode
+  .editor:is(.is-settings-open, .is-page-settings-open)
+  > .sidebar-functions {
+  flex-basis: clamp(260px, 29.166667%, 320px);
+}
+@media (max-width: 1150px) {
+  body .workspace > .editor {
+    height: 80dvh;
+    min-height: 600px;
+  }
+  body .editor > .sidebar-functions {
+    flex-basis: 260px;
+  }
+}

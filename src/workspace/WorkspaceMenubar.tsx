@@ -60,7 +60,11 @@ export default function WorkspaceMenubar() {
         "aria-pressed",
       ],
     });
-    for (const button of [batchToggle.current!, settingsToggle.current!])
+    for (const button of [
+      batchToggle.current!,
+      settingsToggle.current!,
+      document.getElementById("monthTitle")!,
+    ])
       observer.observe(button, { attributeFilter: ["aria-pressed"] });
     window.addEventListener("hashchange", refresh);
     refresh();
@@ -77,12 +81,17 @@ export default function WorkspaceMenubar() {
     "agendaMode",
   ) as HTMLButtonElement | null;
   const development = WorkTimeApp.isDevelopmentEnabled();
+  const yearMode =
+    document.getElementById("monthTitle")?.getAttribute("aria-pressed") ===
+    "true";
   const current =
     analysis?.getAttribute("aria-pressed") === "true"
       ? "analysis"
       : development && agenda?.getAttribute("aria-pressed") === "true"
         ? "agenda"
-        : "calendar";
+        : yearMode
+          ? ""
+          : "calendar";
   const selectedView =
     pending?.view === "agenda" && !development
       ? current
@@ -202,7 +211,7 @@ export default function WorkspaceMenubar() {
             />
             <span className="workspace-view-divider" aria-hidden="true" />
           </div>
-          <ToolbarSegmented<WorkspaceView>
+          <ToolbarSegmented<WorkspaceView | "">
             controlRef={viewControl}
             className="workspace-views"
             aria-label={t("workspace.views")}
@@ -214,6 +223,7 @@ export default function WorkspaceMenubar() {
               disabled,
             }))}
             onChange={async (view) => {
+              if (!view) return;
               const request = { view };
               setPending(request);
               try {
@@ -292,8 +302,8 @@ export default function WorkspaceMenubar() {
             id="analysisToggle"
             data-action-hint=""
             htmlType="button"
-            aria-label="作息分析"
-            data-hint-text="作息分析"
+            aria-label="分析"
+            data-hint-text="分析"
             aria-controls="analysisPage"
             aria-pressed="false"
             data-i18n-aria-label="analysis.toggle"

@@ -11,27 +11,33 @@ export default function CalendarPanel() {
             <section
               id="analysisPage"
               className="analysis-page"
-              aria-labelledby="analysisHeading"
+              data-i18n-aria-label="analysis.title"
+              aria-label="本月作息"
               hidden
             >
-              <div className="analysis-heading">
-                <div className="analysis-title">
-                  <h2
-                    id="analysisHeading"
-                    data-i18n-text='{"0":"analysis.title"}'
-                  >
-                    本月作息
-                  </h2>
-                </div>
-              </div>
               <AnalysisMetrics />
               <div id="analysisDetails">
-                <div className="analysis-chart-heading">
-                  <div className="analysis-section-title">
-                    <h2 data-i18n-text='{"0":"analysis.dailyChart"}'>
-                      每日上下班
-                    </h2>
-                  </div>
+                <div
+                  id="analysisChart"
+                  className="analysis-chart"
+                  tabIndex={0}
+                  role="region"
+                  data-i18n-aria-label="analysis.chart"
+                  aria-label="每日上下班时间"
+                >
+                  <div
+                    id="analysisPlot"
+                    className="analysis-plot-viewport"
+                  ></div>
+                  <div
+                    id="analysisHover"
+                    className="analysis-hover"
+                    aria-live="polite"
+                    aria-atomic="true"
+                    hidden
+                  ></div>
+                </div>
+                <div className="analysis-legends">
                   <span className="analysis-chart-legend">
                     <span>
                       <i className="analysis-legend-dot" aria-hidden="true"></i>
@@ -67,31 +73,11 @@ export default function CalendarPanel() {
                       </span>
                     </span>
                   </span>
-                </div>
-                <div
-                  id="analysisChart"
-                  className="analysis-chart"
-                  tabIndex={0}
-                  role="region"
-                  data-i18n-aria-label="analysis.chart"
-                  aria-label="每日上下班时间"
-                >
                   <div
-                    id="analysisPlot"
-                    className="analysis-plot-viewport"
-                  ></div>
-                  <div
-                    id="analysisHover"
-                    className="analysis-hover"
-                    aria-live="polite"
-                    aria-atomic="true"
-                    hidden
+                    id="analysisTimelineLegend"
+                    className="analysis-timeline-legend"
                   ></div>
                 </div>
-                <div
-                  id="analysisTimelineLegend"
-                  className="analysis-timeline-legend"
-                ></div>
               </div>
             </section>
             <div className="weekdays">

@@ -23,34 +23,17 @@ WorkTimeApp.ui.createCalendar = function (options) {
     document,
     numbers,
     weatherLayer,
+    now = () => new Date(),
   } = options;
+  let workEndTimer = null;
   let renderedMode = null,
     renderedSelection = null,
     renderedYearMode = null;
   const oaRecordActions = $("oaRecordActions"),
     sidebarMonthText = $("sidebarYearMonthText"),
     sidebarMonthSlot = sidebarMonthText.parentElement;
-  function renderYearMonth(
-    label,
-    year,
-    month,
-    { wordMonth = false, animateInitial = true, motion = true } = {},
-  ) {
-    label.classList.toggle("has-word-month", wordMonth);
-    label.classList.toggle(
-      "has-single-digit-month",
-      !wordMonth && month.length === 1,
-    );
-    numbers.set(label.querySelector(".year-month-year"), String(year), {
-      animateInitial,
-      motion,
-    });
-    numbers.set(label.querySelector(".year-month-month"), month, {
-      animateInitial: animateInitial && !wordMonth,
-      animateWhole: wordMonth,
-      animateWholeOnLengthChange: !wordMonth,
-      motion,
-    });
+  function renderYearMonth(label, year, month, options = {}) {
+    WorkTimeApp.ui.renderYearMonth(label, year, month, { ...options, numbers });
   }
   function updateSidebarYearMonth(showMonth, month) {
     if (showMonth && sidebarMonthText.dataset.month !== month) {
@@ -65,6 +48,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
     }
     if (showMonth && oaRecordActions.contains(document.activeElement))
       $("monthTitle").focus({ preventScroll: true });
+    WorkTimeApp.ui.workspaceViews.oaActions.yearMode = showMonth;
     oaRecordActions.parentElement.classList.toggle("is-year-mode", showMonth);
     oaRecordActions.inert = showMonth;
     oaRecordActions.setAttribute("aria-hidden", String(showMonth));
@@ -189,9 +173,10 @@ WorkTimeApp.ui.createCalendar = function (options) {
   }
   function sourceIndicator(day, record) {
     const manual = WorkTimeApp.domain.records.manualSource(day),
-      both = !!(day.oa && manual),
+      oa = day.oa && (day.oa.start || day.oa.end) ? day.oa : null,
+      both = !!(oa && manual),
       priority =
-        !day.oa || (both && day.sourcePriority === "manual") ? "manual" : "oa";
+        !oa || (both && day.sourcePriority === "manual") ? "manual" : "oa";
     if (!both && !record) return "";
     let hint = WorkTimeApp.i18n.t("source." + priority);
     if (record?.filledStart)
@@ -208,7 +193,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
       ? '<button data-ui="button" type="button" class="record-source-pair source-toggle ' +
           priority +
           '" data-source-date="' +
-          day.oa.date +
+          oa.date +
           '" data-hint-text="' +
           esc(hint) +
           '" aria-label="' +
@@ -477,6 +462,8 @@ WorkTimeApp.ui.createCalendar = function (options) {
     );
   }
   function renderCalendar(keepLeavePanel = false) {
+    window.clearTimeout(workEndTimer);
+    workEndTimer = null;
     const state = getState();
     const {
       today,
@@ -699,6 +686,15 @@ WorkTimeApp.ui.createCalendar = function (options) {
         markers = dateMarkers(k, payday, paydayHint),
         kindLabel =
           calendarKind(info) + (info.work ? " " + ++workdayNumber : "");
+      if (label === "waiting")
+        workEndTimer = window.setTimeout(
+          () => renderCalendar(true),
+          Math.max(
+            1,
+            Date.parse(k + "T" + schedule.workEnd + ":00+08:00") -
+              now().getTime(),
+          ),
+        );
       if (r && C.complete(r)) {
         counts[r.type === "estimate" ? "estimate" : "actual"]++;
       } else if (day.oa && day.oa.status === "pending") counts.pending++;
@@ -765,20 +761,24 @@ WorkTimeApp.ui.createCalendar = function (options) {
           : r && C.complete(r)
             ? timePart(
                 r.start || WorkTimeApp.i18n.t("copy.e7909cfbfe"),
-                r.filledStart,
+                r.manual || r.filledStart,
               ) +
               (r.end
-                ? " – " + timePart(r.end + (r.nextDay ? "⁺¹" : ""), r.filledEnd)
+                ? " – " +
+                  timePart(
+                    r.end + (r.nextDay ? "⁺¹" : ""),
+                    r.manual || r.filledEnd,
+                  )
                 : "")
             : r
               ? timePart(
                   r.start || WorkTimeApp.i18n.t("copy.7c8d65e331"),
-                  r.filledStart,
+                  !!r.start && (r.manual || r.filledStart),
                 ) +
                 " – " +
                 timePart(
                   r.end || WorkTimeApp.i18n.t("copy.7c8d65e331"),
-                  r.filledEnd,
+                  !!r.end && (r.manual || r.filledEnd),
                 )
               : "",
         sourceDot = showPlannedHours ? "" : sourceIndicator(day, r);
@@ -894,7 +894,7 @@ WorkTimeApp.ui.createCalendar = function (options) {
                 ? "red"
                 : label === "pending"
                   ? "amber"
-                  : r && r.manual
+                  : label === "waiting" || (r && r.manual)
                     ? "blue"
                     : label === "absent"
                       ? ""
@@ -1293,5 +1293,11 @@ WorkTimeApp.ui.createCalendar = function (options) {
       });
     });
   }
-  return { monthWorkdayNumber, adjacentDayCard, renderCalendar, renderYear };
+  return {
+    monthWorkdayNumber,
+    adjacentDayCard,
+    renderCalendar,
+    renderYear,
+    dispose: () => window.clearTimeout(workEndTimer),
+  };
 };

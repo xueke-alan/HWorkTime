@@ -104,7 +104,6 @@ body .game-garden .garden-flight { position: absolute; transform-origin: top lef
   .garden-actions > .game-button { min-width: 60px; height: 54px; }
   .garden-footer { min-height: 70px; }
 }
-:where(html:where([data-reduced-motion="true"])) .game-garden *, :where(html:where([data-reduced-motion="true"])) .game-garden *::after { animation: none !important; transition: none !important; }
 @container (width < 700px) {
   .game-garden,
   .garden-play {

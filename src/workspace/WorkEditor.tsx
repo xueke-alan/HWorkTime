@@ -1,12 +1,152 @@
 import Button from "antd/es/button";
-import { moveTabFocus } from "./tab-keyboard";
+import { SidebarLayout, SidebarHeader } from "./SidebarLayout";
 import AnalysisSidebar from "../analysis/AnalysisSidebar";
 import SettingsPane from "./SettingsPane";
 
 export default function WorkEditor() {
   return (
     <>
-      <aside className="panel editor" data-ui="panel">
+      <SidebarLayout
+        functions={
+          <>
+            <div className="date-info-area">
+              <section
+                id="editorInfo"
+                className="editor-info"
+                role="tabpanel"
+                aria-labelledby="date-tab-notifications"
+              >
+                <div
+                  id="feedbackList"
+                  className="feedback-list"
+                  aria-live="polite"
+                  aria-atomic="false"
+                  data-ui="status"
+                  role="status"
+                ></div>
+                <div id="storageNotice" className="hidden" role="alert">
+                  <span id="storageNoticeText"></span>
+                  <div className="storage-recovery-actions" data-ui="toolbar">
+                    <Button
+                      id="retryStorage"
+                      htmlType="button"
+                      className="hw-button ui-button"
+                    >
+                      <span
+                        className="button-label"
+                        data-i18n-text='{"0":"copy.4fab98659c"}'
+                      >
+                        重新检查
+                      </span>
+                    </Button>
+                    <Button
+                      id="exportCorruptStorage"
+                      htmlType="button"
+                      hidden
+                      className="hw-button ui-button"
+                    >
+                      <span
+                        className="button-label"
+                        data-i18n-text='{"0":"copy.8e8c503a51"}'
+                      >
+                        导出无法读取的原始数据
+                      </span>
+                    </Button>
+                    <Button
+                      id="restoreStorage"
+                      htmlType="button"
+                      hidden
+                      className="hw-button ui-button"
+                    >
+                      <span
+                        className="button-label"
+                        data-i18n-text='{"0":"copy.35a251c943"}'
+                      >
+                        恢复备份
+                      </span>
+                    </Button>
+                    <Button
+                      id="initializeStorage"
+                      htmlType="button"
+                      hidden
+                      className="hw-button ui-button danger"
+                    >
+                      <span
+                        className="button-label"
+                        data-i18n-text='{"0":"copy.4e07c587e5"}'
+                      >
+                        初始化存档
+                      </span>
+                    </Button>
+                    <a
+                      className="ui-button"
+                      id="convertStorage"
+                      href="tools/convert-backup.html"
+                      target="_blank"
+                      rel="noopener"
+                      hidden
+                      data-i18n-text='{"0":"copy.3150220769"}'
+                    >
+                      打开备份转换工具
+                    </a>
+                  </div>
+                </div>
+                <div
+                  id="timeAnomalyNotice"
+                  className="hidden"
+                  role="alert"
+                ></div>
+                <div id="oaStaleNotice" className="hidden" role="alert"></div>
+                <div
+                  id="setupNotice"
+                  className="notice hidden"
+                  data-i18n-text='{"0":"copy.bc45d8544a"}'
+                >
+                  请设置作息与休息时段。
+                  <Button
+                    id="setupButton"
+                    className="hw-button ui-button"
+                    htmlType="button"
+                  >
+                    <span
+                      className="button-label"
+                      data-i18n-text='{"0":"copy.996681903f"}'
+                    >
+                      填写规则
+                    </span>
+                  </Button>
+                </div>
+                <div
+                  id="yearNotice"
+                  className="notice hidden"
+                  data-i18n-text='{"0":"copy.ac6fd9ce70"}'
+                >
+                  本年无节假日数据，按周一至周五统计。
+                </div>
+                <div
+                  id="notificationEmpty"
+                  className="notification-empty hidden"
+                >
+                  <svg className="ui-icon" aria-hidden="true">
+                    <use href="#icon-notifications-off" />
+                  </svg>
+                  <span data-i18n-text='{"0":"copy.9f144d4667"}'>
+                    暂无通知或异常
+                  </span>
+                </div>
+              </section>
+              <section
+                id="dateInfoPanel"
+                className="date-info-panel"
+                hidden
+                role="tabpanel"
+                tabIndex={0}
+              ></section>
+            </div>
+            <div className="notification-tabs"></div>
+          </>
+        }
+      >
         <div className="editor-content">
           <section
             id="yearAnalysisSidebar"
@@ -14,7 +154,7 @@ export default function WorkEditor() {
             hidden
             aria-labelledby="yearAnalysisTitle"
           >
-            <header className="year-analysis-header">
+            <SidebarHeader className="year-analysis-header">
               <h2
                 id="yearAnalysisTitle"
                 className="editor-date"
@@ -22,7 +162,7 @@ export default function WorkEditor() {
               >
                 年度报告
               </h2>
-            </header>
+            </SidebarHeader>
             <div id="yearAnalysisCards" className="year-analysis-cards">
               {Array.from({ length: 7 }, (_, index) => (
                 <article
@@ -43,9 +183,9 @@ export default function WorkEditor() {
             aria-label="批量填写"
             data-i18n-aria-label="copy.3f712eac83"
           >
-            <div className="batch-editor-header editor-mode-header">
+            <SidebarHeader className="batch-editor-header editor-mode-header">
               <h2 data-i18n-text='{"0":"copy.3f712eac83"}'>批量填写</h2>
-            </div>
+            </SidebarHeader>
             <form id="batchForm" className="batch-inline-form editor-mode-form">
               <div
                 id="batchInputSection"
@@ -355,9 +495,9 @@ export default function WorkEditor() {
             </form>
           </section>
           <div id="dayEditor" className="editor-mode">
-            <div className="editor-day-header editor-mode-header">
+            <SidebarHeader className="editor-day-header editor-mode-header">
               <div id="editorDate" className="editor-date"></div>
-            </div>
+            </SidebarHeader>
             <form id="dayForm" className="editor-mode-form">
               <div className="two time-fields editor-time-fields">
                 <div className="field" data-ui="field">
@@ -675,140 +815,7 @@ export default function WorkEditor() {
           </div>
         </div>
         <SettingsPane />
-        <div className="date-info-area">
-          <section
-            id="editorInfo"
-            className="editor-info"
-            role="tabpanel"
-            aria-labelledby="date-tab-notifications"
-          >
-            <div
-              id="feedbackList"
-              className="feedback-list"
-              aria-live="polite"
-              aria-atomic="false"
-              data-ui="status"
-              role="status"
-            ></div>
-            <div id="storageNotice" className="hidden" role="alert">
-              <span id="storageNoticeText"></span>
-              <div className="storage-recovery-actions" data-ui="toolbar">
-                <Button
-                  id="retryStorage"
-                  htmlType="button"
-                  className="hw-button ui-button"
-                >
-                  <span
-                    className="button-label"
-                    data-i18n-text='{"0":"copy.4fab98659c"}'
-                  >
-                    重新检查
-                  </span>
-                </Button>
-                <Button
-                  id="exportCorruptStorage"
-                  htmlType="button"
-                  hidden
-                  className="hw-button ui-button"
-                >
-                  <span
-                    className="button-label"
-                    data-i18n-text='{"0":"copy.8e8c503a51"}'
-                  >
-                    导出无法读取的原始数据
-                  </span>
-                </Button>
-                <Button
-                  id="restoreStorage"
-                  htmlType="button"
-                  hidden
-                  className="hw-button ui-button"
-                >
-                  <span
-                    className="button-label"
-                    data-i18n-text='{"0":"copy.35a251c943"}'
-                  >
-                    恢复备份
-                  </span>
-                </Button>
-                <Button
-                  id="initializeStorage"
-                  htmlType="button"
-                  hidden
-                  className="hw-button ui-button danger"
-                >
-                  <span
-                    className="button-label"
-                    data-i18n-text='{"0":"copy.4e07c587e5"}'
-                  >
-                    初始化存档
-                  </span>
-                </Button>
-                <a
-                  className="ui-button"
-                  id="convertStorage"
-                  href="tools/convert-backup.html"
-                  target="_blank"
-                  rel="noopener"
-                  hidden
-                  data-i18n-text='{"0":"copy.3150220769"}'
-                >
-                  打开备份转换工具
-                </a>
-              </div>
-            </div>
-            <div id="timeAnomalyNotice" className="hidden" role="alert"></div>
-            <div id="oaStaleNotice" className="hidden" role="alert"></div>
-            <div
-              id="setupNotice"
-              className="notice hidden"
-              data-i18n-text='{"0":"copy.bc45d8544a"}'
-            >
-              请设置作息与休息时段。
-              <Button
-                id="setupButton"
-                className="hw-button ui-button"
-                htmlType="button"
-              >
-                <span
-                  className="button-label"
-                  data-i18n-text='{"0":"copy.996681903f"}'
-                >
-                  填写规则
-                </span>
-              </Button>
-            </div>
-            <div
-              id="yearNotice"
-              className="notice hidden"
-              data-i18n-text='{"0":"copy.ac6fd9ce70"}'
-            >
-              本年无节假日数据，按周一至周五统计。
-            </div>
-            <div id="notificationEmpty" className="notification-empty hidden">
-              <svg className="ui-icon" aria-hidden="true">
-                <use href="#icon-notifications-off" />
-              </svg>
-              <span data-i18n-text='{"0":"copy.9f144d4667"}'>
-                暂无通知或异常
-              </span>
-            </div>
-          </section>
-          <section
-            id="dateInfoPanel"
-            className="date-info-panel"
-            hidden
-            role="tabpanel"
-            tabIndex={0}
-          ></section>
-        </div>
-        <div
-          className="notification-tabs"
-          data-ui="tablist"
-          role="tablist"
-          onKeyDown={moveTabFocus}
-        ></div>
-      </aside>
+      </SidebarLayout>
     </>
   );
 }

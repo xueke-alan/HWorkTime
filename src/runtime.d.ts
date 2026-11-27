@@ -3,7 +3,6 @@ interface Preferences {
   pageTheme?: string;
   weatherDays?: number;
   language?: string;
-  motionMode?: string;
   showCalendarMascot?: boolean;
 }
 interface SaveResult {

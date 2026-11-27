@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useLanguage } from "../ApplicationTheme";
 
-const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const artwork = (
   <span className="calendar-mascot-art" aria-hidden="true">
     <img
@@ -19,22 +18,6 @@ export const showCalendarMascot = () =>
 
 function observePreferences(notify: () => void) {
   return WorkTimeApp.services.preferences.page.subscribe(notify);
-}
-
-function readReducedMotion() {
-  return (
-    reducedMotion.matches ||
-    document.documentElement.dataset.reducedMotion === "true"
-  );
-}
-
-function observeReducedMotion(notify: () => void) {
-  reducedMotion.addEventListener("change", notify);
-  document.addEventListener("worktime:motionchange", notify);
-  return () => {
-    reducedMotion.removeEventListener("change", notify);
-    document.removeEventListener("worktime:motionchange", notify);
-  };
 }
 
 function InteractiveCat() {
@@ -64,17 +47,10 @@ function InteractiveCat() {
 
 export default function CalendarMascot() {
   const visible = useSyncExternalStore(observePreferences, showCalendarMascot);
-  const reduce = useSyncExternalStore(observeReducedMotion, readReducedMotion);
   if (!visible) return null;
   return (
     <div className="calendar-mascot-perch">
-      {reduce ? (
-        <span className="calendar-mascot" aria-hidden="true">
-          {artwork}
-        </span>
-      ) : (
-        <InteractiveCat />
-      )}
+      <InteractiveCat />
     </div>
   );
 }

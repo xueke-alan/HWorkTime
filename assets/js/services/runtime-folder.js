@@ -385,6 +385,7 @@ WorkTimeApp.services.runtimeFolder = (() => {
         const directory = await prepareBackups(backups, directoryPath);
         let writable;
         let uniqueName;
+        let written = false;
         try {
           // A UUID also protects files created in the same second or another page.
           const dot = name.lastIndexOf(".");
@@ -396,16 +397,22 @@ WorkTimeApp.services.runtimeFolder = (() => {
           writable = await file.createWritable();
           await writable.write(text);
           await writable.close();
+          written = true;
+          if (kind !== "manual")
+            await pruneBackups(directory, kind === "hour" ? 72 : 14);
           status = "available";
           detail = "";
           return true;
         } catch (error) {
-          try {
-            await writable?.abort();
-          } catch {}
-          try {
-            if (uniqueName) await directory.removeEntry(uniqueName);
-          } catch {}
+          // A cleanup failure must preserve the newly committed backup.
+          if (!written) {
+            try {
+              await writable?.abort();
+            } catch {}
+            try {
+              if (uniqueName) await directory.removeEntry(uniqueName);
+            } catch {}
+          }
           throw fail(
             error.name === "NotAllowedError" ? "permission" : "failed",
             "backups/" + directoryPath,
@@ -413,6 +420,28 @@ WorkTimeApp.services.runtimeFolder = (() => {
         }
       }),
     );
+  }
+  async function pruneBackups(directory, limit) {
+    const files = [];
+    for await (const [name, entry] of directory.entries()) {
+      if (entry.kind !== "file") continue;
+      // Read the timestamp independently of the localized filename prefix.
+      const match = name.match(/(\d{8}-\d{6})(?:-[0-9a-f-]{36})?\.json$/i);
+      if (match)
+        files.push({
+          name,
+          timestamp: match[1],
+          modified: (await entry.getFile()).lastModified,
+        });
+    }
+    files.sort(
+      (a, b) =>
+        a.timestamp.localeCompare(b.timestamp) ||
+        a.modified - b.modified ||
+        a.name.localeCompare(b.name),
+    );
+    for (const file of files.slice(0, Math.max(0, files.length - limit)))
+      await directory.removeEntry(file.name);
   }
   async function prepareBackups(backups, selectedPath) {
     const directories = new Map([["", backups]]);

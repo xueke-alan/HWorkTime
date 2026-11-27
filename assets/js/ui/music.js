@@ -992,6 +992,10 @@ WorkTimeApp.ui.music = (() => {
       "aria-label",
       `${entry.dataset.hintText}${!state.paused ? " · " + t("play") : ""}`,
     );
+    if (entry.classList.contains("ant-tabs-tab-btn")) {
+      entry.setAttribute("aria-expanded", String(expansion.isOpen));
+      return;
+    }
     if (presentation === "mini") {
       entry.setAttribute("role", "tab");
       entry.removeAttribute("aria-haspopup");

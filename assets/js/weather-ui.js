@@ -51,9 +51,34 @@
       ? "daily"
       : "hourly";
   }
+  let resumeFrame = 0;
+  let resumeCount = 0;
   let mountedRoot = null;
   let mounted = false;
   let viewEvents = null;
+  function resumeImages(root) {
+    if (!root || WorkTimeApp.ui.animationCompat.preference().matches) return;
+    const revision = Date.now() + "-" + ++resumeCount;
+    for (const image of root.querySelectorAll(
+      ".calendar-weather-icon img, .weather-day-icon img",
+    )) {
+      const src = image.getAttribute("src")?.split("?")[0];
+      if (src?.startsWith("assets/icons/meteocons/svg/"))
+        image.src = src + "?resume=" + revision;
+    }
+  }
+  function onVisibility() {
+    cancelAnimationFrame(resumeFrame);
+    resumeFrame = 0;
+    if (document.hidden || WorkTimeApp.ui.animationCompat.preference().matches)
+      return;
+    resumeFrame = requestAnimationFrame(() => {
+      resumeFrame = 0;
+      if (document.hidden) return;
+      // A fresh SVG image resource restarts SMIL after background-tab suspension.
+      resumeImages(mountedRoot);
+    });
+  }
   function releaseView() {
     viewEvents?.abort();
     viewEvents = null;
@@ -62,9 +87,12 @@
       .forEach((view) => WorkTimeApp.ui.motion?.stop(view));
   }
   function dispose() {
+    cancelAnimationFrame(resumeFrame);
+    resumeFrame = 0;
     releaseView();
     mounted = false;
     mountedRoot = null;
+    document.removeEventListener("visibilitychange", onVisibility);
     document.removeEventListener("worktime:failed", dispose);
     g.removeEventListener("pagehide", dispose);
   }
@@ -73,28 +101,20 @@
     mountedRoot = root;
     if (mounted) return;
     mounted = true;
+    document.addEventListener("visibilitychange", onVisibility);
     document.addEventListener("worktime:failed", dispose);
     g.addEventListener("pagehide", dispose);
   }
   function iconFor(code) {
-    if (code === 0) return "sun";
-    if (code === 1 || code === 2) return "cloud-sun";
-    if (code === 3) return "cloud";
-    if (code === 45 || code === 48) return "weather-fog";
+    if (code === 0) return "clear-day";
+    if (code === 1 || code === 2) return "partly-cloudy-day";
+    if (code === 3) return "cloudy";
+    if (code === 45 || code === 48) return "fog";
     if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code))
-      return "weather-rain";
-    if ([71, 73, 75, 77, 85, 86].includes(code)) return "weather-snow";
-    if ([95, 96, 99].includes(code)) return "weather-thunder";
+      return "rain";
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return "snow";
+    if ([95, 96, 99].includes(code)) return "thunderstorms";
     return null;
-  }
-  function createIcon(icon) {
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.setAttribute("aria-hidden", "true");
-    svg.setAttribute("fill", "currentColor");
-    const use = document.createElementNS(svg.namespaceURI, "use");
-    use.setAttribute("href", "#icon-" + icon);
-    svg.append(use);
-    return svg;
   }
   function weatherIcon(code) {
     const icon = iconFor(code);
@@ -106,12 +126,14 @@
       empty.setAttribute("aria-label", description);
       return empty;
     }
-    const condition = node("span", undefined, "weather-day-icon");
-    condition.dataset.hintText = description;
-    condition.setAttribute("role", "img");
-    condition.setAttribute("aria-label", description);
-    condition.append(createIcon(icon));
-    return condition;
+    const picture = node("picture", undefined, "weather-day-icon");
+    picture.dataset.hintText = description;
+    const image = node("img");
+    image.alt = description;
+    image.draggable = false;
+    image.src = "assets/icons/meteocons/svg/" + icon + ".svg";
+    picture.append(image);
+    return picture;
   }
   function render(panel, value) {
     releaseView();
@@ -446,7 +468,7 @@
     render,
     temperatureTone,
     iconFor,
-    createIcon,
+    resumeImages,
     mount,
     dispose,
   };

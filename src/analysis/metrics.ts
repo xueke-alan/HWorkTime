@@ -7,8 +7,7 @@ export interface Metric {
   context: string;
   numeric: string;
   dates: string[];
-  dateCount: string;
-  dateHint: string;
+  remainingDateCount: string;
 }
 interface MetricGroup {
   key: string;

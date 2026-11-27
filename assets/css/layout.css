@@ -260,8 +260,6 @@ body .site-music-controls .site-music-button .ui-icon {
 .site-audio-activity.is-busy .site-audio-spinner { animation: site-audio-spin 1s linear infinite; }
 
 @keyframes site-audio-spin { to { transform: rotate(360deg); } }
-html[data-reduced-motion="true"] .site-audio-activity .site-audio-spinner { animation: none; }
-html[data-reduced-motion="true"] .workspace-footer .site-meta { transition: none; }
 /* Shared solid surface stays unchanged when sidebar content switches. */
 body .work-body > .summary-sidebar .sidebar-brand,
 body .work-body > section.panel > .panel-head,

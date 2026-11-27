@@ -1153,9 +1153,7 @@ WorkTimeApp.ui.vocabulary = (() => {
           );
         }
         for (const background of [
-          ...editor.querySelectorAll(
-            ":scope > .editor-content, :scope > #agendaEditor",
-          ),
+          ...editor.querySelectorAll(".editor-content, #agendaEditor"),
         ].flatMap(WorkTimeApp.ui.motion.editorContent)) {
           if (getComputedStyle(background).display === "none") continue;
           modeStyle(background, "opacity", "1");

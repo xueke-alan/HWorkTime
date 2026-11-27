@@ -14,9 +14,6 @@
   border-radius: 50%;
   background: currentColor;
 }
-:root[data-reduced-motion="true"] .site-inset-wave {
-  visibility: hidden;
-}
 /* Inherited defaults follow the current workspace palette. */
 :root {
   --ui-stroke: 1px;
@@ -192,10 +189,8 @@
 :where([data-ui="button"], .hw-button) svg[stroke="currentColor"] {
   stroke-width: var(--ui-icon-stroke);
 }
-@media (prefers-reduced-motion: no-preference) {
-  .hw-select {
-    transition: border-color var(--ui-motion);
-  }
+.hw-select {
+  transition: border-color var(--ui-motion);
 }
 
 [data-ui="summary"] {

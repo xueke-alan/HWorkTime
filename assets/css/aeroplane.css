@@ -258,15 +258,3 @@
   from { opacity: 0; transform: translate(-50%, -47%) scale(.98); }
   to { opacity: 1; transform: translate(-50%, -50%); }
 }
-html[data-reduced-motion="true"] .game-aeroplane *,
-html[data-reduced-motion="true"] .game-aeroplane *::before,
-html[data-reduced-motion="true"] .game-aeroplane *::after {
-  animation: none !important;
-  transition: none !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  .game-aeroplane *, .game-aeroplane *::before, .game-aeroplane *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-}

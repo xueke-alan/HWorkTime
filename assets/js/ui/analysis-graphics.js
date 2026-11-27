@@ -102,7 +102,9 @@ WorkTimeApp.ui.createAnalysisGraphics = function ({
       step = (right - left) / data.calendarDays.length,
       x = (index) => left + (index + 0.5) * step;
     let svg =
-      '<svg class="analysis-plot" viewBox="0 0 ' +
+      '<svg class="analysis-plot" data-legend-x="' +
+      x(0) +
+      '" viewBox="0 0 ' +
       width +
       " " +
       height +
@@ -374,7 +376,14 @@ WorkTimeApp.ui.createAnalysisGraphics = function ({
   }
 
   function timelineLegend(data) {
-    return ["workedOvertime", "restOvertime", "recorded", "missing", "future"]
+    return [
+      "workedOvertime",
+      "restOvertime",
+      "streak",
+      "recorded",
+      "missing",
+      "future",
+    ]
       .filter(
         (status) =>
           status !== "future" ||

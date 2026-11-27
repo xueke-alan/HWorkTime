@@ -1,21 +1,75 @@
 "use strict";
 
+/** Shared fixed-slot year/month renderer, used by both sidebar headers. */
+WorkTimeApp.ui.renderYearMonth = function (
+  label,
+  year,
+  month,
+  {
+    wordMonth = false,
+    animateInitial = true,
+    motion = true,
+    numbers = WorkTimeApp.ui.numbers,
+  } = {},
+) {
+  label.classList.toggle("has-word-month", wordMonth);
+  label.classList.toggle(
+    "has-single-digit-month",
+    !wordMonth && month.length === 1,
+  );
+  numbers.set(label.querySelector(".year-month-year"), String(year), {
+    animateInitial,
+    motion,
+  });
+  numbers.set(label.querySelector(".year-month-month"), month, {
+    animateInitial: animateInitial && !wordMonth,
+    animateWhole: wordMonth,
+    animateWholeOnLengthChange: !wordMonth,
+    motion,
+  });
+};
+
 /** Shared date stamp for the calendar and selected-day headers. */
-WorkTimeApp.ui.headerDateMarkup = function (date, esc) {
+WorkTimeApp.ui.headerDateMarkup = function (
+  date,
+  esc,
+  { weekday = true } = {},
+) {
   const divider =
     '<svg class="calendar-date-divider" viewBox="0 0 12 24" aria-hidden="true" focusable="false"><use href="#icon-calendar-date-divider"/></svg>';
-  const parts = WorkTimeApp.i18n.date(date).split(/\s*\/\s*/);
+  const { i18n } = WorkTimeApp;
+  const [year, month, day] = date.split("-").map(Number);
+  const parts = weekday
+    ? i18n.date(date).split(/\s*\/\s*/)
+    : [
+        i18n.number(year, { useGrouping: false }),
+        i18n.config.cjk ? i18n.number(month) : i18n.monthName(date),
+        i18n.number(day),
+      ];
   return (
-    '<span class="calendar-today-date">' +
+    '<span class="calendar-today-date' +
+    (weekday ? "" : " year-month-label") +
+    '">' +
     parts
       .map(
-        (part) =>
-          '<span class="calendar-today-number">' + esc(part) + "</span>",
+        (part, index) =>
+          '<span class="calendar-today-number' +
+          (weekday
+            ? ""
+            : index === 0
+              ? " year-month-year"
+              : " year-month-month" + (index === 2 ? " year-month-day" : "")) +
+          '">' +
+          esc(part) +
+          "</span>",
       )
       .join(divider) +
-    '</span><span class="calendar-today-separator" aria-hidden="true"></span><span class="calendar-today-weekday">' +
-    esc(WorkTimeApp.i18n.weekday(date)) +
-    "</span>"
+    "</span>" +
+    (weekday
+      ? '<span class="calendar-today-separator" aria-hidden="true"></span><span class="calendar-today-weekday">' +
+        esc(i18n.weekday(date)) +
+        "</span>"
+      : "")
   );
 };
 
@@ -38,7 +92,7 @@ WorkTimeApp.ui.scheduleDescription = function (schedule) {
 
 /** Create an isolated presentation view; state/view getters remain live after restore and navigation. */
 WorkTimeApp.ui.createDayPresentation = function (options) {
-  const { core: C, getState, getView } = options;
+  const { core: C, getState, getView, now = () => new Date() } = options;
 
   function isFullLeave(day = {}, date = getView().selected) {
     const state = getState();
@@ -60,6 +114,14 @@ WorkTimeApp.ui.createDayPresentation = function (options) {
     const { today } = getView();
     if (timeAnomaly(day, r || day.oa)) return "anomaly";
     if (r && C.complete(r)) return r.manual ? "manual" : "oa";
+    if (
+      k === today &&
+      r &&
+      C.timeMin(r.start) !== null &&
+      !r.end &&
+      C.businessMinutes(now()) < C.timeMin(C.scheduleForDate(state, k).workEnd)
+    )
+      return "waiting";
     if (r && r.manual && (r.start || r.end)) return "pending";
     if (day.oa) return day.oa.status === "off" ? "absent" : "pending";
     if (
@@ -81,6 +143,7 @@ WorkTimeApp.ui.createDayPresentation = function (options) {
         manual: "copy.85f1f8dfaf",
         oa: "copy.079b8cd375",
         pending: "copy.eb87bec8ca",
+        waiting: "status.waitingForEnd",
         absent: "copy.90e8eea725",
         empty: "copy.287a1d1034",
       }[label],

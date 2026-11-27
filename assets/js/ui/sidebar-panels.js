@@ -42,7 +42,7 @@ WorkTimeApp.ui.createSidebarPanels = function ({
     settingsButton = document.getElementById("pageSettingsOpen"),
     settingsCancel = document.getElementById("personalSettingsCancel"),
     tablist = settings.querySelector(".settings-tabs"),
-    tabs = [...tablist.querySelectorAll('[role="tab"]')];
+    tabs = [...tablist.querySelectorAll("[data-settings-command]")];
   let activeTab = tabs[0];
   function updateSettingsButton(animate = false) {
     const open = !settings.hidden;
@@ -152,26 +152,13 @@ WorkTimeApp.ui.createSidebarPanels = function ({
     else closeSettingsPanel();
   }
   function tabClick(event) {
-    const tab = event.target.closest('[role="tab"]');
+    const tab = event.target.closest("[data-settings-command]");
     if (tabs.includes(tab)) selectTab(tab);
-  }
-  function tabKeydown(event) {
-    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-    event.preventDefault();
-    const index = tabs.indexOf(activeTab);
-    const next =
-      event.key === "Home"
-        ? 0
-        : event.key === "End"
-          ? tabs.length - 1
-          : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) %
-            tabs.length;
-    selectTab(tabs[next], true);
   }
   settingsButton.addEventListener("click", toggleSettings);
   settingsCancel.addEventListener("click", closeSettingsPanel);
   tablist.addEventListener("click", tabClick);
-  tablist.addEventListener("keydown", tabKeydown);
+
   selectTab(activeTab);
   function render() {
     const active = stack.at(-1);
@@ -314,7 +301,7 @@ WorkTimeApp.ui.createSidebarPanels = function ({
     settingsButton.removeEventListener("click", toggleSettings);
     settingsCancel.removeEventListener("click", closeSettingsPanel);
     tablist.removeEventListener("click", tabClick);
-    tablist.removeEventListener("keydown", tabKeydown);
+
     WorkTimeApp.ui.motion?.stop(editor);
     hidePopovers();
     settings.hidden = true;

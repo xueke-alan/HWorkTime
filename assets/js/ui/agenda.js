@@ -1948,7 +1948,7 @@ WorkTimeApp.ui.createAgenda = function ({
     signal: scope.signal,
   });
   const pane = make("section", "agendaEditor", "agenda-editor", editor);
-  editor.querySelector(".editor-content").after(pane);
+  editor.querySelector(".sidebar-content").append(pane);
   pane.hidden = true;
   pane.setAttribute("aria-labelledby", "agendaDate");
   WorkTimeApp.ui.workspaceViews.AgendaDayFrame(pane);
@@ -3275,7 +3275,9 @@ WorkTimeApp.ui.createAgenda = function ({
       ? "agenda"
       : model.analysisMode
         ? "analysis"
-        : "calendar";
+        : model.yearMode
+          ? "year"
+          : "calendar";
     if (view === current) return;
     if (active && view === "analysis") return openAnalysisFromAgenda();
     if (active || view === "agenda") return changeAgendaMode(view === "agenda");
@@ -3683,14 +3685,24 @@ WorkTimeApp.ui.createAgenda = function ({
       if (active && window.innerWidth <= 1150 && !formOpen)
         $("agendaOverviewOpen").focus({ preventScroll: true });
     });
-    listen(editor.querySelector(".notification-tabs"), "click", (event) => {
-      const tab = event.target.closest(".notification-tab");
-      if (!active || !tab || tab.id === "musicOpen" || tab.id === "readerOpen")
-        return;
-      const close = auxiliaryOpen && drawerTab === tab.dataset.tab;
-      drawerTab = tab.dataset.tab;
-      setAuxiliary(!close);
-    });
+    listen(
+      editor.querySelector(".notification-tabs"),
+      "click",
+      (event) => {
+        const tab = event.target.closest(".notification-tab");
+        if (
+          !active ||
+          !tab ||
+          tab.id === "musicOpen" ||
+          tab.id === "readerOpen"
+        )
+          return;
+        const close = auxiliaryOpen && drawerTab === tab.dataset.tab;
+        drawerTab = tab.dataset.tab;
+        setAuxiliary(!close);
+      },
+      { capture: true },
+    );
     listen(editor, "worktime:auxiliaryrequest", (event) => {
       if (!active || !["music", "reader"].includes(event.detail?.id)) return;
       drawerTab = event.detail.id;

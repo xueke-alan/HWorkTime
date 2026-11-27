@@ -71,7 +71,13 @@
     );
     if (!heading) return;
     const text = heading.textContent;
-    if (heading === editorHeading && text === editorHeadingText) return;
+    if (
+      heading === editorHeading &&
+      (text === editorHeadingText || heading.hasAttribute("data-number-title"))
+    ) {
+      editorHeadingText = text;
+      return;
+    }
     // Optional panels can begin their reveal before exposing the new heading.
     // Keep that reveal on the body so it cannot multiply the title's motion.
     for (

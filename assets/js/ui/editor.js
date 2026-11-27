@@ -15,7 +15,7 @@ WorkTimeApp.ui.createEditor = function (options) {
   } = options;
 
   let previewMarkup = null,
-    editorDateMarkup = null;
+    editorDateParts = null;
   function updatePreview(html) {
     const next = document.createElement("template");
     next.innerHTML = html;
@@ -118,15 +118,31 @@ WorkTimeApp.ui.createEditor = function (options) {
     const day = state.days[selected] || {},
       r = C.effectiveRecord(day, true) || day.oa || {},
       info = C.calendarInfo(selected, day);
-    const editorDate = $("editorDate"),
-      dateMarkup = WorkTimeApp.ui.headerDateMarkup(selected, esc);
-    // Alignment adds classes/styles to the date spans; compare source markup
-    // rather than the decorated DOM so ordinary edits retain their text nodes.
-    if (editorDateMarkup !== dateMarkup) {
-      editorDate.innerHTML = dateMarkup;
-      editorDateMarkup = dateMarkup;
-      WorkTimeApp.ui.motion?.refreshEditorTitle();
+    const editorDate = $("editorDate");
+    if (!editorDateParts) {
+      editorDate.innerHTML = WorkTimeApp.ui.headerDateMarkup(selected, esc, {
+        weekday: false,
+      });
+      editorDate.dataset.numberTitle = "";
+      editorDateParts = [
+        ...editorDate.querySelectorAll(".calendar-today-number"),
+      ];
     }
+    const [year, month, date] = selected.split("-").map(Number);
+    const wordMonth = !WorkTimeApp.i18n.config.cjk;
+    const dateLabel = editorDate.querySelector(".year-month-label");
+    const motion = editorDate.getClientRects().length > 0;
+    WorkTimeApp.ui.renderYearMonth(
+      dateLabel,
+      year,
+      wordMonth ? WorkTimeApp.i18n.monthName(selected) : String(month),
+      { wordMonth, animateInitial: false, motion, numbers },
+    );
+    numbers.set(editorDateParts[2], date, {
+      animateInitial: false,
+      animateWholeOnLengthChange: true,
+      motion,
+    });
     const schedule = C.scheduleForDate(state, selected);
     $("dayStart").placeholder = schedule.workStart;
     $("dayEnd").placeholder = schedule.workEnd;

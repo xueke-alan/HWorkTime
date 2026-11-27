@@ -149,11 +149,6 @@
 .game-sliding-puzzle .sliding-board:focus-visible {
   outline: none;
 }
-@media (prefers-reduced-motion: reduce) {
-  .game-sliding-puzzle .sliding-tile {
-    transition: none;
-  }
-}
 @media (max-width: 540px) {
   .game-sliding-puzzle {
     --sliding-stat-width: 5.1rem;

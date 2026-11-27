@@ -18,6 +18,7 @@ body .work-body > .sidebar-brand {
   justify-content: center;
   min-height: 0;
   margin: 0;
+  padding-inline: var(--workspace-inline-gutter);
 }
 .work-body .sidebar-brand h1 {
   margin: 0;
@@ -88,7 +89,7 @@ body .workspace-header .month-controls button.icon-only {
   min-width: 0;
 }
 .workspace-header-controls {
-  padding-inline-end: 0.75rem;
+  padding-inline: var(--workspace-inline-gutter);
   column-gap: var(--toolbar-column-gap);
 }
 .workspace-tool-buttons {
@@ -189,14 +190,6 @@ body .workspace-header .month-controls {
   body .work-body > .workspace-header {
     border-inline-start: var(--ui-stroke) solid var(--line);
   }
-  .workspace-header-controls {
-    padding-inline-start: calc(
-      var(--calendar-inline-gutter) - var(--ui-stroke)
-    );
-  }
-  body .workspace-header .month-controls {
-    margin-inline-start: 10px;
-  }
 }
 @media (min-width: 1151px) and (max-width: 1280px) {
   .workspace-header-controls {
@@ -209,12 +202,6 @@ body .workspace-header .month-controls {
     font-size: 1.3rem;
   }
 }
-@media (max-width: 1150px) {
-  .workspace-header-controls {
-    padding-inline: 0.75rem;
-  }
-}
-
 @media (max-width: 390px) {
   body .workspace-header .month-controls {
     --month-item-gap: 0.32rem;

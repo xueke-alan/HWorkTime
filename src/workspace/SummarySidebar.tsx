@@ -1,8 +1,8 @@
 import Alert from "antd/es/alert";
 import Button from "antd/es/button";
 import ConfigProvider from "antd/es/config-provider";
-import Compact from "antd/es/space/Compact";
-import { useRef } from "react";
+import Compact, { type SpaceCompactRef } from "antd/es/space/Compact";
+import { useEffect, useRef, useState } from "react";
 import { ArrowCircleUpRightIcon } from "../phosphor-icons";
 import { oaActions, useOAActions } from "./views";
 import { useLanguage } from "../ApplicationTheme";
@@ -11,7 +11,28 @@ import "../styles/summary-sidebar.css";
 export default function SummarySidebar() {
   useLanguage();
   const { t } = WorkTimeApp.i18n;
-  const { back, clipboardNotice } = useOAActions();
+  const { back, yearMode, clipboardNotice } = useOAActions();
+  const [headerBack, setHeaderBack] = useState(back);
+  const header = useRef<SpaceCompactRef>(null);
+  // Keep the outgoing button intact while it fades into the year/month label.
+  if (!yearMode && headerBack !== back) setHeaderBack(back);
+  useEffect(() => {
+    if (!yearMode || headerBack === back) return;
+    let cancelled = false;
+    // Read after the calendar controller has applied the header's CSS transition.
+    const frame = requestAnimationFrame(() => {
+      const animations = header.current?.nativeElement.getAnimations() || [];
+      void Promise.allSettled(
+        animations.map((animation) => animation.finished),
+      ).then(() => {
+        if (!cancelled) setHeaderBack(back);
+      });
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+    };
+  }, [back, yearMode, headerBack]);
   const pasteInput = useRef<HTMLTextAreaElement>(null);
   const pasteHint = t("copy.4c7c6082dd");
   return (
@@ -24,7 +45,9 @@ export default function SummarySidebar() {
       >
         <div className="oa-entry sidebar-actions">
           <Compact
+            ref={header}
             id="oaRecordActions"
+            className={headerBack ? "is-return" : undefined}
             role="group"
             aria-label={t("copy.8e91ca9989")}
           >
@@ -34,7 +57,7 @@ export default function SummarySidebar() {
               color="primary"
               variant="outlined"
             >
-              {back || t("copy.ed282645c7")}
+              {headerBack || t("copy.ed282645c7")}
             </Button>
             <ConfigProvider wave={{ disabled: true }}>
               <Button
@@ -42,7 +65,7 @@ export default function SummarySidebar() {
                 id="importOASite"
                 color="primary"
                 variant="filled"
-                inert={!!back}
+                inert={!!headerBack}
                 aria-label={t("copy.bba6f511e6")}
                 icon={<ArrowCircleUpRightIcon aria-hidden="true" />}
               />
@@ -132,8 +155,8 @@ export default function SummarySidebar() {
                 <Button
                   id="oaShortcut"
                   htmlType="button"
-                  data-hint-text="OA系统"
-                  aria-label="OA系统，点击打开，按住两秒编辑链接"
+                  data-hint-text="考勤系统"
+                  aria-label="考勤系统，点击打开，按住两秒编辑链接"
                   data-i18n-hint-text="copy.17ee70762b"
                   data-i18n-aria-label="copy.a6ba7e0e2c"
                   className="hw-button ui-button"
@@ -171,7 +194,7 @@ export default function SummarySidebar() {
                     className="button-label"
                     data-i18n-text='{"0":"copy.17ee70762b"}'
                   >
-                    OA系统
+                    考勤系统
                   </span>
                 </Button>
               </div>

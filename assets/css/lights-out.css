@@ -415,12 +415,6 @@
       inset 0 0 12px #fff8dfbb;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .lights-cell,
-  .lights-cell svg * {
-    transition: none !important;
-  }
-}
 @media (max-width: 420px) {
   .lights-stats {
     gap: 0.3rem;

@@ -384,6 +384,3 @@ body .game-link .link-tile:disabled {
     font-size: 1.15rem;
   }
 }
-:where(html:where([data-reduced-motion="true"])) body .game-link .link-tile {
-    transition: none;
-  }

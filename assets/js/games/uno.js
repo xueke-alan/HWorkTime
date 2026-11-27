@@ -793,11 +793,7 @@ WorkTimeApp.games.register({
     }
 
     function reducedMotion() {
-      return (
-        document.documentElement.dataset.reducedMotion === "true" ||
-        (WorkTimeApp.ui.animationCompat?.preference().matches ??
-          matchMedia("(prefers-reduced-motion: reduce)").matches)
-      );
+      return WorkTimeApp.ui.animationCompat.preference().matches;
     }
     function cancelVisuals() {
       for (const [timer, resolve] of visualDelays) {

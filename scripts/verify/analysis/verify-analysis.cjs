@@ -1583,7 +1583,7 @@ async function verify() {
     assert.equal(await page.locator(".analysis-lane").count(), 2);
     assert.equal(await page.locator(".analysis-day").count(), 31);
     await assertTimelineMarkers(page);
-    assert.equal(await page.locator(".analysis-metric").count(), 18);
+    assert.equal(await page.locator(".analysis-metric").count(), 21);
     for (const [width, height] of [
       [1920, 1080],
       [2560, 1440],
@@ -2075,7 +2075,7 @@ async function verify() {
     assert.equal(await view.locator(".analysis-point.is-late").count(), 1);
     assert.equal(await view.locator(".analysis-day").count(), 31);
     assert.equal(await view.locator(".analysis-day.is-longest").count(), 6);
-    assert.equal(await view.locator(".analysis-metric").count(), 18);
+    assert.equal(await view.locator(".analysis-metric").count(), 21);
     assert.equal(await view.locator("#analysisHover").isVisible(), false);
     assert.equal(await view.locator("#analysisHover").textContent(), "");
     const structure = await view.evaluate(() => {
@@ -2104,8 +2104,7 @@ async function verify() {
         ),
       };
     });
-    assert.equal(structure.headings.length, 2);
-    assert.deepEqual(structure.headings[1], structure.headings[0]);
+    assert.equal(structure.headings.length, 0);
     assert.equal(structure.legendBelowChart, true);
     const opticalOffsets = await view
       .locator(".analysis-metric-ratio")
@@ -2186,7 +2185,7 @@ async function verify() {
       false,
       "Pointer clicks do not pin the line through focus",
     );
-    await view.locator("#analysisHeading").hover();
+    await view.locator(".analysis-metrics").hover();
     assert.equal(await view.locator("#analysisHover").isVisible(), false);
     assert.equal(await view.locator(".analysis-range.is-selected").count(), 0);
     const layoutSnapshot = async () => {
@@ -2198,7 +2197,7 @@ async function verify() {
       return view.evaluate(() => ({
         blocks: [
           ...document.querySelectorAll(
-            ".analysis-heading, .analysis-metric, .analysis-chart-heading, #analysisPlot, #analysisTimelineLegend",
+            ".analysis-metric, .analysis-chart-heading, #analysisPlot, #analysisTimelineLegend",
           ),
         ].map((element) => {
           const { x, y, width, height } = element.getBoundingClientRect();
@@ -2415,13 +2414,13 @@ async function verify() {
       );
       assert.equal(await view.locator(".analysis-range").count(), 11);
       assert.equal(
-        (await view.locator("#analysisHeading").textContent()).includes(
-          "analysis.",
-        ),
+        (
+          await view.locator("#analysisPage").getAttribute("aria-label")
+        ).includes("analysis."),
         false,
       );
       assert.equal(
-        await view.locator("#analysisHeading").textContent(),
+        await view.locator("#analysisPage").getAttribute("aria-label"),
         await view.evaluate(() => WorkTimeApp.i18n.t("analysis.title")),
       );
       if (language === "en")

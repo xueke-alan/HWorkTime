@@ -17,8 +17,14 @@ export default function ToolbarSegmented<T extends string | number>({
   const ref = controlRef ?? localRef;
   useLayoutEffect(() => {
     const item = ref.current?.querySelector("input:checked")?.closest("label");
-    const group = item?.parentElement;
-    if (!group || !item) return;
+    const group = ref.current?.querySelector<HTMLElement>(
+      ".ant-segmented-group",
+    );
+    if (!group) return;
+    if (!item) {
+      delete group.dataset.positioned;
+      return;
+    }
     const positionIndicator = () => {
       const track = group.getBoundingClientRect();
       const target = item.getBoundingClientRect();

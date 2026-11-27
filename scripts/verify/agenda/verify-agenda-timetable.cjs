@@ -253,22 +253,19 @@ async function verifyBrowser() {
           Math.abs(line.left - first.left - cards[0].clientLeft) < 1 &&
           Math.abs(line.right - last.right + cards.at(-1).clientLeft) < 1 &&
           Math.abs(line.top - first.top - 160) < 1 &&
-          line.height === 2 &&
-          cards
-            .filter((card) => card.classList.contains("weekend"))
-            .every((card) => {
-              const style = getComputedStyle(card, "::before");
-              return (
-                style.bottom === "0px" &&
-                style.top !== "0px" &&
-                style.backgroundPositionY === "100%"
-              );
-            })
+          line.height === 2
         );
       }),
       true,
-      "One divider crosses every date and gutter; weekend artwork stays at the bottom",
+      "One divider crosses every date and gutter",
     );
+    const weekendBackgrounds = await page
+      .locator("#calendar > .day.weekend[data-agenda-week]:not([data-holiday])")
+      .evaluateAll((cards) =>
+        cards.map((card) => getComputedStyle(card, "::before").backgroundImage),
+      );
+    assert.ok(weekendBackgrounds.length > 0);
+    assert.ok(weekendBackgrounds.every((background) => background === "none"));
     const dates = await page
       .locator("#calendar > .day[data-agenda-week]")
       .evaluateAll((nodes) =>

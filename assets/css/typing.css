@@ -245,9 +245,6 @@
   .typing-pause { align-items: start; flex-direction: column; }
   .typing-result { padding: 24px 18px; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .typing-dialog * { scroll-behavior: auto !important; }
-}
 
 /* Use the shared workspace toolbar spacing and title size. */
 body .typing-dialog .typing-toolbar { background: var(--ui-surface, var(--paper)); }

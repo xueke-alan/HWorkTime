@@ -13,9 +13,11 @@ const site = path.resolve(
 );
 
 (async () => {
-  const server = process.argv.includes("--http")
-    ? await runtimeServer(site)
-    : null;
+  const server = process.argv.includes("--preview")
+    ? { url: "http://127.0.0.1:4173/HWorkTime/", close: async () => {} }
+    : process.argv.includes("--http")
+      ? await runtimeServer(site)
+      : null;
   const browser = await chromium.launch({ headless: true });
   try {
     const context = await browser.newContext({
@@ -29,9 +31,49 @@ const site = path.resolve(
       (server?.url || pathToFileURL(path.join(site, "index.html")).href) +
         "#dev",
     );
+    if (process.argv.includes("--preview")) await page.reload();
     await page.waitForFunction(
       () => document.documentElement.dataset.appState === "ready",
     );
+    if (process.argv.includes("--completion-only")) {
+      await page.clock.install();
+      await page.evaluate(() => {
+        const idle = WorkTimeApp.services.vocabularyIdle;
+        const snapshot = Object.getOwnPropertyDescriptor(idle, "state").get;
+        window.completionPhase = "generating";
+        Object.defineProperty(idle, "state", {
+          get: () => ({
+            ...snapshot(),
+            available: true,
+            indexStatus: "ready",
+            progressExact: true,
+            generatedTotal: 4,
+            audioTotal: 4,
+            audioPhase: window.completionPhase,
+          }),
+        });
+        idle.configure({ paused: true });
+      });
+      const activity = page.locator(".calendar-footer .site-audio-activity");
+      assert(await activity.isVisible());
+      await activity.hover();
+      await page.locator("#siteHint").waitFor({ state: "visible" });
+      for (const phase of ["checkingFolder", "complete"]) {
+        await page.evaluate((value) => {
+          window.completionPhase = value;
+          WorkTimeApp.services.vocabularyIdle.configure({ paused: true });
+        }, phase);
+      }
+      await page.clock.runFor(1000);
+      assert.equal(await activity.isVisible(), false);
+      assert(!(await activity.getAttribute("class")).includes("is-busy"));
+      await page.locator("#siteHint").waitFor({ state: "hidden" });
+      assert.deepEqual(errors, []);
+      console.log(
+        "Completed audio hides the footer indicator, spinner and hint.",
+      );
+      return;
+    }
     assert.equal(
       await page.evaluate(() => !!WorkTimeApp.services.vocabularySpeech),
       false,
@@ -518,12 +560,18 @@ const site = path.resolve(
       "waitingGame",
       "waitingPlayback",
       "otherTab",
+      "complete",
     ]) {
       await page.evaluate((value) => {
         window.footerPhaseOverride = value;
         WorkTimeApp.services.vocabularyIdle.configure({ paused: true });
       }, phase);
       assert.equal(await center.isVisible(), false, phase + " stays hidden");
+      if (phase === "complete")
+        assert(
+          !(await center.getAttribute("class")).includes("is-busy"),
+          "Completion stops the footer spinner",
+        );
     }
     await page.locator("#siteHint").waitFor({ state: "hidden" });
     for (const [phase, label] of [

@@ -463,7 +463,7 @@ WorkTimeApp.ui.popover = (() => {
     text = label;
     description = target.getAttribute("aria-describedby");
     // Bottom navigation never opens hints, including clipped or status labels.
-    if (element.closest(".editor > .notification-tabs")) return;
+    if (element.closest(".editor .notification-tabs")) return;
     if (action !== null && element.matches(':disabled,[aria-disabled="true"]'))
       return;
     // Labels and routine action descriptions should never float over the layout,

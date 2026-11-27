@@ -159,6 +159,7 @@ WorkTimeApp.services.bootstrap.run(
       numbers: WorkTimeApp.ui.numbers,
       document,
       window,
+      now: clock.now,
     };
     const {
       isFullLeave,
@@ -172,6 +173,7 @@ WorkTimeApp.services.bootstrap.run(
       getState: getPreviewState,
       core: {
         calendarInfo: D.calendar.calendarInfo,
+        businessMinutes: D.time.businessMinutes,
         complete: D.records.complete,
         effectiveRecord: D.records.effectiveRecord,
         scheduleForDate: D.schedule.scheduleForDate,
@@ -260,6 +262,7 @@ WorkTimeApp.services.bootstrap.run(
       weatherLayer,
     });
     const { renderCalendar } = calendarUI;
+    lifecycle.defer(() => calendarUI.dispose());
     const {
       updateResetDayButton,
       updatePlannedOvertime,

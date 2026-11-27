@@ -1108,6 +1108,68 @@ async function main() {
       1,
       "Capacity exhaustion pauses without a retry loop",
     );
+    await page.evaluate(async () => {
+      const S = WorkTimeApp.services;
+      const cache = S.vocabularyAudioCache;
+      S.vocabularyIdle.configure({ paused: true });
+      const entry = {
+        id: "fully-cached",
+        word: "cache-fixture",
+        books: ["daily"],
+        examples: [{ en: "This example is already cached." }],
+      };
+      for (const accent of ["us", "uk"]) {
+        const blob = await cache.read(entry, accent);
+        if (!blob) throw Error("Missing cached WAV fixture");
+        await cache.write(
+          { word: entry.examples[0].en, kind: "example" },
+          accent,
+          blob,
+          Number.MAX_SAFE_INTEGER,
+        );
+      }
+      WorkTimeApp.data.vocabularyCatalog.entries = [entry];
+      window.completedCacheLookups = 0;
+      S.vocabularySpeech.synthesize = async () => {
+        window.completedCacheLookups++;
+        return new Blob(["audio"]);
+      };
+      S.vocabularyIdle.configure({ paused: false });
+    });
+    await page.clock.runFor(5000);
+    assert.deepEqual(
+      await page.evaluate(() => {
+        const state = WorkTimeApp.services.vocabularyIdle.state;
+        return {
+          lookups: window.completedCacheLookups,
+          phase: state.audioPhase,
+          completed: state.completed,
+          total: state.total,
+          generated: state.generatedTotal,
+        };
+      }),
+      { lookups: 0, phase: "complete", completed: 4, total: 4, generated: 4 },
+      "A complete word and example index finishes without per-file lookups",
+    );
+    await page.clock.runFor(30000);
+    assert.equal(
+      await page.evaluate(() => window.completedCacheLookups),
+      0,
+      "Completed caches stay finished on later background ticks",
+    );
+    await page.evaluate(() => {
+      window.finishCompletedModelTask =
+        WorkTimeApp.services.vocabularyIdle.beginModelTask();
+    });
+    await page.clock.runFor(15000);
+    assert.equal(
+      await page.evaluate(
+        () => WorkTimeApp.services.vocabularyIdle.state.status,
+      ),
+      "complete",
+      "Foreground activity cannot turn completion back into waiting",
+    );
+    await page.evaluate(() => window.finishCompletedModelTask());
     assert.deepEqual(errors, []);
     console.log(
       "Idle generation, deduplication, completion and pause verified.",

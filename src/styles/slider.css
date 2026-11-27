@@ -83,13 +83,3 @@ body #readerDialog input.media-range,
 body #readerPanel input.media-range {
   width: 100%;
 }
-:where(html:where([data-reduced-motion="true"]))
-  body
-  input.media-range::-webkit-slider-thumb {
-  transition: none;
-}
-:where(html:where([data-reduced-motion="true"]))
-  body
-  input.media-range::-moz-range-thumb {
-  transition: none;
-}

@@ -141,7 +141,7 @@ WorkTimeApp.ui.createSiteFooter = function (host, expanded = false) {
     activity.removeAttribute("data-hint-text");
     if (
       idle.settings.enabled === false ||
-      ["disabled", "paused"].includes(state.audioPhase)
+      ["disabled", "paused", "complete"].includes(state.audioPhase)
     ) {
       activity.hidden = true;
       activity.classList.remove("is-busy");
@@ -241,7 +241,7 @@ WorkTimeApp.ui.createWorkspace = function ({
     observer = null,
     disposeFooter = null;
   const footer = document.querySelector(".calendar-footer"),
-    tabs = document.querySelector(".editor>.notification-tabs");
+    tabs = document.querySelector(".editor .notification-tabs");
   function syncFooter(entries) {
     if (disposed) return;
     const entry = entries?.find((item) => item.target === footer);

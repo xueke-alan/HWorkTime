@@ -1,3 +1,5 @@
+import SettingsTabs from "./SettingsTabs";
+import { SidebarHeader } from "./SidebarLayout";
 import Button from "antd/es/button";
 import { lazy, Suspense, useLayoutEffect, useRef, useState } from "react";
 const PreferenceFields = lazy(() => import("./PreferenceFields"));
@@ -24,13 +26,14 @@ export default function SettingsPane() {
         hidden
         aria-labelledby="pageSettingsTitle"
       >
-        <div className="editor-mode-header page-settings-header">
+        <SidebarHeader className="editor-mode-header page-settings-header">
           <h2 id="pageSettingsTitle" data-i18n-text='{"0":"copy.165118b1d4"}'>
             我的设置
           </h2>
-        </div>
+        </SidebarHeader>
         <div
-          className="settings-tabs"
+          className="settings-tabs settings-tab-commands"
+          hidden
           aria-label="我的设置"
           data-i18n-aria-label="copy.165118b1d4"
           data-ui="tablist"
@@ -44,7 +47,7 @@ export default function SettingsPane() {
             tabIndex={-1}
             data-i18n-text='{"0":"settings.general"}'
             className="hw-button settings-tab"
-            role="tab"
+            data-settings-command=""
           >
             常规
           </Button>
@@ -56,7 +59,7 @@ export default function SettingsPane() {
             tabIndex={-1}
             data-i18n-text='{"0":"settings.work"}'
             className="hw-button settings-tab"
-            role="tab"
+            data-settings-command=""
           >
             工作时间
           </Button>
@@ -68,11 +71,12 @@ export default function SettingsPane() {
             tabIndex={-1}
             data-i18n-text='{"0":"copy.c241ef1b93"}'
             className="hw-button settings-tab"
-            role="tab"
+            data-settings-command=""
           >
             个人信息
           </Button>
         </div>
+        <SettingsTabs />
         <section
           id="pageSettingsPane"
           className="settings-tab-panel"

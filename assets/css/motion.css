@@ -1,12 +1,11 @@
-/* data-reduced-motion is the effective site preference, including the system default. */
 /* Short native color transitions keep palette switching simple. */
-html:where([data-reduced-motion="false"]):not(.app-loading) :where(body, .panel, .card, .calendar > .day, .panel-head, .editor-mode-header, .weekdays, .calendar-footer, .card-label, .card-foot, .metric, .ui-button) {
+html:not(.app-loading) :where(body, .panel, .card, .calendar > .day, .panel-head, .editor-mode-header, .weekdays, .calendar-footer, .card-label, .card-foot, .metric, .ui-button) {
     transition: color 180ms ease-out, background-color 180ms ease-out, border-color 180ms ease-out;
   }
 
 /* Selection thickness is an inset shadow; keep it in the transition list even
    when shared palette rules replace the calendar's component transitions. */
-html:where([data-reduced-motion="false"]):not(.app-loading) body #calendar > .day {
+html:not(.app-loading) body #calendar > .day {
     transition:
       background-color 180ms ease-out,
       border-color 240ms var(--motion-ease),
@@ -14,7 +13,7 @@ html:where([data-reduced-motion="false"]):not(.app-loading) body #calendar > .da
       opacity 180ms var(--motion-ease);
   }
 
-html:where([data-reduced-motion="false"]):not(.app-loading) body .year-month .year-day {
+html:not(.app-loading) body .year-month .year-day {
   transition: border-color 180ms var(--motion-ease), box-shadow 180ms var(--motion-ease);
 }
 
@@ -51,11 +50,6 @@ body .summary-sidebar.sidebar-navigation-instant .sidebar-oa-pane[open] {
   animation-duration: 0s;
   animation-delay: 0s;
 }
-:where(html:where([data-reduced-motion="true"])) body #importOpen .import-main,
-  :where(html:where([data-reduced-motion="true"])) body .sidebar-actions .import-secondary-actions,
-  :where(html:where([data-reduced-motion="true"])) body .sidebar-actions:has(#importOpen.is-return) .import-secondary-actions {
-    transition: none;
-  }
 
 @keyframes ring-drain {
   to {
@@ -81,13 +75,7 @@ body .summary-sidebar.sidebar-navigation-instant .sidebar-oa-pane[open] {
     transform: scale(1);
     opacity: 0;
   }
-}
-:where(html:where([data-reduced-motion="true"])) *,
-  :where(html:where([data-reduced-motion="true"])) *::before,
-  :where(html:where([data-reduced-motion="true"])) *::after {
-    transition: none !important;
-    scroll-behavior: auto !important;
-  } /* Shared motion: animate surfaces, never the aligned text layers. */
+} /* Shared motion: animate surfaces, never the aligned text layers. */
 body button,
 body button.ui-button:not(.notification-tab):not(#importOpen),
 body :is(.settings-button-group, .calendar-view-button-group),
@@ -137,8 +125,6 @@ body .motion-sidebar-back {
   from { opacity: 0; transform: translateX(-8px); }
   to { opacity: 1; transform: translateX(0); }
 }
-:where(html:where([data-reduced-motion="true"])) body .motion-sidebar-forward,
-  :where(html:where([data-reduced-motion="true"])) body .motion-sidebar-back { animation: none !important; }
 .motion-day {
   animation: motion-month 280ms var(--motion-ease) var(--motion-delay, 0ms)
     backwards;
@@ -222,20 +208,6 @@ body .leave-popover:not(.hidden) {
     transform: translateY(-3px);
   }
 }
-:where(html:where([data-reduced-motion="true"])) body .motion-enter,
-  :where(html:where([data-reduced-motion="true"])) body .motion-content,
-  :where(html:where([data-reduced-motion="true"])) body .motion-day,
-  :where(html:where([data-reduced-motion="true"])) body .motion-selection,
-  :where(html:where([data-reduced-motion="true"])) body dialog[open],
-  :where(html:where([data-reduced-motion="true"])) body dialog[open]::backdrop,
-  :where(html:where([data-reduced-motion="true"])) body .feedback-notice,
-  :where(html:where([data-reduced-motion="true"])) body .feedback-notice.motion-leaving,
-  :where(html:where([data-reduced-motion="true"])) body .leave-popover:not(.hidden) {
-    animation: none !important;
-  }
-:where(html:where([data-reduced-motion="true"])) body .notification-tab svg {
-    transform: none !important;
-  }
 
 /* Calendar mode changes reveal the new layout; year navigation follows arrow direction. */
 .motion-calendar-view {
@@ -278,14 +250,6 @@ body .leave-popover:not(.hidden) {
     transform: translateY(0);
   }
 }
-:where(html:where([data-reduced-motion="true"])) body .motion-calendar-view,
-  :where(html:where([data-reduced-motion="true"])) body .motion-calendar-year,
-  :where(html:where([data-reduced-motion="true"])) body .motion-year-month {
-    animation: none !important;
-  }
-:root[data-reduced-motion="true"] body .year-watermark {
-  transition: none;
-}
 
 /* Odometer transitions animate digit strips while the final value stays accessible. */
 .number-roll-up {
@@ -312,10 +276,6 @@ body .leave-popover:not(.hidden) {
     transform: translate3d(0, 0, 0);
   }
 }
-:where(html:where([data-reduced-motion="true"])) body .number-roll-up,
-  :where(html:where([data-reduced-motion="true"])) body .number-roll-down {
-    animation: none !important;
-  }
 
 /* First reveal starts only once data, fonts and alignment are ready. */
 .motion-startup {
@@ -332,6 +292,3 @@ body .leave-popover:not(.hidden) {
     transform: translateY(0);
   }
 }
-:where(html:where([data-reduced-motion="true"])) body .motion-startup {
-    animation: none !important;
-  }

@@ -159,7 +159,6 @@ body .editor .vocabulary-pronunciation-play:is(:hover, :active, :focus, :focus-v
 .vocabulary-revealing .vocabulary-detail-section + .vocabulary-detail-section { animation-delay: .1s; }
 .vocabulary-revealing .vocabulary-detail-section + .vocabulary-detail-section + .vocabulary-detail-section { animation-delay: .15s; }
 @keyframes vocabulary-answer-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-html[data-reduced-motion="true"] .vocabulary-revealing :is(.vocabulary-meaning, .vocabulary-right, .vocabulary-wrong, .vocabulary-detail-section) { animation: none; }
 
 
 
@@ -203,10 +202,6 @@ body .editor .vocabulary-preferences .vocabulary-accent-switch { position: relat
 body .editor .vocabulary-accent-switch > span { display: block; height: 20px; text-align: center; line-height: 20px; font-size: .78rem; font-weight: 400; color: inherit; transform: translateY(var(--ui-ink-offset, 0px)); text-box-trim: none; }
 body .editor .vocabulary-accent-switch[aria-checked="false"] > :first-child, body .editor .vocabulary-accent-switch[aria-checked="true"] > :last-child { color: var(--accent); }
 body .editor .vocabulary-accent-switch:disabled { opacity: .5; cursor: default; }
-html[data-reduced-motion="true"] .vocabulary-accent-switch::before, html[data-reduced-motion="true"] body .editor .vocabulary-preferences input.vocabulary-switch, html[data-reduced-motion="true"] body .editor .vocabulary-preferences input.vocabulary-switch::before { transition: none; }
-@media (prefers-reduced-motion: reduce) { .vocabulary-accent-switch::before { transition: none; } }
-
-@media (prefers-reduced-motion: reduce) { body .editor .vocabulary-preferences input.vocabulary-switch,body .editor .vocabulary-preferences input.vocabulary-switch::before { transition: none; } }
 
 /* The title stays still; only the clipped drawer body moves. */
 body .editor #vocabularyPanel { overflow: hidden; }
@@ -330,7 +325,6 @@ body .editor .vocabulary-order-switch { align-self: flex-end; position: relative
 .vocabulary-order-switch[aria-checked="true"]::before { transform: translateX(100%); }
 body .editor .vocabulary-order-switch > span { color: inherit; font-size: .72rem; line-height: 20px; text-align: center; }
 .vocabulary-order-switch[aria-checked="false"] > span:first-child, .vocabulary-order-switch[aria-checked="true"] > span:last-child { color: var(--accent); font-weight: 650; }
-@media (prefers-reduced-motion: reduce) { .vocabulary-order-switch::before { transition: none; } }
 
 .vocabulary-book-back > .ui-icon { transform: translateY(-2px); }
 

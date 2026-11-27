@@ -370,13 +370,6 @@
 @keyframes xiangqi-thinking-spin {
   to { transform: rotate(360deg); }
 }
-:where(html:where([data-reduced-motion="true"])) .xiangqi-thinking-icon,
-:where(html:where([data-reduced-motion="true"])) .xiangqi-thinking-gear {
-  animation: none !important;
-}
-:where(html:where([data-reduced-motion="true"])) .xiangqi-thinking {
-  transition: none;
-}
 .xiangqi-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
