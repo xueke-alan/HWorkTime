@@ -346,7 +346,7 @@ async function main() {
             assert.equal(requests.length, 1);
             await page.locator("#pageSettingsOpen").click();
             await page.locator("#settingsPane").waitFor({ state: "visible" });
-            await page.locator("#personalSettingsCancel").click();
+            await page.locator("#pageSettingsOpen").click();
             await page.locator("#importOpen").click();
             await page.waitForFunction(
               () => document.getElementById("importDialog").open,

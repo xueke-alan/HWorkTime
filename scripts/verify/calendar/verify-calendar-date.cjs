@@ -46,7 +46,7 @@ async function verify() {
       await page
         .locator('.day[data-date="2026-10-23"] .day-select')
         .click({ force: true });
-      await page.evaluate(() => WorkTimeApp.ui.alignment.refresh());
+
       assert.deepEqual(
         await tagSizes(),
         initialTags,
@@ -89,12 +89,8 @@ async function verify() {
       );
       for (const width of [1440, 1280, 390, 320]) {
         await page.setViewportSize({ width, height: 1000 });
-        await page.evaluate(() => {
-          for (const text of document.querySelectorAll("#calendar .pill-text"))
-            text.classList.remove("ui-aligned-text");
-        });
-        const unalignedTags = await tagSizes();
-        await page.evaluate(() => WorkTimeApp.ui.alignment.refresh());
+        const initialTags = await tagSizes();
+
         const clippedDateDigits = await page
           .locator("#calendar .daynum-text .summary-number-digit")
           .evaluateAll((digits) =>
@@ -123,7 +119,7 @@ async function verify() {
         );
         assert.deepEqual(
           await tagSizes(),
-          unalignedTags,
+          initialTags,
           language +
             "/" +
             width +

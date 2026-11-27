@@ -108,7 +108,6 @@
       if (toolIds.includes(id)) WorkTimeApp.ui[id].open();
       else WorkTimeApp.ui.dateInfo.selectTab(id);
     },
-    () => showToolsPanel(active),
   );
   toolsPanel.append(readerPanel, typingPanel, vocabularyPanel);
   for (const child of [readerPanel, typingPanel, vocabularyPanel]) {
@@ -161,147 +160,6 @@
   dateHeader.append(dateHeading, dateSwitch);
   dateHeader.hidden = true;
   panel.before(dateHeader);
-  function fitAlmanac() {
-    if (disposed) return;
-    const grid = panel.querySelector(".almanac-guidance");
-    if (!grid || panel.hidden || !grid.clientWidth) return;
-    const lists = [...grid.querySelectorAll(".almanac-activities")],
-      width = grid.clientWidth,
-      canvas = document.createElement("canvas"),
-      context = canvas.getContext("2d"),
-      metrics = lists.map((list) => {
-        const style = getComputedStyle(list),
-          columnStyle = getComputedStyle(list.parentElement);
-        context.font = style.font;
-        return {
-          count: list.children.length,
-          items: [...list.children].map((item) =>
-            Math.ceil(context.measureText(item.textContent).width),
-          ),
-          wide: [...list.children].map((item) =>
-            item.classList.contains("almanac-activity-wide"),
-          ),
-          gap: parseFloat(style.columnGap),
-          inset:
-            parseFloat(columnStyle.paddingLeft) +
-            parseFloat(columnStyle.paddingRight) +
-            1,
-          rows: Math.max(
-            1,
-            Math.floor(
-              (grid.clientHeight -
-                2 -
-                parseFloat(columnStyle.paddingTop) -
-                parseFloat(columnStyle.paddingBottom) +
-                parseFloat(style.rowGap)) /
-                (parseFloat(style.lineHeight) + parseFloat(style.rowGap)),
-            ),
-          ),
-        };
-      });
-    let best = null;
-    for (const columns of [
-      [3, 3],
-      [4, 3],
-      [3, 4],
-      [4, 4],
-      [5, 3],
-      [3, 5],
-      [5, 4],
-      [4, 5],
-      [5, 5],
-    ]) {
-      const layouts = metrics.map((m, i) => {
-        const sizes = Array(columns[i]).fill(0);
-        let cursor = 0,
-          rows = 0,
-          wideWidth = 0;
-        m.items.forEach((size, j) => {
-          if (m.wide[j]) {
-            if (cursor) rows++;
-            rows++;
-            cursor = 0;
-            wideWidth = Math.max(wideWidth, size);
-            return;
-          }
-          sizes[cursor] = Math.max(sizes[cursor], size);
-          if (++cursor === columns[i]) {
-            rows++;
-            cursor = 0;
-          }
-        });
-        return {
-          sizes,
-          rows: rows + (cursor ? 1 : 0),
-          remainder: cursor,
-          wideWidth,
-        };
-      });
-      const tracks = layouts.map((layout) => layout.sizes);
-      const minimum = metrics.map(
-        (m, i) =>
-          Math.max(
-            layouts[i].wideWidth,
-            tracks[i].reduce((sum, size) => sum + size, 0) +
-              m.gap * (columns[i] - 1),
-          ) + m.inset,
-      );
-      if (minimum[0] + minimum[1] > width) continue;
-      const left = Math.max(
-          minimum[0],
-          Math.min(
-            width - minimum[1],
-            (width * columns[0]) / (columns[0] + columns[1]),
-          ),
-        ),
-        overflow = metrics.reduce(
-          (sum, m, i) => sum + Math.max(0, layouts[i].rows - m.rows),
-          0,
-        ),
-        score =
-          overflow * 1000 +
-          columns[0] +
-          columns[1] -
-          6 +
-          Math.abs(left / width - 0.5);
-      if (!best || score < best.score) best = { tracks, layouts, left, score };
-    }
-    if (!best) return;
-    grid.style.gridTemplateColumns = best.left + "px minmax(0, 1fr)";
-    lists.forEach(
-      (list, i) =>
-        (list.style.gridTemplateColumns = best.tracks[i]
-          .map((size) => "minmax(" + size + "px, 1fr)")
-          .join(" ")),
-    );
-    lists.forEach((list, i) => {
-      const items = [...list.children];
-      items.forEach((item) => item.style.removeProperty("translate"));
-      const sizes = getComputedStyle(list)
-        .gridTemplateColumns.split(" ")
-        .map(parseFloat);
-      let row = [];
-      function centerRow() {
-        if (row.length && row.length < sizes.length) {
-          const rowWidth =
-            sizes.slice(0, row.length).reduce((sum, size) => sum + size, 0) +
-            metrics[i].gap * (row.length - 1);
-          const offset = (list.clientWidth - rowWidth) / 2;
-          row.forEach((item) => (item.style.translate = offset + "px 0"));
-        }
-        row = [];
-      }
-      for (const item of items) {
-        if (item.classList.contains("almanac-activity-wide")) centerRow();
-        else {
-          row.push(item);
-          if (row.length === sizes.length) centerRow();
-        }
-      }
-      centerRow();
-    });
-  }
-  const almanacResize = new ResizeObserver(fitAlmanac);
   function link(text, url) {
     const e = node("a", text);
     try {
@@ -826,7 +684,6 @@
       footer.append(details);
       sheet.append(grid, footer);
       panel.append(sheet);
-      fitAlmanac();
     } else if (c.sections) {
       for (const section of c.sections) {
         const block = node("section", undefined, "festival-section");
@@ -1043,7 +900,6 @@
     WorkTimeApp.ui.renderWorkspaceTabs(bar, null);
     synchronizeTimer();
     badgeObserver.disconnect();
-    almanacResize.disconnect();
     unsubscribeWeather?.();
     unsubscribeWeather = null;
     WorkTimeApp.services.weather.setDemand("details", false);
@@ -1089,7 +945,6 @@
       attributes: true,
       attributeFilter: ["class", "hidden"],
     });
-    almanacResize.observe(panel);
     events.listen(document, "visibilitychange", onVisibility);
     events.listen(document, "worktime:languagechange", refreshLanguage);
     events.listen(focusButton, "click", toggleCountdownFocus);

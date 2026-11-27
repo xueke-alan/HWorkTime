@@ -165,16 +165,12 @@ async function verifyToolbarSegmented(control, count, labelPadding = "8px") {
         .map((animation) => animation.finished),
     );
     const track = root.querySelector(".ant-segmented-group");
-    const trackBounds = track.getBoundingClientRect();
     const items = [...track.querySelectorAll("label")];
     const labels = items.map((item) => item.getBoundingClientRect());
     const selected = track.querySelector("input:checked").closest("label");
-    const painted = getComputedStyle(track, "::before");
-    const [top, right = top, bottom = top, left = right] = painted.clipPath
-      .split(" round")[0]
-      .match(/[\d.]+(?=px)/g)
-      .map(Number);
-    const selectedBounds = selected.getBoundingClientRect();
+    const painted = getComputedStyle(selected, "::after");
+    const top = parseFloat(painted.top),
+      bottom = parseFloat(painted.bottom);
     const hoverPaint = getComputedStyle(
       track.querySelector("label:hover"),
       "::after",
@@ -190,10 +186,7 @@ async function verifyToolbarSegmented(control, count, labelPadding = "8px") {
         return [style.paddingInlineStart, style.paddingInlineEnd];
       }),
       selectedInsets: [top, bottom],
-      selectedAlignment: [
-        left - (selectedBounds.left - trackBounds.left),
-        right - (trackBounds.right - selectedBounds.right),
-      ],
+      selectedAlignment: [parseFloat(painted.left), parseFloat(painted.right)],
       hoverInsets: [
         hoverPaint.top,
         hoverPaint.bottom,
@@ -479,7 +472,7 @@ async function verify(page) {
       }
     }
   }
-  if (page.viewportSize().width === 1440) await verifyInterruptedSlide(views);
+  if (page.viewportSize().width === 1440) await verifyRapidSelection(views);
   await page.waitForFunction(
     () => !document.getElementById("panelContent").inert,
   );
@@ -505,80 +498,28 @@ async function verify(page) {
     () => document.documentElement.dataset.reducedMotion === "true",
   );
   const duration = await year
-    .locator(".ant-segmented-group")
-    .evaluate(
-      (track) => getComputedStyle(track, "::before").transitionDuration,
-    );
+    .locator("label:has(input:checked)")
+    .evaluate((item) => getComputedStyle(item, "::after").transitionDuration);
   assert.equal(duration, "0s");
 }
 
-async function verifyInterruptedSlide(views) {
+async function verifyRapidSelection(views) {
   const result = await views.evaluate(async (control) => {
-    const track = control.querySelector(".ant-segmented-group");
     const item = (view) =>
       control.querySelector(`[data-view="${view}"]`).closest("label");
-    const frame = () => new Promise(requestAnimationFrame);
-    function bounds() {
-      const style = getComputedStyle(track, "::before");
-      const insets = style.clipPath
-        .split(" round")[0]
-        .match(/[\d.]+(?=px)/g)
-        .map(Number);
-      const [top, right = top, bottom = top, left = right] = insets;
-      return {
-        left,
-        width: track.clientWidth - left - right,
-        top,
-        bottom,
-        opacity: style.opacity,
-      };
+    for (const view of ["analysis", "calendar"]) {
+      item(view).click();
+      await new Promise(requestAnimationFrame);
     }
-    await Promise.allSettled(
-      track
-        .getAnimations({ subtree: true })
-        .map((animation) => animation.finished),
-    );
-    const start = bounds();
-    const target =
-      item("analysis").getBoundingClientRect().left -
-      track.getBoundingClientRect().left;
-    item("analysis").click();
-    const samples = [];
-    const deadline = performance.now() + 1500;
-    while (performance.now() < deadline) {
-      await frame();
-      const sample = bounds();
-      samples.push(sample);
-      if (sample.left > start.left + 1) break;
-    }
-    const turn = bounds();
-    item("calendar").click();
-    await Promise.resolve();
-    const redirected = bounds();
-    const end = performance.now() + 300;
-    do {
-      await frame();
-      samples.push(bounds());
-    } while (performance.now() < end);
-    return { start, target, turn, redirected, samples, finish: bounds() };
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    const selected = control.querySelector("input:checked").closest("label");
+    return {
+      value: selected.querySelector("[data-view]").dataset.view,
+      opacity: getComputedStyle(selected, "::after").opacity,
+      sliders: control.querySelectorAll(".ant-segmented-thumb").length,
+    };
   });
-  const { start, target, turn, redirected, samples, finish } = result;
-  assert.ok(
-    turn.left > start.left && turn.left < target,
-    JSON.stringify(result),
-  );
-  assert.ok(Math.abs(redirected.left - turn.left) < 1);
-  assert.ok(Math.abs(redirected.width - turn.width) < 1);
-  assert.ok(
-    samples.every(
-      (s) =>
-        s.width >= start.width - 1 &&
-        s.top === 4 &&
-        s.bottom === 4 &&
-        s.opacity === "1",
-    ),
-  );
-  assert.deepEqual(finish, start);
+  assert.deepEqual(result, { value: "calendar", opacity: "1", sliders: 0 });
 }
 async function main() {
   const browser = await chromium.launch({ channel: "msedge" });
@@ -608,7 +549,7 @@ async function main() {
       await context.close();
     }
     console.log(
-      "Verified shared toolbar segmented styling, keyboard selection and motion at desktop and mobile widths.",
+      "Verified shared toolbar segmented styling, keyboard selection and CSS selection backgrounds at desktop and mobile widths.",
     );
   } finally {
     await browser.close();

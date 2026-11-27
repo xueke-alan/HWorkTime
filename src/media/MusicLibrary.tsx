@@ -1,5 +1,7 @@
+import List from "antd/es/list";
+import Empty from "antd/es/empty";
 import Button from "antd/es/button";
-import { HeartIcon } from "../phosphor-icons";
+import { HeartIcon } from "../tabler-icons";
 import { mountView } from "../mount-view";
 import { useLanguage } from "../ApplicationTheme";
 
@@ -32,13 +34,13 @@ function TrackList({
 }: TrackListProps) {
   useLanguage();
   return (
-    <>
+    <List split={false}>
       {tracks.map((track, index) => {
         const selected = track.path === current;
         const starred = favorite(track);
         const favoriteLabel = text(starred ? "unfavorite" : "favorite");
         return (
-          <div
+          <List.Item
             key={track.path}
             className={"music-track" + (selected ? " is-current" : "")}
             role="listitem"
@@ -80,18 +82,21 @@ function TrackList({
                 <HeartIcon />
               </span>
             </Button>
-          </div>
+          </List.Item>
         );
       })}
       {noResults && (
         <div className="music-empty">
-          <p>{text("noResults")}</p>
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={text("noResults")}
+          />
           <Button className="music-button" onClick={clear}>
             {text("clearSearch")}
           </Button>
         </div>
       )}
-    </>
+    </List>
   );
 }
 interface LyricsProps {

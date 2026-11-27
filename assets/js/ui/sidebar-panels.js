@@ -40,7 +40,6 @@ WorkTimeApp.ui.createSidebarPanels = function ({
   const editor = document.querySelector(".workspace > .editor"),
     settings = document.getElementById("settingsPane"),
     settingsButton = document.getElementById("pageSettingsOpen"),
-    settingsCancel = document.getElementById("personalSettingsCancel"),
     tablist = settings.querySelector(".settings-tabs"),
     tabs = [...tablist.querySelectorAll("[data-settings-command]")];
   let activeTab = tabs[0];
@@ -84,7 +83,7 @@ WorkTimeApp.ui.createSidebarPanels = function ({
       document.getElementById(item.getAttribute("aria-controls")).hidden =
         !selected;
     }
-    WorkTimeApp.ui.alignment?.refresh([settings]);
+
     if (animate && direction && !settings.hidden)
       WorkTimeApp.ui.motion?.play(
         document.getElementById(tab.getAttribute("aria-controls")),
@@ -156,7 +155,6 @@ WorkTimeApp.ui.createSidebarPanels = function ({
     if (tabs.includes(tab)) selectTab(tab);
   }
   settingsButton.addEventListener("click", toggleSettings);
-  settingsCancel.addEventListener("click", closeSettingsPanel);
   tablist.addEventListener("click", tabClick);
 
   selectTab(activeTab);
@@ -218,7 +216,7 @@ WorkTimeApp.ui.createSidebarPanels = function ({
       if (navigating && !instant)
         WorkTimeApp.ui.motion?.play(host, "motion-sidebar-forward");
       if (id === "importDialog") pane.dispatchEvent(new Event("sidebar-open"));
-      WorkTimeApp.ui.alignment?.refresh([pane]);
+
       if (window.matchMedia("(max-width: 1150px)").matches)
         sidebar.scrollIntoView({ block: "nearest" });
       (id === "importDialog"
@@ -262,7 +260,7 @@ WorkTimeApp.ui.createSidebarPanels = function ({
       previous ? host : document.getElementById("cards"),
       "motion-sidebar-back",
     );
-    if (previous) WorkTimeApp.ui.alignment?.refresh([panes.get(previous.id)]);
+
     const trigger = removed[0].trigger;
     if (
       !previous &&
@@ -299,7 +297,6 @@ WorkTimeApp.ui.createSidebarPanels = function ({
     if (disposed) return;
     disposed = true;
     settingsButton.removeEventListener("click", toggleSettings);
-    settingsCancel.removeEventListener("click", closeSettingsPanel);
     tablist.removeEventListener("click", tabClick);
 
     WorkTimeApp.ui.motion?.stop(editor);

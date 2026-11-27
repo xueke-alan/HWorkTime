@@ -4,61 +4,91 @@
   --ant-segmented-item-color: var(--toolbar-icon-color);
   --ant-segmented-item-hover-color: var(--toolbar-icon-color);
   --ant-segmented-item-selected-color: var(--toolbar-icon-color);
-  --ant-segmented-track-bg: var(--ui-surface);
-  --ant-segmented-item-hover-bg: color-mix(
-    in srgb,
-    var(--control-hover) 65%,
-    var(--ui-surface)
-  );
-  --ant-segmented-item-active-bg: var(--ui-highlight);
-  --ant-segmented-item-selected-bg: transparent;
+  display: inline-flex;
   height: var(--control-height, 40px);
   box-sizing: border-box;
   padding: 0 var(--toolbar-segmented-space);
   border: var(--ui-stroke) solid var(--ui-border);
+  border-radius: var(--ui-button-radius);
+  background: var(--ui-surface);
   box-shadow: var(--control-shadow);
   flex: 0 0 auto;
   max-width: 100%;
 }
 .toolbar-segmented .ant-segmented-group {
+  display: flex;
   gap: var(--toolbar-segmented-space);
+  height: 100%;
+}
+.toolbar-segmented.ant-segmented .ant-segmented-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ui-button-radius);
+  background: transparent;
+  color: var(--toolbar-icon-color);
+  box-shadow: none;
+  cursor: pointer;
 }
 .toolbar-segmented.ant-segmented .ant-segmented-item::after {
+  content: "";
   position: absolute;
+  display: block;
   inset: var(--toolbar-segmented-space) 0;
   width: auto;
   height: auto;
+  overflow: visible;
   border-radius: inherit;
+  background: color-mix(in srgb, var(--control-hover) 65%, var(--ui-surface));
+  opacity: 0;
   pointer-events: none;
+  transition: opacity 180ms ease;
 }
-.toolbar-segmented.ant-segmented .ant-segmented-item-selected {
-  box-shadow: none;
+.toolbar-segmented.ant-segmented
+  .ant-segmented-item:not(.ant-segmented-item-disabled):not(
+    .ant-segmented-item-selected
+  ):not(.ant-segmented-item-selected-text):hover::after {
+  opacity: 1;
 }
-.toolbar-segmented .ant-segmented-thumb {
-  visibility: hidden;
-}
-/* Keep one painted layer when the library swaps its moving thumb for the selected label. */
-.toolbar-segmented .ant-segmented-group[data-positioned]::before {
+/* The library swaps the resting selection for its moving thumb. Paint both
+   with identical insets so the handoff never changes the highlight's shape. */
+.toolbar-segmented.ant-segmented .ant-segmented-item-selected::before,
+.toolbar-segmented.ant-segmented .ant-segmented-thumb::before {
   content: "";
   position: absolute;
-  inset: 0;
-  pointer-events: none;
+  inset: var(--toolbar-segmented-space) 0;
+  border-radius: inherit;
   background: color-mix(in srgb, var(--ui-highlight) 94%, var(--ui-accent));
-  clip-path: inset(
-    var(--toolbar-segmented-space) var(--view-right)
-      var(--toolbar-segmented-space) var(--view-left) round
-      var(--ui-button-radius)
-  );
-  transition: clip-path 180ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  opacity: 1;
+  pointer-events: none;
+  transition: none;
 }
-.toolbar-segmented .ant-segmented-group,
-.toolbar-segmented .ant-segmented-item-label {
-  height: 100%;
+.toolbar-segmented.ant-segmented .ant-segmented-thumb {
+  background: transparent;
+  box-shadow: none;
+  border-radius: var(--ui-button-radius);
+}
+.toolbar-segmented.ant-segmented .ant-segmented-item:has(input:focus-visible) {
+  outline: 2px solid var(--ui-accent);
+  outline-offset: -2px;
+}
+.toolbar-segmented.ant-segmented .ant-segmented-item-disabled {
+  color: var(--ui-muted);
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 .toolbar-segmented .ant-segmented-item .ant-segmented-item-label {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  height: 100%;
   min-height: 0;
   padding-inline: var(--toolbar-segmented-label-padding);
   font-size: 14px;
@@ -67,10 +97,25 @@
 .toolbar-segmented .ant-segmented-item-icon {
   display: flex;
 }
+.toolbar-segmented .ant-segmented-item-icon + * {
+  margin-inline-start: 0;
+}
 .toolbar-segmented .ant-segmented-item-icon > svg {
   margin: 0;
-  width: 1.25em;
-  height: 1.25em;
+  width: 20px;
+  height: 20px;
+}
+.toolbar-segmented.ant-segmented.toolbar-segmented--small {
+  --toolbar-segmented-space: 3px;
+  --toolbar-segmented-label-padding: 6px;
+  height: 28px;
+}
+.toolbar-segmented--small .ant-segmented-item .ant-segmented-item-label {
+  font-size: 12px;
+}
+.toolbar-segmented--small .ant-segmented-item-icon > svg {
+  width: 16px;
+  height: 16px;
 }
 @container (max-width: 460px) {
   .toolbar-segmented.ant-segmented.toolbar-segmented--compact-on-narrow {

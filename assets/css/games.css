@@ -62,11 +62,32 @@
   text-align: center;
 }
 .game-idle-motto {
+  --motto-fade-duration: 500ms;
+  display: grid;
+  width: 100%;
   color: var(--theme-accent-deep, color-mix(in srgb, var(--accent) 70%, black));
   font-size: 1.142857rem;
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 2;
   text-align: center;
+}
+.game-idle-motto-item {
+  grid-area: 1 / 1;
+  align-self: start;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--motto-fade-duration) ease,
+    visibility 0s linear var(--motto-fade-duration);
+}
+.game-idle-motto-item.is-active {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity var(--motto-fade-duration) ease var(--motto-fade-duration),
+    visibility 0s linear var(--motto-fade-duration);
 }
 .games-panel[hidden],
 .game-shell[hidden] {

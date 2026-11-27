@@ -642,20 +642,7 @@ async function browser() {
       const label = document.querySelector(
         ".vocabulary-pronunciation-play .vocabulary-voice-label",
       );
-      const style = getComputedStyle(label);
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d");
-      context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-      const metrics = context.measureText(label.textContent);
-      const probe = document.createElement("i");
-      probe.style.cssText =
-        "display:inline-block;width:0;height:0;padding:0;margin:0;border:0;vertical-align:baseline;font-size:0;line-height:0";
-      label.append(probe);
-      const inkCenter =
-        probe.getBoundingClientRect().top +
-        (metrics.actualBoundingBoxDescent - metrics.actualBoundingBoxAscent) /
-          2;
-      probe.remove();
+      const labelBox = label.getBoundingClientRect();
       const icon = document
         .querySelector(".vocabulary-pronunciation-play svg")
         .getBoundingClientRect();
@@ -664,8 +651,10 @@ async function browser() {
           Math.abs(
             (title.top + pronunciation.bottom - header.top - header.bottom) / 2,
           ) < 1,
-        // The existing optical alignment deliberately lifts the label by 1px.
-        aligned: Math.abs(inkCenter + 1 - (icon.top + icon.bottom) / 2) < 1,
+        aligned:
+          Math.abs(
+            labelBox.top + labelBox.height / 2 - (icon.top + icon.bottom) / 2,
+          ) < 1,
         border: getComputedStyle(
           document.querySelector(".vocabulary-word-header"),
         ).borderBottomWidth,
@@ -883,7 +872,7 @@ async function browser() {
       true,
     );
     assert.equal(await page.locator("#vocabularyContent").isVisible(), false);
-    await page.locator("#personalSettingsCancel").click();
+    await page.locator("#pageSettingsOpen").click();
     await page
       .locator(".vocabulary-mini-expand")
       .click({ position: { x: 10, y: 100 } });
@@ -1051,7 +1040,7 @@ async function browser() {
       true,
     );
     assert.equal(await page.locator("#vocabularyContent").isVisible(), false);
-    await page.locator("#personalSettingsCancel").click();
+    await page.locator("#pageSettingsOpen").click();
     await assertSidebar();
     await toggleAgenda(page);
     await page

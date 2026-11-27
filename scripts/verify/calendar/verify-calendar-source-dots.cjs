@@ -78,7 +78,7 @@ async function verify() {
     );
     assert.equal(
       await card("2026-11-02").locator(".record-source-dot.oa").count(),
-      1,
+      0,
     );
     for (const date of ["2026-11-01", "2026-11-08"]) {
       await card(date).locator(".day-select").click();

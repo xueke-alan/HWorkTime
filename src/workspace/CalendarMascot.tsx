@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useLanguage } from "../ApplicationTheme";
+import useDevelopmentEnabled from "../useDevelopmentEnabled";
 
 const artwork = (
   <span className="calendar-mascot-art" aria-hidden="true">
@@ -46,8 +47,9 @@ function InteractiveCat() {
 }
 
 export default function CalendarMascot() {
+  const development = useDevelopmentEnabled();
   const visible = useSyncExternalStore(observePreferences, showCalendarMascot);
-  if (!visible) return null;
+  if (!development || !visible) return null;
   return (
     <div className="calendar-mascot-perch">
       <InteractiveCat />

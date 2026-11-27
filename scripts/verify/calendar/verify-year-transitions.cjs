@@ -69,7 +69,12 @@ async function verify() {
             );
           }
           const outgoing = await page.evaluate(async (selector) => {
-            document.querySelector(selector).click();
+            const target = document.querySelector(selector);
+            if (target.matches("[data-year-date]"))
+              target.dispatchEvent(
+                new MouseEvent("dblclick", { bubbles: true }),
+              );
+            else target.click();
             const titleMotion = document
               .getElementById("monthTitleYear")
               .getAnimations()
@@ -287,6 +292,11 @@ async function verify() {
           await page.evaluate(() =>
             document.getElementById("nextMonth").click(),
           );
+          await page.waitForFunction(
+            () =>
+              document.querySelector(".year-month")?.dataset.yearMonth ===
+              "2027-01",
+          );
           assert.ok(
             (await page
               .locator(".sidebar-year-number .summary-number-outgoing")
@@ -294,16 +304,8 @@ async function verify() {
           );
           assert.equal(
             await page.locator(".calendar-navigation-copy").count(),
-            1,
+            0,
           );
-          await page.evaluate(async () => {
-            for (const element of document.querySelectorAll(
-              "#calendar, .calendar-navigation-copy",
-            ))
-              for (const animation of element.getAnimations())
-                animation.finish();
-            await new Promise(requestAnimationFrame);
-          });
           assert.equal(
             await page
               .locator("#monthTitleYear .summary-number-accessible")

@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
 import { ApplicationTheme } from "../ApplicationTheme";
+import { SidebarTheme } from "../sidebar-theme";
 import { AgendaEditor } from "./AgendaEditor";
 
 export type Status = "pending" | "completed" | "in-progress" | "cancelled";
@@ -25,15 +26,19 @@ export function mount(host: HTMLElement, options: EditorOptions) {
         createElement(
           ApplicationTheme,
           null,
-          createElement(AgendaEditor, {
-            ...options,
-            draft: { ...options.draft },
-            view,
-            change(patch: Partial<Draft>) {
-              Object.assign(options.draft, patch);
-              options.changed();
-            },
-          }),
+          createElement(
+            SidebarTheme,
+            null,
+            createElement(AgendaEditor, {
+              ...options,
+              draft: { ...options.draft },
+              view,
+              change(patch: Partial<Draft>) {
+                Object.assign(options.draft, patch);
+                options.changed();
+              },
+            }),
+          ),
         ),
       ),
     );

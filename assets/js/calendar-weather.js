@@ -89,6 +89,7 @@ WorkTimeApp.ui.createCalendarWeather = function ({
     if (disposed) return;
     for (const picture of new Set([...animations.keys(), ...decodes.keys()]))
       if (!picture.isConnected) cancel(picture);
+    if (calendar.classList.contains("year-calendar")) return;
     const value = weather.snapshot();
     const today = businessDate(now());
     const weatherDays =

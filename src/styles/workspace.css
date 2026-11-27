@@ -1,6 +1,7 @@
 :where([data-ui="workspace"]) {
   --summary-sidebar-width: 236px;
   --editor-sidebar-width: 300px;
+  --workspace-panel-radius: var(--ui-radius);
   --workspace-divider-thickness: 2px;
   --workspace-divider-length: 90%;
   --workspace-divider-color: color-mix(
@@ -14,6 +15,10 @@
     );
   gap: 18px;
   align-items: stretch;
+}
+/* Resolve the shell radius before sidebar controls apply their local tokens. */
+body .workspace > .panel {
+  border-radius: var(--workspace-panel-radius);
 }
 @media (min-width: 1151px) {
   :where([data-ui="workspace"]) {
@@ -56,6 +61,11 @@ body .work-main > .calendar-footer {
   flex: none;
   margin: 0;
   padding-inline: var(--workspace-inline-gutter);
+}
+body .work-main > .calendar-footer,
+body .work-main > .calendar-footer * {
+  font-family: var(--font-ui-medium);
+  font-weight: 500;
 }
 .work-body {
   flex: 1;

@@ -249,7 +249,10 @@ WorkTimeApp.ui.createWorkspace = function ({
       entry?.borderBoxSize?.[0]?.blockSize ??
       footer.getBoundingClientRect().height;
     const value = height + "px";
-    if (tabs.style.height !== value) tabs.style.height = value;
+    if (tabs.style.height !== value) {
+      tabs.style.height = value;
+      tabs.parentElement.style.setProperty("--sidebar-tabs-height", value);
+    }
   }
   function render() {
     if (disposed) return;
@@ -318,15 +321,7 @@ WorkTimeApp.ui.createWorkspace = function ({
       if (disposed || sidebarPanels.open(id, options)) return;
       if (WorkTimeApp.ui.confirmations.open(id)) return;
       const dialog = $(id);
-      // Let native dialog focusing run while visible. No frame is painted between
-      // showModal and preparation; alignment completes before the opening fade.
       dialog.showModal();
-      dialog.classList.add("motion-dialog-preparing");
-      try {
-        WorkTimeApp.ui.alignment?.refresh([dialog]);
-      } finally {
-        dialog.classList.remove("motion-dialog-preparing");
-      }
     },
     saveFeedback(saved, message) {
       if (disposed) return;

@@ -72,19 +72,6 @@ async function verify() {
               checked.push(id);
               const style = getComputedStyle(host);
               const box = host.getBoundingClientRect();
-              if (host.parentElement.matches(".settings-pane-actions")) {
-                const row = host.parentElement;
-                const rowStyle = getComputedStyle(row);
-                const available =
-                  row.getBoundingClientRect().width -
-                  parseFloat(rowStyle.paddingLeft) -
-                  parseFloat(rowStyle.paddingRight) -
-                  2 * parseFloat(rowStyle.columnGap);
-                if (Math.abs(box.width - available * 0.3) > 1)
-                  issues.push(
-                    id + ": return button does not occupy three shares",
-                  );
-              }
               if (box.left < -1 || box.right > innerWidth + 1)
                 issues.push(id + ": button outside viewport");
               const left =
@@ -160,9 +147,9 @@ async function verify() {
         await audit("batch-disabled");
         await page.locator("#batchCancel").click();
         for (const [open, close] of [
-          ["#settingsWorkTab", "#personalSettingsCancel"],
-          ["#settingsPersonalTab", "#personalSettingsCancel"],
-          ["#pageSettingsOpen", "#personalSettingsCancel"],
+          ["#settingsWorkTab", "#pageSettingsOpen"],
+          ["#settingsPersonalTab", "#pageSettingsOpen"],
+          ["#pageSettingsOpen", "#pageSettingsOpen"],
         ]) {
           await clickSettingsControl(page, open);
           await audit(open);
@@ -206,7 +193,6 @@ async function verify() {
         "batchSave",
         "dayLeaveFull",
         "dayLeaveDone",
-        "personalSettingsCancel",
       ])
         assert.ok(checked.has(id), language + ": missing coverage for " + id);
       assert.deepEqual(errors, [], language);

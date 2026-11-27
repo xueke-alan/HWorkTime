@@ -1,9 +1,9 @@
 import Button from "antd/es/button";
 import Input from "antd/es/input";
 import Select from "antd/es/select";
-import Switch from "antd/es/switch";
+import ToolbarSegmented from "../workspace/ToolbarSegmented";
 import { useMemo, useRef, useState } from "react";
-import { ArrowLeftIcon, MagnifyingGlassIcon } from "../phosphor-icons";
+import { ArrowLeftIcon, MagnifyingGlassIcon } from "../tabler-icons";
 
 const t = (key: string) => WorkTimeApp.i18n.t("vocabulary." + key);
 interface Entry {
@@ -114,37 +114,27 @@ function Overview({ p }: { p: BooksProps }) {
       <section
         className="vocabulary-current-book"
         data-hint-text={t("familiarityHint")}
-        onClick={(event) => {
-          if (!(event.target as Element).closest("button") && !p.disabled)
-            p.openBook(p.current);
-        }}
       >
         <span className="vocabulary-book-tools">
-          <Switch
+          <ToolbarSegmented
             className="vocabulary-order-switch"
+            size="small"
             aria-label={t("wordOrder")}
             data-hint-text={t("wordOrderHint")}
-            checked={p.random}
-            checkedChildren={t("randomOrder")}
-            unCheckedChildren={t("ordered")}
+            value={p.random ? "random" : "ordered"}
+            options={[
+              { value: "ordered", label: t("ordered") },
+              { value: "random", label: t("randomOrder") },
+            ]}
             disabled={p.disabled}
-            onChange={(random) =>
-              p.update("wordOrder", random ? "random" : "ordered")
-            }
+            onChange={(value) => p.update("wordOrder", value)}
           />
           <Cover book={p.current} />
         </span>
         <span className="vocabulary-current-book-info">
           <small>{t("currentBook")}</small>
-          <strong>
-            <Button
-              type="text"
-              className="vocabulary-current-book-open"
-              disabled={p.disabled}
-              onClick={() => p.openBook(p.current)}
-            >
-              {t(p.current)}
-            </Button>
+          <strong className="vocabulary-current-book-title">
+            {t(p.current)}
           </strong>
           <span className="vocabulary-distribution-bar" aria-hidden="true">
             {Object.entries(p.distribution).map(([key, n]) => (
@@ -180,6 +170,7 @@ function Overview({ p }: { p: BooksProps }) {
         {titles.map((id) => (
           <Button
             key={id}
+            type="text"
             className={
               "vocabulary-book" + (id === p.current ? " is-current" : "")
             }

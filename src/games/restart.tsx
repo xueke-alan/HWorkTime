@@ -1,5 +1,5 @@
 import Button from "antd/es/button";
-import { ArrowCounterClockwiseIcon } from "../phosphor-icons";
+import { ArrowCounterClockwiseIcon } from "../tabler-icons";
 import type { KeyboardEvent } from "react";
 import { mountView } from "../mount-view";
 import { useLanguage } from "../ApplicationTheme";

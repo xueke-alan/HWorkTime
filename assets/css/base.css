@@ -10,57 +10,57 @@ body {
     "Microsoft YaHei",
     sans-serif;
 }
-button,
-input,
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)),
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)),
 select,
-textarea {
+textarea:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   font: inherit;
 }
-button {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   cursor: pointer;
   border: var(--ui-stroke) solid var(--line);
   color: var(--ui-text, var(--ink));
   padding: 8px 13px;
 }
-button:hover {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):hover {
   background: var(--theme-surface-subtle, #eef2eb);
 }
-button:disabled {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):disabled {
   cursor: default;
 }
-button.primary {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).primary {
   color: var(--ui-on-accent, white);
 }
-button.primary:hover {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).primary:hover {
   background: var(--theme-accent-dark, #1d654f);
 }
-button.subtle {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).subtle {
   background: transparent;
 }
-input,
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):not(:where(.ant-select *)),
 select,
-textarea {
+textarea:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   max-width: 100%;
   border: var(--ui-stroke) solid var(--theme-border-soft, #d7e0d4);
   padding: 9px 10px;
   color: var(--ui-text, var(--ink));
 }
-input:focus,
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):focus:not(:where(.ant-select *)),
 select:focus,
-textarea:focus,
-button:focus-visible {
+textarea:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):focus,
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):focus-visible {
   outline: 0;
 }
-textarea {
+textarea:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   width: 100%;
   resize: vertical;
 }
-input[type="checkbox"] {
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))[type="checkbox"] {
   width: 16px;
   height: 16px;
   vertical-align: middle;
 }
-input[type="file"] {
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))[type="file"] {
   display: none;
 }
 h1,
@@ -111,7 +111,7 @@ small,
   padding: 12px 15px;
   margin: 0 0 18px;
 }
-.notice button {
+.notice button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   margin-left: 8px;
 }
 .notice.error {
@@ -137,7 +137,7 @@ small,
 .label {
   font-size: var(--ui-font-size, 12px);
 }
-.field input,
+.field input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):not(:where(.ant-select *)),
 .field select {
   width: 100%;
 }
@@ -223,41 +223,41 @@ h2,
 h3 {
   font-weight: 650;
 }
-button {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   border-radius: var(--ui-button-radius);
   font-weight: 500;
   background: var(--ui-surface, white);
   border-color: var(--ui-border, var(--theme-border-soft, #dfe8e3));
 }
-button:hover:not(:disabled) {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):hover:not(:disabled) {
   background: var(--theme-surface-subtle, #f0f7f4);
   border-color: var(--ui-hover-border, var(--theme-border, #b9d4c8));
 }
-button:active:not(:disabled) {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):active:not(:disabled) {
   background: var(--theme-surface-soft, #e3f0e9);
 }
-button.primary {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).primary {
   background: var(--ui-accent, var(--accent));
   border-color: var(--ui-accent, var(--accent));
   box-shadow: 0 2px 4px rgba(var(--theme-rgb, 21, 126, 104), 0.078431);
 }
-button.primary:hover:not(:disabled) {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).primary:hover:not(:disabled) {
   background: var(--theme-accent-deep, #116d59);
   border-color: var(--theme-edge, #116d59);
 }
-button:disabled {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):disabled {
   opacity: 0.42;
 }
-button.danger {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).danger {
   color: var(--red);
 }
-button.danger:hover:not(:disabled) {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).danger:hover:not(:disabled) {
   background: var(--ui-danger-surface, #fdf1ee);
   border-color: var(--ui-danger-border, #edc5bf);
 }
-input,
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):not(:where(.ant-select *)),
 select,
-textarea {
+textarea:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   border-color: var(--ui-border, var(--theme-border-soft, #dce6e0));
   border-radius: var(--ui-radius);
   background: var(--ui-control-surface, #fbfdfc);
@@ -266,24 +266,24 @@ textarea {
     box-shadow 0.16s;
   min-width: 0;
 }
-input:hover,
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):hover:not(:where(.ant-select *)),
 select:hover,
-textarea:hover {
+textarea:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):hover {
   border-color: var(--ui-hover-border, var(--theme-border, #aecdc0));
 }
-input:focus,
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):focus:not(:where(.ant-select *)),
 select:focus,
-textarea:focus {
+textarea:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):focus {
   background: var(--ui-surface, white);
   border-color: var(--ui-accent, var(--accent));
   outline: 0;
 }
-button:focus-visible,
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):focus-visible,
 summary:focus-visible,
 a:focus-visible {
   outline: 0;
 }
-input[type="checkbox"] {
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))[type="checkbox"] {
   accent-color: var(--accent);
   border-radius: var(--ui-radius);
 }
@@ -353,7 +353,7 @@ input[type="checkbox"] {
   color: var(--theme-text-muted, #7a8d80);
   line-height: 1.9;
 }
-textarea {
+textarea:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   line-height: 1.8;
 }
 th {
@@ -416,7 +416,7 @@ td {
 .toast {
   white-space: nowrap;
 }
-input:is([type="number"], [inputmode="numeric"]) {
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):is([type="number"], [inputmode="numeric"]) {
   min-height: 44px;
   padding: 7px 8px;
   border: calc(1.5 * var(--ui-stroke)) solid var(--theme-border, #a9c9b8);
@@ -434,28 +434,28 @@ input:is([type="number"], [inputmode="numeric"]) {
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
-input:is([type="number"], [inputmode="numeric"]):focus {
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):is([type="number"], [inputmode="numeric"]):focus {
   border-color: var(--theme-edge, #3a9477);
   background: var(--ui-surface, white);
   outline: 0;
 }
-input:is([type="number"], [inputmode="numeric"])::selection {
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):is([type="number"], [inputmode="numeric"])::selection {
   background: var(--theme-surface-active, #c7e7d4);
   color: var(--theme-text-strong, #174939);
 }
-input:is([type="number"], [inputmode="numeric"])::placeholder {
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):is([type="number"], [inputmode="numeric"])::placeholder {
   color: var(--ui-muted, var(--theme-text-muted, #8ca496));
   opacity: 1;
 }
-input[type="number"] {
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))[type="number"] {
   appearance: textfield;
 }
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))[type="number"]::-webkit-inner-spin-button,
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))[type="number"]::-webkit-outer-spin-button {
   appearance: none;
   margin: 0;
 }
-button.icon-only {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).icon-only {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -463,7 +463,7 @@ button.icon-only {
   line-height: 1;
   flex: none;
 }
-button.icon-only .ui-icon {
+button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).icon-only .ui-icon {
   display: block;
   width: 17px;
   height: 17px;
@@ -473,8 +473,8 @@ button.icon-only .ui-icon {
   user-select: none;
   -webkit-user-select: none;
 }
-input,
-textarea,
+input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)),
+textarea:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)),
 [contenteditable="true"],
 [contenteditable="true"] * {
   user-select: text;
@@ -484,7 +484,7 @@ textarea,
 .theme-settings > legend {
   padding-inline-start: 8px;
 }
-body textarea {
+body textarea:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   border-radius: var(--ui-radius);
 }
 .anomaly-hint {
@@ -502,9 +502,21 @@ kbd,
 samp {
   font-family: var(--font-numeric);
 }
-body .ui-aligned-text {
-  display: inline-block;
+/* Ordinary labels use their container's flex/grid or baseline alignment. */
+body :is(
+  .batch-editor-header h2,
+  .page-settings-header h2,
+  .dialog-head h2,
+  #gameTitle,
+  #musicTitle,
+  #readerTitle,
+  .summary-sidebar .card-label,
+  #calendarFoot,
+  .calendar-footer .legend-label,
+  .almanac-watermark-text,
+  .analysis-manual > span,
+  .analysis-chart-legend > span > span,
+  .analysis-legend-label
+) {
   line-height: 1.3;
-  transform: translateY(var(--ui-ink-offset, 0px));
-  text-box-trim: none;
 }

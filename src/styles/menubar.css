@@ -32,7 +32,8 @@ body .work-body > .sidebar-brand {
   height: auto;
 }
 .workspace-header-controls {
-  --control-height: 40px;
+  --control-height: 36px;
+  --icon-size-button: 20px;
   --toolbar-column-gap: 0.5rem;
   --workspace-view-gap: 24px;
 }
@@ -49,8 +50,8 @@ body .work-body > .sidebar-brand {
 .workspace-header-controls .ant-btn-icon svg,
 body .workspace-header .workspace-tool-buttons button > .ui-icon {
   display: block;
-  width: 20px;
-  height: 20px;
+  width: var(--icon-size-button, 24px);
+  height: var(--icon-size-button, 24px);
 }
 body .workspace-header #monthTitle {
   --ant-btn-bg-color-active: var(--ant-btn-bg-color);
@@ -93,7 +94,7 @@ body .workspace-header .month-controls button.icon-only {
   column-gap: var(--toolbar-column-gap);
 }
 .workspace-tool-buttons {
-  --icon-button-width: 56px;
+  --icon-button-width: 50px;
   /* Reserve space for the widest mode so hiding its action cannot rewrap the toolbar. */
   min-inline-size: calc(
     3 * var(--icon-button-width) + var(--workspace-view-gap) + 0.5rem
@@ -102,6 +103,15 @@ body .workspace-header .month-controls button.icon-only {
   justify-content: flex-end;
   flex-wrap: nowrap;
   gap: 0;
+}
+@supports (width: round(nearest, calc(1px * sqrt(2)), 2px)) {
+  .workspace-tool-buttons {
+    --icon-button-width: round(
+      nearest,
+      calc(var(--control-height) * sqrt(2)),
+      2px
+    );
+  }
 }
 .workspace-tool-buttons .workspace-context-actions,
 .workspace-permanent-actions {
@@ -205,12 +215,6 @@ body .workspace-header .month-controls {
 @media (max-width: 390px) {
   body .workspace-header .month-controls {
     --month-item-gap: 0.32rem;
-    --control-height: 34px;
     gap: var(--month-item-gap);
-  }
-}
-@media (max-width: 360px) {
-  .workspace-tool-buttons {
-    --icon-button-width: var(--control-height);
   }
 }

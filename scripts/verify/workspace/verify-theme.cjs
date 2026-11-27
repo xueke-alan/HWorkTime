@@ -88,7 +88,7 @@ async function verify() {
       await page.keyboard.press("ArrowRight");
       await assertTheme("purple");
       await page.evaluate(() => {
-        for (const id of ["green", "mint", "orange"]) {
+        for (const id of ["green", "pink", "orange"]) {
           const input = document.querySelector(
             `input[name="pageTheme"][value="${id}"]`,
           );
@@ -136,8 +136,8 @@ async function verify() {
           }),
         });
       });
-      await card("brown").click();
-      await assertTheme("brown");
+      await card("black").click();
+      await assertTheme("black");
       await page.waitForFunction(
         () =>
           document.querySelector(".theme-save-notice").textContent.length > 0,

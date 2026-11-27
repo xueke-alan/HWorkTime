@@ -342,7 +342,6 @@ WorkTimeApp.ui.secondary.imports = function (options) {
       esc(log.sources.map((source) => source.raw).join("\n\n")) +
       "</textarea></div>";
     $("sourceBody").scrollTop = 0;
-    WorkTimeApp.ui.alignment?.refresh([pane]);
   }
   async function showSources(valid = () => true) {
     try {

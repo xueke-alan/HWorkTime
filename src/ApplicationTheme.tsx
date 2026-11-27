@@ -12,7 +12,17 @@ import {
   useSyncExternalStore,
   type PropsWithChildren,
 } from "react";
-import { CaretDownIcon, CheckIcon, SpinnerIcon } from "./phosphor-icons";
+import {
+  CaretDownIcon,
+  CheckIcon,
+  CloseIcon,
+  ErrorIcon,
+  InfoIcon,
+  MoreIcon,
+  PlusIcon,
+  SpinnerIcon,
+  WarningIcon,
+} from "./tabler-icons";
 import { showInsetWave } from "./inset-wave";
 import "./styles/tokens.css";
 
@@ -125,6 +135,8 @@ export function ApplicationTheme({ children }: PropsWithChildren) {
       ],
       token: {
         ...(accent && { colorPrimary: accent }),
+        fontFamily: "var(--font-ui-medium)",
+        fontSize: 14,
         borderRadius,
         borderRadiusXS: borderRadius,
         borderRadiusSM: borderRadius,
@@ -158,9 +170,35 @@ export function ApplicationTheme({ children }: PropsWithChildren) {
       select={{
         suffixIcon: <CaretDownIcon size="1em" />,
         menuItemSelectedIcon: <CheckIcon size="1em" />,
+        clearIcon: <CloseIcon size="1em" />,
+        removeIcon: <CloseIcon size="1em" />,
+        loadingIcon: <SpinnerIcon size="1em" className="tabler-spinner" />,
       }}
       button={{
-        loadingIcon: <SpinnerIcon size="1em" className="site-audio-spinner" />,
+        loadingIcon: <SpinnerIcon size="1em" className="tabler-spinner" />,
+      }}
+      modal={{
+        closeIcon: <CloseIcon size="1em" />,
+        infoIcon: <InfoIcon size="1em" />,
+        successIcon: <CheckIcon size="1em" />,
+        errorIcon: <ErrorIcon size="1em" />,
+        warningIcon: <WarningIcon size="1em" />,
+      }}
+      alert={{
+        closeIcon: <CloseIcon size="1em" />,
+        infoIcon: <InfoIcon size="1em" />,
+        successIcon: <CheckIcon size="1em" />,
+        errorIcon: <ErrorIcon size="1em" />,
+        warningIcon: <WarningIcon size="1em" />,
+      }}
+      tabs={{
+        moreIcon: <MoreIcon size="1em" />,
+        addIcon: <PlusIcon size="1em" />,
+        removeIcon: <CloseIcon size="1em" />,
+      }}
+      tag={{ closeIcon: <CloseIcon size="1em" /> }}
+      spin={{
+        indicator: <SpinnerIcon size="1em" className="tabler-spinner" />,
       }}
       getPopupContainer={popupContainer}
     >

@@ -200,7 +200,7 @@ body .notification-empty {
   gap: 0.4rem;
   margin-top: 0.571429rem;
 }
-.storage-recovery-actions button {
+.storage-recovery-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   font-size: var(--ui-font-size, var(--text-small));
 }
 @media (max-width: 850px) {
@@ -239,7 +239,7 @@ body .notification-empty {
   .editor .editor-actions + .editor-actions {
     margin-top: 8px;
   }
-  .editor .editor-actions button {
+  .editor .editor-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
     font-size: var(--ui-font-size, 12px);
   }
 }
@@ -251,7 +251,7 @@ body .notification-empty {
   padding: 0;
   text-align: left;
 }
-.time-entry input {
+.time-entry input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   display: block;
   width: 100%;
   margin: 0;
@@ -296,7 +296,7 @@ body .notification-empty {
   overflow: hidden;
   flex: none;
 }
-.time-template-chip button {
+.time-template-chip button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   border: 0;
   background: transparent;
   border-radius: 0;
@@ -346,7 +346,7 @@ body .notification-empty {
   gap: 9px;
   margin-top: 18px;
 }
-.batch-editor-actions button {
+.batch-editor-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   width: 100%;
   padding: 9px 12px;
 }
@@ -362,7 +362,7 @@ body .notification-empty {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 7px;
 }
-.batch-inline-form .batch-calc-fields button {
+.batch-inline-form .batch-calc-fields button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   grid-column: 1/-1;
   width: 100%;
 }
@@ -374,7 +374,7 @@ body .notification-empty {
   margin-top: 12px;
   flex-direction: row;
 }
-.batch-inline-form .batch-editor-actions button {
+.batch-inline-form .batch-editor-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   flex: 1 1 0;
   width: auto;
   min-width: 0;
@@ -386,7 +386,7 @@ body .notification-empty {
   font-weight: 650;
   letter-spacing: -0.35px;
 }
-.time-entry input {
+.time-entry input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   min-height: 34px;
   font-variant-numeric: tabular-nums;
 }
@@ -402,7 +402,7 @@ body .notification-empty {
   background: var(--theme-surface-subtle, #edf6ee);
   border-radius: var(--ui-button-radius);
 }
-.time-template-chip button:hover {
+.time-template-chip button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):hover {
   background: var(--theme-surface-soft, #dfefdf);
 }
 .time-template-chip .template-edit {
@@ -422,7 +422,7 @@ body .notification-empty {
 .calc-preview strong {
   color: var(--theme-text-strong, #20593f);
 }
-.batch-editor-actions button {
+.batch-editor-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   border-radius: var(--ui-button-radius);
 }
 @media (min-width: 1151px) {
@@ -437,7 +437,7 @@ body .notification-empty {
     margin-top: 13px;
     gap: 5px;
   }
-  .editor input,
+  .editor input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):not(:where(.ant-select *)),
   .editor select {
     padding: 7px 9px;
     font-size: var(--ui-font-size, 12px);
@@ -450,7 +450,7 @@ body .notification-empty {
   .editor .editor-actions {
     margin-top: 13px;
   }
-  .editor .editor-actions button {
+  .editor .editor-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
     padding: 7px 10px;
   }
   .editor .hr {
@@ -499,7 +499,7 @@ body .notification-empty {
     margin-top: 16px;
     gap: 6px;
   }
-  .editor input,
+  .editor input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):not(:where(.ant-select *)),
   .editor select {
     padding: 9px 11px;
   }
@@ -510,7 +510,7 @@ body .notification-empty {
     padding: 14px;
     margin-top: 18px;
   }
-  .editor .editor-actions button {
+  .editor .editor-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
     padding: 9px 11px;
   }
 }
@@ -527,7 +527,7 @@ body .notification-empty {
 .time-template-chip {
   max-width: none;
 }
-.time-template-chip button {
+.time-template-chip button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   height: 100%;
 }
 .time-template-chip .template-fill {
@@ -561,8 +561,6 @@ body .notification-empty {
 .nextday-toggle .ui-icon {
   width: 21px;
   height: 21px;
-  fill: currentColor;
-  stroke: none;
 }
 .nextday-toggle[aria-pressed="true"] {
   color: var(--theme-text-strong, #155943);
@@ -624,7 +622,7 @@ body .notification-empty {
 .batch-calc-fields .field {
   margin-top: 0;
 }
-.batch-calc-fields input[type="number"] {
+.batch-calc-fields input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))[type="number"] {
   border-color: var(--ui-border, var(--theme-border-soft, #c9d0cc));
   background: var(--ui-control-surface, #f4f6f5);
   color: var(--theme-text-strong, #45534d);
@@ -632,11 +630,11 @@ body .notification-empty {
     inset 0 1px 0 #fff,
     0 1px 2px rgba(var(--theme-rgb, 52, 67, 60), 0.05098);
 }
-.batch-calc-fields input[type="number"]:focus {
+.batch-calc-fields input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))[type="number"]:focus {
   border-color: var(--theme-edge, #8e9a94);
   background: var(--ui-surface, white);
 }
-.batch-calc-fields button {
+.batch-calc-fields button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   height: 44px;
   min-height: 44px;
   white-space: nowrap;
@@ -651,7 +649,7 @@ body .notification-empty {
   .batch-calc-fields {
     grid-template-columns: 1fr 1fr;
   }
-  .batch-calc-fields button {
+  .batch-calc-fields button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
     grid-column: 1 / -1;
   }
 }
@@ -719,7 +717,7 @@ body .editor #dayForm .leave-inline-unit {
   font-size: var(--text-small);
   color: var(--muted);
 }
-body .editor #dayForm .leave-inline button.icon-only {
+body .editor #dayForm .leave-inline button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).icon-only {
   flex: 0 0 calc(var(--control-height) - 0.4rem);
   width: calc(var(--control-height) - 0.4rem) !important;
   min-width: 0 !important;
@@ -731,7 +729,7 @@ body .editor #dayForm .leave-inline button.icon-only {
   box-shadow: none;
   color: var(--ui-text, var(--ink));
 }
-body .editor #dayForm .leave-inline button.icon-only:hover {
+body .editor #dayForm .leave-inline button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).icon-only:hover {
   border-color: var(--ui-accent, var(--accent));
   background: var(--ui-surface, var(--paper));
 }
@@ -848,7 +846,7 @@ body .editor #dayForm .leave-inline .ui-icon { width: 1.2rem; height: 1.2rem; }
   line-height: 1.7;
   flex: none;
 }
-.editor-info .notice button {
+.editor-info .notice button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   font-size: var(--ui-font-size, 12px);
 }
 @media (min-width: 1151px) {
@@ -897,13 +895,13 @@ body .editor #dayForm .leave-inline .ui-icon { width: 1.2rem; height: 1.2rem; }
 .editor .editor-actions.day-action-row {
   display: flex;
 }
-.editor .editor-actions.day-action-row button {
+.editor .editor-actions.day-action-row button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   white-space: nowrap;
   padding: 7px 4px;
   font-size: var(--ui-font-size, 11px);
 }
 @media (min-width: 1800px) and (min-height: 900px) {
-  .editor .editor-actions.day-action-row button {
+  .editor .editor-actions.day-action-row button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
     padding: 9px 5px;
   }
 }
@@ -955,10 +953,10 @@ body .editor #dayForm .leave-inline .ui-icon { width: 1.2rem; height: 1.2rem; }
   line-height: 1.55;
   word-break: break-word;
 }
-#dayForm .time-fields .clock-input {
+#dayForm .time-fields .clock-input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   padding: 5px 3px;
 }
-#dayForm .time-fields .clock-input::-webkit-calendar-picker-indicator {
+#dayForm .time-fields .clock-input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))::-webkit-calendar-picker-indicator {
   display: none;
 }
 .template-toolbar #addTimeTemplate.icon-only {
@@ -1019,11 +1017,11 @@ body .editor #dayForm .leave-inline .ui-icon { width: 1.2rem; height: 1.2rem; }
   gap: 8px;
 }
 .editor .time-fields .nextday-toggle,
-.editor .batch-time-fields input,
+.editor .batch-time-fields input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)),
 .editor .batch-time-fields .nextday-toggle {
   padding-block: 0;
 }
-.editor .time-fields .clock-input {
+.editor .time-fields .clock-input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   padding-block: 0;
 }
 .editor .time-fields .nextday-toggle,
@@ -1038,11 +1036,11 @@ body .editor #dayForm .leave-inline .ui-icon { width: 1.2rem; height: 1.2rem; }
 .batch-inline-form .batch-time-fields {
   gap: 8px !important;
 }
-.batch-inline-form .batch-calc-fields button {
+.batch-inline-form .batch-calc-fields button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   height: var(--form-control-height);
   min-height: var(--form-control-height);
 }
-.batch-inline-form .batch-editor-actions button {
+.batch-inline-form .batch-editor-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   height: var(--control-height);
   min-height: var(--control-height);
   padding-block: 0;
@@ -1065,13 +1063,13 @@ body .editor #dayForm .leave-inline .ui-icon { width: 1.2rem; height: 1.2rem; }
   min-height: var(--form-control-height);
   align-items: stretch;
 }
-.time-template-chip button {
+.time-template-chip button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding-block: 0;
 }
-.editor-info .notice button {
+.editor-info .notice button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1086,9 +1084,9 @@ body .editor #dayForm .leave-inline .ui-icon { width: 1.2rem; height: 1.2rem; }
 .editor #dayForm .time-fields {
   gap: 8px;
 }
-.editor .editor-actions.day-action-row button,
-.editor .batch-editor-actions button,
-.editor .batch-calc-fields button {
+.editor .editor-actions.day-action-row button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)),
+.editor .batch-editor-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)),
+.editor .batch-calc-fields button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   height: var(--form-control-height);
   min-height: var(--form-control-height);
   max-height: var(--form-control-height);
@@ -1102,12 +1100,12 @@ body .editor #dayForm .leave-inline .ui-icon { width: 1.2rem; height: 1.2rem; }
   height: var(--form-control-height);
   min-height: var(--form-control-height);
 }
-.editor .time-template-chip button {
+.editor .time-template-chip button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   min-height: 0;
   height: 100%;
   padding-block: 0;
 }
-.editor #dayForm .time-fields .clock-input {
+.editor #dayForm .time-fields .clock-input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   padding-block: 0;
 }
 .editor .nextday-toggle .ui-icon {
@@ -1144,7 +1142,7 @@ body .time-template-chip .template-edit.icon-only {
   justify-content: space-between;
   gap: 12px;
 }
-body button.nextday-toggle,
+body button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).nextday-toggle,
 body #batchCalculateEnd {
   height: var(--input-height) !important;
   min-height: var(--input-height) !important;
@@ -1166,13 +1164,13 @@ body #batchCalculateEnd {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--input-height);
 }
 body #dayForm .time-fields .nextday-toggle,
-body #batchForm .batch-time-fields input,
+body #batchForm .batch-time-fields input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)),
 body #batchForm .batch-time-fields .nextday-toggle {
   height: var(--input-height) !important;
   min-height: var(--input-height) !important;
   max-height: var(--input-height) !important;
 }
-body #dayForm .time-fields .clock-input {
+body #dayForm .time-fields .clock-input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   height: var(--input-height) !important;
   min-height: var(--input-height) !important;
   max-height: var(--input-height) !important;
@@ -1192,7 +1190,7 @@ body #batchForm .batch-time-fields .nextday-toggle {
     flex-basis: 28%;
   }
 }
-body .editor #dayForm .time-fields .clock-input {
+body .editor #dayForm .time-fields .clock-input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   padding-inline: 4px;
 }
 .editor .editor-time-fields::after {
@@ -1252,7 +1250,7 @@ body .editor #dayForm .time-fields .clock-input {
   flex-wrap: wrap;
   gap: 8px;
 }
-.editor .editor-actions.day-action-row button {
+.editor .editor-actions.day-action-row button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   flex: 0 0 auto;
   width: auto;
   min-width: 0;
@@ -1270,8 +1268,8 @@ body .editor .field > label,
 body .editor .theme-settings > legend,
 body .editor .time-template-title,
 body .editor #batchCalcResult,
-body .time-template-chip button,
-body .editor-actions.day-action-row button {
+body .time-template-chip button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)),
+body .editor-actions.day-action-row button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   font-size: var(--ui-font-size, var(--text-small));
 }
 body .editor .editor-date {
@@ -1348,7 +1346,7 @@ body #dayPreview .preview-totals small {
   background: #ffe8bd;
   border-color: #d6ad67;
 }
-body .editor .editor-actions.day-action-row button {
+body .editor .editor-actions.day-action-row button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   height: var(--control-height) !important;
   min-height: var(--control-height) !important;
   max-height: var(--control-height) !important;
@@ -1379,7 +1377,7 @@ body .editor #batchForm .batch-editor-actions {
   overflow-wrap: anywhere;
 }
 .batch-preview-status:empty { display: none; }
-body .editor #batchForm .batch-editor-actions button {
+body .editor #batchForm .batch-editor-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -1507,7 +1505,7 @@ body .editor .time-template-chip {
   gap: 0;
   padding: 0;
 }
-body .editor .time-template-chip button {
+body .editor .time-template-chip button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   height: calc(var(--control-height) - 2px) !important;
   min-height: 0 !important;
   max-height: none !important;
@@ -1528,7 +1526,7 @@ body .editor .time-template-chip .template-edit.icon-only {
   padding: 0;
   border-left: 1px solid var(--theme-border-soft, #cee2d4);
 }
-body .editor .time-template-chip button:hover:not(:disabled) {
+body .editor .time-template-chip button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):hover:not(:disabled) {
   background: var(--theme-surface-soft, #dfefdf);
 }
 body .editor .template-toolbar {
@@ -1575,7 +1573,6 @@ body .editor .batch-editor-header h2 {
   font-weight: 650;
   line-height: 1.3;
   text-align: center;
-  transform: translateY(calc(var(--ui-ink-offset, 0px) + 0.142857rem));
 }
 #dayPreview .preview-employment {
   grid-column: 3;
@@ -1676,7 +1673,6 @@ body .editor .page-settings-header h2 {
   font-size: 1.571429rem;
   line-height: 1.3;
   text-align: center;
-  transform: translateY(calc(var(--ui-ink-offset, 0px) + 0.142857rem));
 }
 /* Settings share the right column with its persistent bottom tabs. */
 body .workspace > .editor #settingsDialog.settings-sidebar-pane[open] {
@@ -1745,7 +1741,7 @@ body #workCityOptions:not([hidden]) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-body #workCityOptions button {
+body #workCityOptions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1766,11 +1762,11 @@ body #workCityOptions button {
   margin: 0;
   box-shadow: none;
 }
-body #workCityOptions button:is(:hover, [aria-selected="true"]) {
+body #workCityOptions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):is(:hover, [aria-selected="true"]) {
   background: var(--theme-surface-soft, #e7f1eb);
 }
-body #workCityOptions button:nth-child(odd) { border-right: var(--ui-stroke) solid var(--line); }
-body #workCityOptions button:nth-child(n + 3) { border-top: 1px solid var(--line); }
+body #workCityOptions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):nth-child(odd) { border-right: var(--ui-stroke) solid var(--line); }
+body #workCityOptions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):nth-child(n + 3) { border-top: 1px solid var(--line); }
 body #workCityOptions .work-city-name { font-size: 1rem; font-weight: 650; line-height: 1.3; }
 body #workCityOptions .work-city-office { font-size: 0.75rem; font-weight: 400; color: var(--muted); opacity: 0.8; line-height: 1.25; text-align: center; overflow-wrap: anywhere; }
 body #workCityOptions .work-city-empty {
@@ -1781,17 +1777,17 @@ body #workCityOptions .work-city-empty {
   text-align: center;
 }
 body .editor #settingsForm #breaksList > .breakrow:first-child { margin-top: 0; }
-body .editor #settingsForm .breakrow button {
+body .editor #settingsForm .breakrow button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   background: var(--ui-surface, white);
   border-color: var(--ui-border, var(--control-border));
   color: var(--red);
   box-shadow: var(--control-shadow);
 }
-body .editor #settingsForm .breakrow button:hover:not(:disabled) {
+body .editor #settingsForm .breakrow button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):hover:not(:disabled) {
   background: var(--control-hover);
   border-color: var(--ui-hover-border, var(--theme-border, #aecdbf));
 }
-body .editor #settingsForm .breakrow button .ui-icon { width: 18px; height: 18px; }
+body .editor #settingsForm .breakrow button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) .ui-icon { width: 18px; height: 18px; }
 body .editor #settingsForm .settings-goal {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: stretch;
@@ -1816,13 +1812,13 @@ body .editor #settingsForm .settings-requirement label {
   text-align: left;
   white-space: nowrap;
 }
-body .editor #settingsForm .settings-requirement input {
+body .editor #settingsForm .settings-requirement input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   --input-height: 2.285714rem;
   appearance: textfield;
   padding-block: 0.285714rem;
 }
-body .editor #settingsForm .settings-requirement input::-webkit-inner-spin-button,
-body .editor #settingsForm .settings-requirement input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+body .editor #settingsForm .settings-requirement input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))::-webkit-inner-spin-button,
+body .editor #settingsForm .settings-requirement input:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))::-webkit-outer-spin-button { appearance: none; margin: 0; }
 body .editor #settingsForm .settings-breaks > .label,
 body .editor #settingsForm #scheduleEditingDate,
 body .editor #settingsForm .requirements-unit {
@@ -1846,26 +1842,10 @@ body .editor .page-settings-pane[hidden] { display: none !important; }
 body .editor .page-settings-pane { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
 body .editor .page-settings-header { display: flex; flex: none; width: 100%; margin: 0; }
 body .editor .page-settings-body { flex: 1; min-height: 0; overflow-y: auto; padding: 1rem var(--editor-gutter); font-size: var(--text-small); }
-body .editor .settings-pane-actions {
-  --control-height: var(--action-control-height);
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) repeat(2, minmax(0, 3fr));
-  gap: 0.428571rem;
-  flex: none;
-  padding: 0.857143rem var(--editor-gutter) var(--editor-gutter);
-}
 body .editor .settings-content-divider {
   border: 0;
   border-top: 1px solid var(--line);
   margin: 1rem 0;
-}
-body .editor .settings-pane-actions button {
-  grid-column: 3;
-  width: 100%;
-  min-width: 0;
-  height: var(--control-height);
-  min-height: var(--control-height);
-  padding: 0 1.428571rem 0 0.857143rem;
 }
 @media (min-width: 1151px) {
   body .editor .page-settings-body { padding-top: 0.928571rem; }
@@ -2021,15 +2001,15 @@ body .editor .time-template-header {
   margin-inline-start: var(--template-header-gap);
   background: var(--control-border);
 }
-body .editor .time-template-header .template-header-actions button {
+body .editor .time-template-header .template-header-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   border: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
 }
-body .editor .time-template-header .template-header-actions button:hover:not(:disabled) {
+body .editor .time-template-header .template-header-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):hover:not(:disabled) {
   color: var(--ui-accent, var(--accent));
 }
-body .editor .time-template-header .template-share-buttons button {
+body .editor .time-template-header .template-share-buttons button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   --control-height: var(--template-header-height);
   flex: none;
   width: var(--template-header-width) !important;
@@ -2059,16 +2039,7 @@ body .editor .time-template-header :is(#addTimeTemplate, #batchAddTimeTemplate):
 body .editor :is(#dayForm, #batchForm) .time-template-header .time-template-title {
   margin: 0;
 }
-body .editor .time-template-header :is(#addTimeTemplate, #batchAddTimeTemplate) {
-  --control-height: var(--template-header-height);
-  width: var(--template-header-width) !important;
-  min-width: var(--template-header-width) !important;
-  max-width: var(--template-header-width) !important;
-  height: var(--control-height) !important;
-  min-height: var(--control-height) !important;
-  padding: 0;
-  flex: none;
-}
+
 body .editor .time-template-area .template-toolbar {
   display: block;
 }
@@ -2085,7 +2056,7 @@ body .editor .time-template-area .time-template-chip {
   min-width: 0;
   border-radius: var(--ui-button-radius);
 }
-body .editor .time-template-area .time-template-chip button {
+body .editor .time-template-area .time-template-chip button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   font-size: var(--ui-font-size, 0.785714rem);
 }
 body .editor .time-template-area .template-fill {
@@ -2099,12 +2070,7 @@ body .editor .time-template-area .template-fill .button-label {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-body .editor .time-template-area .template-edit.icon-only {
-  width: var(--template-edit-width) !important;
-  min-width: var(--template-edit-width) !important;
-  max-width: var(--template-edit-width) !important;
-  flex: 0 0 var(--template-edit-width);
-}
+
 body .editor .time-template-area .template-edit.icon-only .ui-icon {
   width: 1rem;
   height: 1rem;
@@ -2134,12 +2100,12 @@ body .editor #personalSettingsForm .settings-employment {
 }
 body .editor #personalSettingsForm .field { margin: 0; gap: 0.428571rem; }
 body .editor #personalSettingsForm .field > label { padding-inline-start: 8px; }
-body .editor #personalSettingsForm :is(#employmentDate, #workCity) {
+body .editor #personalSettingsForm :is(#employmentDate:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)), #workCity:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn))) {
   width: 100%;
   min-width: 0;
   text-align: center;
 }
-body .editor #personalSettingsForm #workCity {
+body .editor #personalSettingsForm #workCity:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   font-weight: 650;
   cursor: pointer;
 }
@@ -2191,7 +2157,7 @@ body .editor #dayForm .day-action-row #dayLeaveToggle[aria-expanded="true"] {
 body .editor #dayForm .day-action-row.is-leave-open > :not(#dayLeaveArea) {
   opacity: 0;
 }
-body .editor #dayForm .day-action-row > button {
+body .editor #dayForm .day-action-row > button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   transition: opacity 180ms ease;
 }
 body .editor #dayForm #dayLeaveToggle {
@@ -2288,8 +2254,7 @@ body .editor #dayForm .leave-inline #dayLeave {
   font-size: 1rem;
   font-weight: 600;
   opacity: 0;
-  transform: translateX(var(--leave-value-offset, 0.6rem));
-  transition: opacity 180ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 180ms ease;
 }
 body .editor #dayForm .leave-inline-unit {
   position: absolute;
@@ -2297,12 +2262,10 @@ body .editor #dayForm .leave-inline-unit {
   padding: 0;
   pointer-events: none;
   opacity: 0;
-  transform: translateX(var(--leave-unit-offset, -0.6rem));
-  transition: opacity 180ms ease, transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 180ms ease;
 }
 body .editor #dayForm .is-leave-open :is(#dayLeave, .leave-inline-unit) {
   opacity: 1;
-  transform: translateX(0);
 }
 body .editor #dayForm .leave-inline :is(#dayLeaveFull, #dayLeaveDone) {
   width: 100%;
@@ -2341,7 +2304,7 @@ body .editor #dayForm #clearManual.is-planned-reset:hover {
 
 .theme-settings { border: 0; margin: 0; padding: 0; min-width: 0; }
 .theme-settings legend { padding-block: 0; padding-inline-end: 0; }
-.theme-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; margin-top: 0.428571rem; }
+.theme-grid { display: grid; margin-top: 0.428571rem; }
 
 .theme-save-notice { margin-top: 0.85rem; color: var(--ui-text, var(--ink)); }
 .theme-save-notice:empty { display: none; }
@@ -2413,7 +2376,7 @@ body .workspace > .editor.is-settings-open { display: flex; flex-direction: colu
   overflow: hidden;
   background: var(--theme-surface-paper, var(--paper));
 }
-body .editor .batch-toolbar .batch-selection-group > button.ui-button {
+body .editor .batch-toolbar .batch-selection-group > button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).ui-button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   min-width: 0;
   margin: 0;
   padding-inline: 0.35rem;
@@ -2422,15 +2385,15 @@ body .editor .batch-toolbar .batch-selection-group > button.ui-button {
   box-shadow: none;
   background: transparent;
 }
-body .editor .batch-toolbar .batch-selection-group > button.ui-button + button {
+body .editor .batch-toolbar .batch-selection-group > button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).ui-button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) + button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   border-inline-start: var(--ui-stroke) solid var(--control-border, var(--line));
 }
-body .editor .batch-toolbar .batch-selection-group > button.ui-button:hover:not(:disabled) {
+body .editor .batch-toolbar .batch-selection-group > button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).ui-button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):hover:not(:disabled) {
   background: var(--ui-highlight, var(--accent-light));
 }
-.batch-selection-group > button:first-child { flex: 1 1 auto; }
-.batch-selection-group > button:last-child { flex-shrink: 0; }
-body .editor .batch-toolbar .ui-button {
+.batch-selection-group > button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):first-child { flex: 1 1 auto; }
+.batch-selection-group > button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)):last-child { flex-shrink: 0; }
+body .editor .batch-toolbar .ui-button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   --control-height: var(--batch-toolbar-height);
   min-width: 0;
   font-size: var(--ui-font-size, var(--text-small));
@@ -2443,7 +2406,7 @@ body .editor .batch-mode-toggle:hover:not(:disabled) { background: var(--ui-high
   white-space: nowrap;
 }
 .batch-mode-toggle .batch-mode-icon { width: 1rem; height: 1rem; }
-body .editor .batch-toolbar .batch-selection-group > button.ui-button {
+body .editor .batch-toolbar .batch-selection-group > button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)).ui-button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   --control-height: calc(var(--batch-toolbar-height) - 2px);
 }
 body .editor #batchForm .batch-editor-actions {
@@ -2452,7 +2415,7 @@ body .editor #batchForm .batch-editor-actions {
   padding-top: var(--section-spacing);
   padding-bottom: 0;
 }
-body .editor #batchForm .batch-editor-actions button { gap: 0.214286rem; }
+body .editor #batchForm .batch-editor-actions button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) { gap: 0.214286rem; }
 /* Both modes share the same footer geometry, independently of their copy. */
 body .editor .editor-footer {
   position: relative;
@@ -2480,7 +2443,7 @@ body .editor :is(#dayForm, #batchForm) .editor-footer::before {
   pointer-events: none;
 }
 
-body .editor :is(#dayForm, #batchForm) .editor-footer .day-action-row button {
+body .editor :is(#dayForm, #batchForm) .editor-footer .day-action-row button:not(:where(.editor .ant-input,.editor .ant-input-number-input,.editor .ant-btn)) {
   width: 100%;
   min-width: 0;
   max-width: 100%;

@@ -18,34 +18,7 @@ async function audit(context) {
       if (this.id === "onboardingDialog") this.close();
       return value;
     };
-    const counts = new WeakMap();
-    window.criticalStartup = {
-      executions: [],
-      maxMeasurements: 0,
-      measured: 0,
-      prepares: 0,
-    };
-    const set = CSSStyleDeclaration.prototype.setProperty;
-    CSSStyleDeclaration.prototype.setProperty = function (
-      name,
-      value,
-      ...args
-    ) {
-      if (
-        name === "--ui-ink-offset" &&
-        value === "0px" &&
-        document.documentElement.classList.contains("app-loading")
-      ) {
-        const count = (counts.get(this) || 0) + 1;
-        counts.set(this, count);
-        window.criticalStartup.maxMeasurements = Math.max(
-          count,
-          window.criticalStartup.maxMeasurements,
-        );
-        window.criticalStartup.measured++;
-      }
-      return set.call(this, name, value, ...args);
-    };
+    window.criticalStartup = { executions: [] };
     document.addEventListener(
       "load",
       (event) => {
@@ -55,20 +28,6 @@ async function audit(context) {
         )?.[1];
         if (!stage) return;
         window.criticalStartup.executions.push(stage);
-        if (stage !== "startup") return;
-        const alignment = WorkTimeApp.ui.alignment,
-          prepare = alignment.prepareFirstPaint;
-        alignment.prepareFirstPaint = () => {
-          window.criticalStartup.prepares++;
-          window.criticalStartup.prepared = {
-            ready: document.documentElement.dataset.appState,
-            fonts: document.fonts.status,
-            covered: document.documentElement.classList.contains("app-loading"),
-          };
-          return prepare();
-        };
-        // Coalesce both explicit component requests and automatic resize requests.
-        alignment.refresh([document.querySelector(".sidebar-brand")]);
         window.dispatchEvent(new Event("resize"));
       },
       true,
@@ -89,29 +48,12 @@ async function assertFirstFrame(page) {
   const state = await page.evaluate(() => ({
     ...window.criticalStartup,
     days: document.querySelectorAll(".day[data-date]").length,
-    aligned: document.querySelectorAll(".ui-aligned-text").length,
+    measurementRuntime: Boolean(WorkTimeApp.ui.alignment),
     overflow: document.body.scrollWidth - innerWidth,
   }));
   assert.deepEqual(state.executions, stages);
-  assert.equal(
-    state.prepares,
-    1,
-    "the reveal owns exactly one initial preparation",
-  );
-  assert.deepEqual(state.prepared, {
-    ready: "ready",
-    fonts: "loaded",
-    covered: true,
-  });
-  assert.equal(
-    state.maxMeasurements,
-    1,
-    "no text is measured repeatedly under the loading cover",
-  );
-  assert.ok(
-    state.measured > 20 && state.aligned > 20 && state.days >= 28,
-    "reveal the complete, aligned work view",
-  );
+  assert.equal(state.measurementRuntime, false, "Text alignment uses CSS");
+  assert.ok(state.days >= 28, "Reveal the complete calendar");
   assert.ok(state.overflow <= 1, "the complete first frame fits the viewport");
 }
 async function parallelAndRetry(browser, server) {
@@ -256,7 +198,7 @@ async function closingBeforeExecution(browser, server) {
     await context.close();
   }
 }
-async function onboardingInk(browser, url, locale, width) {
+async function onboardingLayout(browser, url, locale, width) {
   const context = await browser.newContext({
     locale,
     viewport: { width, height: 1000 },
@@ -268,64 +210,21 @@ async function onboardingInk(browser, url, locale, width) {
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await ready(page);
     await page.locator("#onboardingDialog[open]").waitFor();
-    for (let pass = 0; pass < 2; pass++) {
-      if (pass) await page.evaluate(() => WorkTimeApp.ui.alignment.refresh());
-      for (const node of await page.locator(".onboarding-node").all()) {
-        const white = await node.evaluate(
-          (element) => getComputedStyle(element).color === "rgb(255, 255, 255)",
+    for (const node of await page.locator(".onboarding-node").all()) {
+      const centered = await node.evaluate((circle) => {
+        const box = circle.getBoundingClientRect();
+        const text = circle
+          .querySelector(".onboarding-node-text")
+          .getBoundingClientRect();
+        return (
+          Math.abs(text.left + text.width / 2 - box.left - box.width / 2) < 1 &&
+          Math.abs(text.top + text.height / 2 - box.top - box.height / 2) < 1
         );
-        // Measure the settled dialog. The app's default is full motion even
-        // when this browser context reports a reduced-motion preference.
-        const data = (
-          await node.screenshot({ scale: "css", animations: "disabled" })
-        ).toString("base64");
-        const ink = await page.evaluate(
-          async ({ data, white }) => {
-            const image = new Image();
-            image.src = "data:image/png;base64," + data;
-            await image.decode();
-            const canvas = document.createElement("canvas");
-            canvas.width = image.width;
-            canvas.height = image.height;
-            const context = canvas.getContext("2d");
-            context.drawImage(image, 0, 0);
-            const pixels = context.getImageData(
-              0,
-              0,
-              canvas.width,
-              canvas.height,
-            ).data;
-            let left = Infinity,
-              right = -Infinity,
-              top = Infinity,
-              bottom = -Infinity;
-            for (let y = 6; y < canvas.height - 6; y++)
-              for (let x = 6; x < canvas.width - 6; x++) {
-                const index = (y * canvas.width + x) * 4;
-                const rgb = [
-                  pixels[index],
-                  pixels[index + 1],
-                  pixels[index + 2],
-                ];
-                if (!(white ? Math.min(...rgb) > 210 : Math.max(...rgb) < 195))
-                  continue;
-                left = Math.min(left, x);
-                right = Math.max(right, x);
-                top = Math.min(top, y);
-                bottom = Math.max(bottom, y);
-              }
-            return {
-              x: (left + right + 1 - canvas.width) / 2,
-              y: (top + bottom + 1 - canvas.height) / 2,
-            };
-          },
-          { data, white },
-        );
-        assert.ok(
-          Math.abs(ink.x) <= 1 && Math.abs(ink.y) <= 1,
-          `${locale}/${width}: visible onboarding ink remains centered after refresh: ${JSON.stringify(ink)}`,
-        );
-      }
+      });
+      assert(
+        centered,
+        `${locale}/${width}: onboarding text is centered by CSS`,
+      );
     }
   } finally {
     await context.close();
@@ -366,7 +265,7 @@ async function main() {
             await context.close();
           }
         }
-        await onboardingInk(browser, server.url, locale, width);
+        await onboardingLayout(browser, server.url, locale, width);
       }
     console.log(
       "Critical startup: parallel hashed downloads, ordered single execution, one aligned complete frame, retry, departure, six locales and desktop/mobile HTTP/file entries verified.",

@@ -1,7 +1,7 @@
 import type { SVGProps } from "react";
 
 function spriteIcon(id: string) {
-  return function PhosphorIcon({
+  return function TablerIcon({
     size = 24,
     ...props
   }: SVGProps<SVGSVGElement> & { size?: string | number }) {
@@ -9,8 +9,12 @@ function spriteIcon(id: string) {
       <svg
         width={size}
         height={size}
-        viewBox="0 0 256 256"
-        fill="currentColor"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
         focusable="false"
         aria-hidden="true"
         {...props}
@@ -30,6 +34,7 @@ export const BookIcon = spriteIcon("#icon-book-5");
 export const BookOpenIcon = spriteIcon("#icon-menu-book");
 export const BooksIcon = spriteIcon("#icon-library-books");
 export const CalendarCheckIcon = spriteIcon("#icon-today");
+export const CalendarTimeIcon = spriteIcon("#icon-calendar-time");
 export const CalendarDotsIcon = spriteIcon("#icon-event-note");
 export const CalendarGridIcon = spriteIcon("#icon-calendar-view-month");
 export const ColumnsIcon = spriteIcon("#icon-view-week");
@@ -47,6 +52,7 @@ export const HeartIcon = spriteIcon("#icon-heart");
 export const HourglassMediumIcon = spriteIcon("#icon-hourglass-pause");
 export const LineVerticalIcon = spriteIcon("#icon-line-vertical");
 export const MagnifyingGlassIcon = spriteIcon("#icon-search");
+export const MapPinSimpleAreaIcon = spriteIcon("#icon-map-pin-simple-area");
 export const PauseIcon = spriteIcon("#icon-pause");
 export const PlayIcon = spriteIcon("#icon-play-arrow");
 export const PlusCircleIcon = spriteIcon("#icon-plus-circle");
@@ -60,3 +66,10 @@ export const SkipForwardIcon = spriteIcon("#icon-skip-next");
 export const SpeakerHighIcon = spriteIcon("#icon-text-to-speech");
 export const StackIcon = spriteIcon("#icon-stacks");
 export const TrashIcon = spriteIcon("#icon-delete-outline");
+
+export const CloseIcon = spriteIcon("#icon-close");
+export const InfoIcon = spriteIcon("#icon-info");
+export const ErrorIcon = spriteIcon("#icon-error");
+export const WarningIcon = spriteIcon("#icon-warning");
+export const MoreIcon = spriteIcon("#icon-more-horiz");
+export const PlusIcon = spriteIcon("#icon-add");

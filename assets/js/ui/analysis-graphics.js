@@ -2,7 +2,6 @@
 /** Stateless SVG and timeline markup; interaction and animation belong to the analysis view. */
 WorkTimeApp.ui.createAnalysisGraphics = function ({
   escape: esc,
-  window,
   t,
   number,
   date,
@@ -87,24 +86,12 @@ WorkTimeApp.ui.createAnalysisGraphics = function ({
         )
           lane.labels.add(tick);
     }
-    const context = window.document.createElement("canvas").getContext("2d");
-    if (context)
-      context.font = '12px "Segoe UI", "Microsoft YaHei", sans-serif';
-    // Fit the gutter to visible labels, including next-day times only when shown.
-    const labelWidths = lanes
-      .flatMap((lane) => [...lane.labels])
-      .map((tick) =>
-        context
-          ? context.measureText(clock(tick)).width
-          : clock(tick).length * 7,
-      );
-    const left = Math.max(44, Math.ceil(Math.max(...labelWidths)) + 8),
+    // Reserve a stable SVG gutter for localized next-day labels at 12px.
+    const left = 112,
       step = (right - left) / data.calendarDays.length,
       x = (index) => left + (index + 0.5) * step;
     let svg =
-      '<svg class="analysis-plot" data-legend-x="' +
-      x(0) +
-      '" viewBox="0 0 ' +
+      '<svg class="analysis-plot" viewBox="0 0 ' +
       width +
       " " +
       height +
@@ -183,7 +170,9 @@ WorkTimeApp.ui.createAnalysisGraphics = function ({
           t("overtime") +
           " " +
           WorkTimeApp.i18n.duration(day.overtime) +
-          (!day.work ? " · " + t("restOvertime") : "") +
+          (!day.work
+            ? " · " + t(day.holiday ? "holidayOvertime" : "restOvertime")
+            : "") +
           (day.manual ? " · " + t("manualRecord") : "");
       svg +=
         '<g class="analysis-range' +
@@ -298,7 +287,11 @@ WorkTimeApp.ui.createAnalysisGraphics = function ({
         label =
           date(day.date) +
           " · " +
-          t(status) +
+          t(
+            status === "restOvertime" && record?.holiday
+              ? "holidayOvertime"
+              : status,
+          ) +
           (longest.has(day.date) ? " · " + t("longest") : ""),
         cx = step / 2;
       markup +=

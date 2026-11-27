@@ -4,7 +4,7 @@ WorkTimeApp.services.bootstrap.run(
     lifecycle.defer(() => WorkTimeApp.ui.disposeWorkspace?.());
     lifecycle.defer(() => WorkTimeApp.services.preferences.page.dispose());
     lifecycle.defer(() => WorkTimeApp.ui.theme.dispose());
-    lifecycle.defer(() => WorkTimeApp.ui.alignment?.dispose());
+
     lifecycle.defer(() => WorkTimeApp.ui.numbers?.dispose());
     lifecycle.defer(() => WorkTimeApp.ui.dateInfo?.dispose());
     lifecycle.defer(() => WorkTimeApp.ui.motion?.dispose());
@@ -156,6 +156,7 @@ WorkTimeApp.services.bootstrap.run(
       escape: esc,
       getState,
       getView,
+      getRevision: () => model.revision,
       numbers: WorkTimeApp.ui.numbers,
       document,
       window,
@@ -454,6 +455,10 @@ WorkTimeApp.services.bootstrap.run(
       formDay,
       renderStats,
       renderCalendar,
+      renderYearToolbar: () => agenda?.renderToolbar(),
+      prepareYearEntry: calendarUI.prepareYearEntry,
+      renderYearNavigation: calendarUI.renderYearNavigation,
+      prepareNeighboringYears: calendarUI.prepareNeighboringYears,
       updateResetDayButton,
       updatePlannedOvertime,
       openLeavePanel,
@@ -716,8 +721,11 @@ WorkTimeApp.services.bootstrap.run(
       if (model.batchMode) actions.refreshBatchPreview();
       for (const { element, value, checked, start, end } of drafts) {
         if (!element.isConnected || element.id === "languageSelect") continue;
-        element.value = value;
-        if ("checked" in element) element.checked = checked;
+        if (element.classList.contains("ant-input-number-input"))
+          WorkTimeApp.ui.workspaceViews.setNumberValue(element, value);
+        else element.value = value;
+        if ("checked" in element)
+          WorkTimeApp.ui.workspaceViews.setCheckedValue(element, checked);
         if (start !== null) element.setSelectionRange?.(start, end);
       }
       if (leaveOpen) openLeavePanel();
@@ -726,7 +734,6 @@ WorkTimeApp.services.bootstrap.run(
         if (element.isConnected)
           WorkTimeApp.ui.fieldErrors.show(element, error);
       if (focusId) $(focusId)?.focus({ preventScroll: true });
-      WorkTimeApp.ui.alignment?.refresh();
     }
     document.addEventListener("worktime:languagechange", refreshLanguage);
     lifecycle.defer(() =>

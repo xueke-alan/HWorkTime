@@ -96,7 +96,7 @@ async function verify() {
     await frame();
     await page.locator('[data-settings-tab="settingsGeneralTab"]').click();
     await page.locator("#pageSettingsPane").waitFor({ state: "visible" });
-    await page.locator("#personalSettingsCancel").click();
+    await page.locator("#pageSettingsOpen").click();
     await page.locator("#settingsPane").waitFor({ state: "hidden" });
     await page.locator("#date-tab-history").click();
     await page.locator("#dateContextViewTrigger").click();
@@ -177,8 +177,9 @@ async function verify() {
           (inner.top + inner.bottom) / 2 - (outer.top + outer.bottom) / 2,
         ),
         background: getComputedStyle(header).backgroundColor,
-        leftBackground: getComputedStyle(document.querySelector(".work-main"))
-          .backgroundColor,
+        leftHeaderGradient: getComputedStyle(
+          document.querySelector(".workspace-header"),
+        ).backgroundImage,
       };
     });
     assert.equal(heading.fontSize, "24px");
@@ -207,10 +208,9 @@ async function verify() {
       "Sidebar title uses its 2px optical centering offset: " +
         JSON.stringify(heading),
     );
-    assert.equal(
-      heading.background,
-      heading.leftBackground,
-      "Header matches the left panel background",
+    assert.ok(
+      heading.leftHeaderGradient.endsWith(heading.background + ")"),
+      "Sidebar header matches the left header gradient's end color",
     );
     await page.waitForFunction(
       () => !document.getElementById("panelContent").inert,
@@ -303,24 +303,26 @@ async function verify() {
       const changing = await page
         .locator("#editorDate .year-month-day")
         .evaluate((slot) => {
-          const outgoing = slot.querySelector(".summary-number-outgoing");
+          const outgoing = [
+            ...slot.querySelectorAll(".summary-number-outgoing"),
+          ];
           const column = slot.querySelector(".summary-number-column");
           return {
-            oldText: outgoing?.textContent,
+            oldText: outgoing.map((node) => node.textContent).join(""),
             slotWidth: slot.getBoundingClientRect().width,
             columnWidth: column?.getBoundingClientRect().width,
-            oldWidth: outgoing?.scrollWidth,
+            oldWidth: Math.max(...outgoing.map((node) => node.scrollWidth)),
             clipWidth: column?.clientWidth,
           };
         });
       assert.equal(
         changing.oldText,
-        String(before),
-        "The full outgoing date remains until its roll finishes",
+        String(before).padStart(2, "0"),
+        "Both outgoing date digits remain until their rolls finish",
       );
       assert.ok(
-        Math.abs(changing.slotWidth - changing.columnWidth) < 1,
-        "The rolling column keeps its full two-digit slot",
+        Math.abs(changing.slotWidth - 2 * changing.columnWidth) < 1,
+        "The two rolling columns fill the fixed two-digit slot",
       );
       assert.ok(
         changing.oldWidth <= changing.clipWidth + 1,

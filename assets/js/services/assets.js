@@ -7,7 +7,7 @@ WorkTimeApp.services.assets = (() => {
   const versions = WorkTimeApp.data.assetVersions || {};
   const pending = new Map();
   const elements = new Map();
-  const preloads = new Map();
+  const prefetches = new Map();
   const idleListeners = new Set();
   const changed = () => idleListeners.forEach((listener) => listener());
   function whenIdle({ signal } = {}) {
@@ -92,20 +92,21 @@ WorkTimeApp.services.assets = (() => {
   async function scripts(paths) {
     for (const path of paths) await load(path);
   }
-  function preload(path, style = false) {
+  function prefetch(path, style = false) {
     if (pending.has(path)) return pending.get(path).task;
-    if (preloads.has(path)) return preloads.get(path);
-    // Preload bytes without executing modules, creating views or applying styles.
+    if (prefetches.has(path)) return prefetches.get(path);
+    // Optional features may stay unused for the entire visit. Prefetch their
+    // bytes without promising immediate use, executing scripts or applying CSS.
     const task = new Promise((resolve, reject) => {
       const link = document.createElement("link");
       const url = new URL(path, root);
       if (versions[path]) url.searchParams.set("v", versions[path]);
-      link.rel = "preload";
+      link.rel = "prefetch";
       link.as = style ? "style" : "script";
       link.fetchPriority = "low";
       link.href = url.href;
       const timer = setTimeout(
-        () => finish(Error("Preload timed out: " + path)),
+        () => finish(Error("Prefetch timed out: " + path)),
         15000,
       );
       function finish(error) {
@@ -117,15 +118,15 @@ WorkTimeApp.services.assets = (() => {
         } else resolve();
       }
       link.onload = () => finish();
-      link.onerror = () => finish(Error("Preload failed: " + path));
+      link.onerror = () => finish(Error("Prefetch failed: " + path));
       document.head.append(link);
     });
-    preloads.set(path, task);
-    task.catch(() => preloads.delete(path));
+    prefetches.set(path, task);
+    task.catch(() => prefetches.delete(path));
     return task;
   }
   return {
-    preload,
+    prefetch,
     script,
     style: (path, options) => load(path, true, options),
     scripts,

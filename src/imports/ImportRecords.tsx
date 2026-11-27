@@ -1,7 +1,7 @@
 import Button from "antd/es/button";
 import { lazy, Suspense } from "react";
 const Conflict = lazy(() => import("./Conflict"));
-import { TrashIcon } from "../phosphor-icons";
+import { TrashIcon } from "../tabler-icons";
 import { useLanguage } from "../ApplicationTheme";
 import { records, useImportRecords } from "./records";
 export function ImportRows() {

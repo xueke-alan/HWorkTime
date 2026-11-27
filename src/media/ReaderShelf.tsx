@@ -1,6 +1,8 @@
+import Card from "antd/es/card";
+import Empty from "antd/es/empty";
 import Button from "antd/es/button";
 import Select from "antd/es/select";
-import { HeartIcon } from "../phosphor-icons";
+import { HeartIcon } from "../tabler-icons";
 import type { CSSProperties } from "react";
 import { mountView } from "../mount-view";
 import { useLanguage } from "../ApplicationTheme";
@@ -29,11 +31,23 @@ interface Props {
 }
 function Shelf({ books, groups, empty, text, open, update }: Props) {
   useLanguage();
-  if (!books.length) return <p className="reader-empty">{text(empty)}</p>;
+  if (!books.length)
+    return (
+      <Empty
+        className="reader-empty"
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+        description={text(empty)}
+      />
+    );
   return books.map((book) => (
-    <article className="reader-book" key={book.id} data-book-id={book.id}>
-      <button
-        type="button"
+    <Card
+      size="small"
+      className="reader-book"
+      key={book.id}
+      data-book-id={book.id}
+    >
+      <Button
+        htmlType="button"
         className="reader-book-open"
         disabled={!book.available}
         aria-label={book.title}
@@ -72,7 +86,7 @@ function Shelf({ books, groups, empty, text, open, update }: Props) {
             {!book.available && " · " + text("unavailable")}
           </small>
         </div>
-      </button>
+      </Button>
       <div className="reader-book-tools">
         <Button
           className="reader-button reader-heart"
@@ -127,7 +141,7 @@ function Shelf({ books, groups, empty, text, open, update }: Props) {
           </div>
         </details>
       </div>
-    </article>
+    </Card>
   ));
 }
 export function mountReaderShelf(host: HTMLElement) {

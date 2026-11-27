@@ -18,10 +18,27 @@
 .panel-content {
   position: relative;
 }
-.calendar-today-glow {
+.calendar .day > .calendar-today-attention {
   position: absolute;
-  z-index: 6;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
   pointer-events: none;
+  background: color-mix(in srgb, var(--accent, #439e7f) 6%, transparent);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--accent, #439e7f) 40%, transparent);
+  opacity: 0;
+  animation: calendar-today-attention 800ms ease-out;
+}
+.calendar .day > .calendar-today-attention.is-static {
+  animation: none;
+  opacity: 1;
+}
+.calendar-navigation-copy .calendar-today-attention {
+  display: none;
+}
+@keyframes calendar-today-attention {
+  0%, 100% { opacity: 0; }
+  30% { opacity: 1; }
 }
 .panel-head {
   --month-item-gap: 0.714286rem;
@@ -57,7 +74,7 @@ body .editor .analysis-sidebar-header {
 .calendar-today-number,
 .calendar-today-weekday {
   display: block;
-  transform: translateY(var(--ui-ink-offset, 0px));
+  line-height: 1.3;
 }
 .calendar-today-weekday {
   margin-left: 0;
@@ -72,9 +89,10 @@ body .editor .analysis-sidebar-header {
 .calendar-date-divider {
   display: block;
   width: 0.5em;
-  height: 1em;
+  height: 1.3em;
+  line-height: 1.3;
+  text-align: center;
   flex: none;
-  shape-rendering: geometricPrecision;
 }
 .calendar-today-separator {
   flex: none;
@@ -182,11 +200,14 @@ body .editor .analysis-sidebar-header {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  column-gap: 10px;
+  column-gap: 6px;
   font-variant-numeric: tabular-nums;
 }
 .dayhours > span {
   white-space: nowrap;
+}
+.calendar .day > .daytime + .dayhours {
+  margin-top: -2px;
 }
 /* Propagate the digit baseline through the rolling-number wrappers. */
 .dayhours .summary-number,
@@ -200,12 +221,58 @@ body .editor .analysis-sidebar-header {
   flex-direction: column;
 }
 .dayhours .day-overtime {
-  font-size: 0.9em;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15em;
+  font-size: 0.857143em;
   font-weight: 400;
 }
-.dayhours .day-overtime.negative,
+.dayhours .day-overtime > .summary-number-value,
+.dayhours .day-total-hours:not(.day-planned-hours) {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.1em;
+}
+.dayhours .day-overtime small,
+.dayhours .day-total-hours:not(.day-planned-hours) small {
+  margin: 0;
+  color: inherit;
+  font-size: 0.85em;
+  line-height: inherit;
+}
+body .calendar .day-average-value {
+  position: relative;
+  top: 2px;
+  inset-inline-end: 16px;
+  display: inline-flex;
+  align-items: baseline;
+  vertical-align: top;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  line-height: 1.3;
+  /* The number component owns its baseline; selection must not recalibrate it. */
+  transform: none;
+}
+body .calendar .day-average-value :is(.summary-number, .summary-number-visual) {
+  display: inline-flex;
+  align-items: baseline;
+  vertical-align: baseline;
+}
+body .calendar .day-average-value .summary-number-column {
+  display: inline-flex;
+  flex-direction: column;
+}
+/* Give neutral figures enough contrast, with quieter times above the totals. */
+body .calendar .daytime,
+body .calendar .day-time-value {
+  color: #62666d;
+}
+body .calendar .day-total-hours:not(.day-planned-hours),
+body .calendar .dayhours .day-overtime {
+  color: #4b5058;
+}
 body .calendar .worktime-corner.is-short {
-  color: #d13b32;
+  color: var(--theme-accent-dark, var(--accent));
 }
 .daystatus {
   font-size: 10px;
@@ -313,7 +380,7 @@ body .calendar .worktime-corner.is-short {
   }
 }
 .panel-head {
-  background: linear-gradient(110deg, #fff, #fafcfb);
+  background: linear-gradient(110deg, #fff, var(--column-header-background, #fafcfb));
   border-color: var(--ui-border, var(--theme-border-soft, #edf1ee));
 }
 .month-title {
@@ -392,28 +459,32 @@ body .calendar .worktime-corner.is-short {
 .daytime {
   color: var(--theme-text-muted, #75897d);
 }
-.daytime .manual-time {
+body .calendar .day-time-value.manual-time {
   color: var(--amber);
 }
 .record-source-dot {
   display: inline-block;
-  width: 0.9em;
-  height: 0.9em;
+  width: 0.85em;
+  height: 0.85em;
+  aspect-ratio: 1;
+  flex: none;
   margin-left: 7px;
-  border-radius: 50%;
-  vertical-align: -0.08em;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  vertical-align: calc(-0.03em - 1px);
 }
 .record-source-dot.manual {
-  background: #e58a2b;
+  fill: #e58a2b;
 }
 .record-source-dot.oa {
-  background: #19876b;
+  fill: #19876b;
 }
 .record-source-dot + .record-source-dot {
   margin-left: 3px;
 }
 .record-source-dot.oa.secondary {
-  background: #78b9a8;
+  fill: #78b9a8;
 }
 /* Separate card selection and source controls, with no nested buttons. */
 .calendar .day > .day-select,
@@ -443,12 +514,12 @@ body .calendar .worktime-corner.is-short {
 .calendar .day .source-toggle {
   position: relative;
   display: inline-block;
-  width: calc(1.62em + 3px);
-  height: 0.9em;
+  width: calc(1.53em + 3px);
+  height: 0.85em;
   min-width: 0;
   min-height: 0;
   margin-left: 7px;
-  vertical-align: -0.08em;
+  vertical-align: calc(-0.03em - 1px);
   z-index: 3;
   pointer-events: auto;
   padding: 0;
@@ -468,7 +539,7 @@ body .calendar .worktime-corner.is-short {
   top: 0;
   left: 0;
   margin: 0;
-  transform-origin: left bottom;
+  transform-origin: left center;
 }
 .calendar .day .source-toggle.oa > .manual,
 .calendar .day .source-toggle.manual > .oa {
@@ -485,28 +556,49 @@ body .calendar .worktime-corner.is-short {
   letter-spacing: 0.05px;
 }
 .daystatus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  column-gap: 4px;
+}
+.day-status-tags {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 3px 4px;
+  min-width: 0;
+}
+.day-status-tags > div {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+.day-status-tags:empty {
+  display: none;
 }
 .daystatus:has(.muted) {
   color: var(--theme-text-muted, #94a297);
 }
-/* Tags and the daily average share the remaining space below the totals. */
+/* Keep the average close to the totals and reserve a separate bottom row for tags. */
 body .calendar .day-footer {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 4px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(max-content, 1fr);
+  row-gap: 2px;
   flex: 1;
   min-width: 0;
+  margin-top: -0.285714rem;
 }
 body .calendar .day-footer .daystatus {
   grid-column: 1;
-  grid-row: 1;
+  grid-row: 2;
   align-self: end;
   min-width: 0;
   margin-top: 0;
+  /* Let tags use the card gutter while keeping the data rows aligned. */
+  margin-inline: calc(4px - var(--day-inline-padding, 9px));
+  margin-bottom: calc(4px - var(--day-bottom-padding, 9px));
 }
 body .calendar .day-footer .daystatus > * {
   min-width: 0;
@@ -514,31 +606,51 @@ body .calendar .day-footer .daystatus > * {
 }
 body .calendar .day-footer .daystatus .pill {
   box-sizing: border-box;
+  flex: none;
+  height: 20px;
+  min-height: 20px;
   max-width: 100%;
-  white-space: normal;
+  padding: 0 4px;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
 }
-body .calendar .day-footer .daystatus .pill-text {
+body .calendar .day .day-footer .daystatus .pill-text {
+  display: block;
+  height: 16px;
   min-width: 0;
-  overflow-wrap: anywhere;
+  max-width: 100%;
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transform: none;
 }
 body .calendar .day-footer .day-average {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 1;
   align-self: start;
+  justify-self: end;
   min-width: 0;
   margin-top: 0;
+  margin-inline-end: 0;
+  padding-top: 0;
+  line-height: 1.3;
+  overflow: visible;
 }
 body .calendar .day-footer:not(:has(.day-average:not(:empty))) {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
 }
-body .calendar .day-footer:has(.daystatus:empty) {
-  grid-template-columns: minmax(0, 1fr);
+body .calendar .day-footer:not(:has(.day-average:not(:empty))) .daystatus {
+  grid-row: 1;
 }
-body .calendar .day-footer:has(.daystatus:empty) .day-average {
-  grid-column: 1;
-  justify-self: end;
+body .calendar .day-footer:not(:has(.day-status-tags:not(:empty), .worktime-corner)) {
+  grid-template-rows: auto;
 }
-body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empty))) {
+body .calendar .day-footer .daystatus:not(:has(.day-status-tags:not(:empty), .worktime-corner)) {
+  display: none;
+}
+body .calendar .day-footer:not(:has(.day-status-tags:not(:empty), .worktime-corner, .day-average:not(:empty))) {
   display: none;
 }
 .calendar-foot {
@@ -583,7 +695,10 @@ body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empt
     padding: 8px 15px;
   }
   .calendar[data-weeks="6"] .day {
-    padding: 4px 6px;
+    --day-inline-padding: 6px;
+    --day-bottom-padding: 4px;
+    padding: 4px var(--day-inline-padding);
+    padding-bottom: var(--day-bottom-padding);
     gap: 2px;
   }
   .calendar[data-weeks="6"] .dayhours {
@@ -691,7 +806,10 @@ body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empt
     height: 27px;
   }
   .calendar[data-weeks="6"] .day {
-    padding: 7px 8px;
+    --day-inline-padding: 8px;
+    --day-bottom-padding: 7px;
+    padding: 7px var(--day-inline-padding);
+    padding-bottom: var(--day-bottom-padding);
     gap: 4px;
   }
   .calendar[data-weeks="6"] .daytime {
@@ -880,10 +998,12 @@ body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empt
 }
 @media (min-width: 1151px) and (max-height: 800px) {
   .calendar[data-weeks="6"] .day {
+    --day-bottom-padding: 2px;
     padding-block: 2px;
     gap: 1px;
   }
   .calendar[data-weeks="5"] .day {
+    --day-bottom-padding: 3px;
     padding-block: 3px;
     gap: 1px;
   }
@@ -925,15 +1045,18 @@ body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empt
   margin-top: -2px;
   padding-top: 2px;
 }
+.day-average:not(:empty)::before,
+body .calendar .day-lunar::before {
+  height: 1px;
+  background: var(--line);
+  pointer-events: none;
+}
 .day-average:not(:empty)::before {
   content: "";
   position: absolute;
   top: 0;
   right: 0;
-  width: 67%;
-  height: 1px;
-  background: var(--line);
-  pointer-events: none;
+  width: calc(100% + 16px);
 }
 .day-average > span {
   white-space: nowrap;
@@ -942,31 +1065,6 @@ body .calendar .day-footer:has(.daystatus:empty):not(:has(.day-average:not(:empt
 .day-average.batch-average-affected:has(> .day-average-value.below-target) {
   color: #d13b32;
 }
-.day-average .trend-icon {
-  display: block;
-  align-self: center;
-  transform: translateY(var(--average-trend-offset, 0px));
-  width: 12px;
-  height: 12px;
-  flex: none;
-  vertical-align: initial;
-}
-.day-average .trend-up {
-  color: #00856a;
-}
-.day-average .trend-down {
-  color: #d13b32;
-}
-.day-average .trend-flat {
-  color: #506681;
-}
-@media (min-width: 1800px) and (min-height: 900px) {
-  .day-average .trend-icon {
-    width: 14px;
-    height: 14px;
-  }
-}
-
 #settingsOpen svg {
   width: 16px;
   height: 16px;
@@ -1198,27 +1296,44 @@ body .month-controls #nextMonth .ui-icon {
   width: 1.285714rem;
   height: 1.285714rem;
   display: block;
-  fill: currentColor;
-  stroke: none;
   shape-rendering: geometricPrecision;
 }
 body .panel-head .calendar-toolbar-actions button {
   font-size: var(--ui-font-size, var(--text-small));
 }
 body .daynum {
-  font-size: 1.142857rem;
+  font-size: 16px;
 }
 body .daykind,
-body .daytime,
 body .daystatus,
-body .day-average,
 body .weekdays,
 body .calendar-foot,
 body .calendar-footer {
   font-size: var(--text-small);
 }
+body .calendar .daykind {
+  font-size: 0.714286rem;
+  line-height: 1.3;
+}
+/* Give Chinese day labels more presence while retaining the ordinal's size. */
+html[lang|="zh"] body .calendar .daykind {
+  font-size: 0.785714rem;
+}
+html[lang|="zh"] body .calendar .daykind .calendar-label-number {
+  font-size: 0.785714rem;
+}
+body .daytime {
+  font-size: 0.785714rem;
+}
 body .dayhours {
   font-size: 1rem;
+}
+/* The cumulative daily average is the primary calculation in each date card. */
+body .day-average {
+  font-size: 16px;
+}
+body .calendar .day-total-hours:not(.day-planned-hours) {
+  font-size: 0.857143em;
 }
 body .daytime {
   white-space: normal;
@@ -1226,13 +1341,11 @@ body .daytime {
 }
 body .workspace .day {
   --day-inline-padding: 0.642857rem;
+  --day-bottom-padding: 9px;
   padding: 0.642857rem;
   padding-inline: var(--day-inline-padding);
-  padding-bottom: 9px;
+  padding-bottom: var(--day-bottom-padding);
   gap: 0.285714rem;
-}
-body .calendar .daystatus:not(:empty) {
-  margin-inline-start: 0;
 }
 @media (max-width: 699px) {
   .calendar-today,
@@ -1251,6 +1364,7 @@ body .calendar .daystatus:not(:empty) {
   font-variant-numeric: tabular-nums;
 }
 body .month-controls .month-title {
+  --month-label-width: 2ch;
   --month-title-gap: min(var(--year-month-gap), var(--month-item-gap));
   --month-title-padding: calc(0.428571rem + var(--month-item-gap) - var(--month-title-gap));
   --month-title-width: calc(
@@ -1262,10 +1376,25 @@ body .month-controls .month-title {
   gap: var(--month-title-gap);
   padding-inline: var(--month-title-padding);
 }
+/* Abbreviated word months keep one font-relative slot across all twelve months. */
+body .month-controls .month-title.has-word-month {
+  --month-label-width: 3em;
+}
 .year-month-year {
   width: 4ch;
   text-align: center;
   flex: none;
+}
+/* Flex slots remove inline baseline space below the rolling number layers. */
+body .year-month-label > :is(.year-month-year, .year-month-month) {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: none;
+}
+.year-month-label > :is(.year-month-year, .year-month-month) > .summary-number {
+  display: flex;
 }
 .year-month-month {
   width: var(--month-label-width, 2ch);
@@ -1282,9 +1411,9 @@ body .month-controls .month-title {
 .year-month-month .summary-number-word {
   width: 100%;
 }
-/* A one-digit month stays centered in the two-digit slot. */
+/* Numeric months stay left-aligned, rolling the trailing column to blank. */
 .year-month-month .summary-number-visual {
-  justify-content: center;
+  justify-content: flex-start;
 }
 .year-month-label.has-word-month .year-month-month .summary-number-digit {
   text-align: left;
@@ -1297,18 +1426,9 @@ body .month-controls .month-title > :is(.month-title-year, .month-title-month) {
   transform: translateX(0);
   transition: transform 360ms var(--motion-ease);
 }
-/* Alignment temporarily resets ink offsets while measuring. Keep it off the
-   moving layer so those measurements cannot cancel/restart title travel. */
-.year-month-label > :is(.year-month-year, .year-month-month) > .summary-number {
-  transform: translateY(var(--ui-ink-offset, 0px));
-}
-/* Lower the SVG slightly to match the rasterized digits' optical center. */
+/* Date slashes follow the numeric baseline while the year title slides. */
 .year-month-label > .calendar-date-divider {
-  transform: translate(var(--year-month-divider-x, 0px), 0.035em);
-}
-/* Center the slash in the extra space before a centered one-digit month. */
-.year-month-label.has-single-digit-month {
-  --year-month-divider-x: 0.25ch;
+  transform: translateX(var(--year-month-divider-x, 0px));
 }
 .year-month-label > .calendar-date-divider,
 body .month-controls .month-title > .month-title-month {
@@ -1419,11 +1539,6 @@ body .calendar .day:is([data-holiday], .weekend, .full-leave).batchselected:hove
 body .calendar .day:is([data-holiday], .weekend, .full-leave):focus-visible {
   outline: 0;
 }
-body .calendar .day:is([data-holiday], .weekend, .full-leave).today .daynum {
-  background: var(--day-tone);
-  color: #fff;
-  box-shadow: 0 2px 4px color-mix(in srgb, var(--day-tone) 18%, transparent);
-}
 body .calendar .day:is([data-holiday], .weekend, .full-leave) .daykind {
   color: #647c72;
 }
@@ -1431,7 +1546,7 @@ body .calendar .day .daykind.is-planned-overtime {
   color: #e58a2b;
 }
 body .calendar .day:is([data-holiday], .weekend, .full-leave) .daytime {
-  color: #48675d;
+  color: #62666d;
 }
 body .calendar .day:is([data-holiday], .weekend, .full-leave) .dayhours {
   color: var(--ink);
@@ -1458,43 +1573,14 @@ body .calendar .daystatus .pill {
   padding: 0.25em 0.5em;
   letter-spacing: 0;
 }
-/* Ink alignment must not replace the badge's compact or wrapped line height. */
-body .calendar .daystatus .pill-text { line-height: inherit; }
-/* Narrow cells retain readable labels rather than clipping single-line pills. */
-@container calendar-panel (max-width: 849px) {
-  body .calendar .day-footer:has(.daystatus:not(:empty)):has(.day-average:not(:empty)) :is(.day-average, .pill) {
-    font-size: 0.714286rem;
-  }
-  body .calendar .day-footer .daystatus .pill {
-    padding-inline: 1px;
-  }
-  body .calendar .day-footer .day-average .trend-icon {
-    width: 0.714286rem;
-    height: 0.714286rem;
-  }
-}
+/* Keep the same badge geometry at every breakpoint; long labels keep a hint. */
 @container calendar-panel (max-width: 699px) {
-  body .calendar .day-footer:has(.daystatus:not(:empty)):has(.day-average:not(:empty)) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-    column-gap: 2px;
-  }
   body .calendar .day-footer .day-average-value {
     white-space: normal;
     overflow-wrap: anywhere;
   }
   body .workspace .day {
     --day-inline-padding: 3px;
-  }
-  body .calendar .daystatus .pill {
-    box-sizing: border-box;
-    max-width: 100%;
-    padding-inline: 1px;
-    white-space: normal;
-    line-height: 1.3;
-  }
-  body .calendar .daystatus .pill-text {
-    min-width: 0;
-    overflow-wrap: anywhere;
   }
 }
 body .calendar-footer {
@@ -1584,6 +1670,7 @@ body .workspace .calendar.year-calendar {
 }
 .year-month {
   position: relative;
+  contain: layout style;
   min-width: 0;
   padding: 6px 0;
   isolation: isolate;
@@ -1592,17 +1679,20 @@ body .workspace .calendar.year-calendar {
 .year-month h3 {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   font-size: 18px;
   font-weight: 600;
   color: var(--theme-text-muted, #81958b);
   line-height: 24px;
-  margin: 0 0 10px;
+  margin: 0 0 6px;
 }
 .year-month-number {
-  padding: 7px 14px 5px;
-  border-radius: var(--ui-radius);
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 2px 10px;
+  border-radius: 4px;
   color: color-mix(in srgb, currentColor 65%, var(--theme-text-strong, var(--ui-text, var(--ink))));
   white-space: nowrap;
   transition: background-color 180ms ease-out;
@@ -1610,9 +1700,8 @@ body .workspace .calendar.year-calendar {
 .year-month[aria-current="true"] .year-month-number {
   background-color: var(--ui-highlight, var(--accent-light));
 }
-.year-month:focus-visible .year-month-number {
-  outline: 2px solid var(--ui-focus, var(--accent));
-  outline-offset: 2px;
+.year-month:focus-visible {
+  outline: none;
 }
 .year-month-stats {
   display: flex;
@@ -1648,7 +1737,7 @@ body .workspace .calendar.year-calendar {
 }
 
 body .year-day {
-  --year-card-background: var(--year-heat-bg);
+  --year-card-background: var(--year-heat-bg, transparent);
   position: relative;
   display: block;
   min-width: 0;
@@ -1663,10 +1752,13 @@ body .year-day {
   font-size: 11px;
   line-height: 1.15;
   background-clip: padding-box;
-  background-color: var(--year-heat-bg);
+  background-color: var(--year-card-background);
 }
-.year-calendar-detail .year-day {
-  --year-card-background: var(--year-detail-bg, var(--theme-surface-soft, #edf4f0));
+body .year-days > button.year-day:disabled {
+  background: var(--year-card-background) padding-box;
+  border-color: transparent;
+  opacity: 1;
+  pointer-events: none;
 }
 @property --year-legend-min {
   syntax: "<color>";
@@ -1700,16 +1792,13 @@ body .calendar-footer .year-legend {
   max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
-  transform: translateX(0);
-  transition: opacity 180ms ease-out, transform 180ms var(--motion-ease),
-    visibility 0s;
+  transition: opacity 180ms ease-out, visibility 0s;
 }
 body .calendar-footer .year-legend.is-inactive {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateX(-20px);
-  transition-delay: 0s, 0s, 180ms;
+  transition-delay: 0s, 180ms;
 }
 .year-legend span {
   display: inline-flex;
@@ -1747,8 +1836,8 @@ body button.year-day {
   border-color: transparent;
   line-height: 1.15;
 }
-.year-calendar:not(.year-calendar-detail) button.year-day:is(:hover, :active):not(:disabled) {
-  background: var(--year-heat-bg) padding-box;
+.year-calendar button.year-day:is(:hover, :active):not(:disabled) {
+  background: var(--year-card-background) padding-box;
 }
 body button.year-day:hover:not(:disabled) {
   border-color: color-mix(
@@ -1760,7 +1849,7 @@ body button.year-day:hover:not(:disabled) {
 }
 /* The decorative tracks line up with the live buttons. Movement and fading
    composite once per month layer, including when a switch is reversed. */
-.year-day-layer {
+.year-ink, .year-heat-labels, .year-day-layer, .year-detail-colors {
   position: absolute;
   inset: 0;
   display: grid;
@@ -1768,54 +1857,67 @@ body button.year-day:hover:not(:disabled) {
   grid-auto-rows: inherit;
   gap: inherit;
   pointer-events: none;
+}
+.year-ink { transition: opacity 130ms ease-out; }
+.year-ink.is-outgoing { opacity: 0; transition-duration: 90ms; }
+.year-ink.is-entering { animation: year-ink-enter 130ms ease-out; }
+@keyframes year-ink-enter {
+  from { opacity: .25; }
+  to { opacity: 1; }
+}
+.year-heat-labels { transition: opacity 180ms ease-out; }
+.year-calendar-detail .year-heat-labels { opacity: 0; }
+.year-heat-labels > span {
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--year-heat-ink) 28%, transparent);
+  transition: color 160ms ease-out;
+}
+.year-month:is(:hover, :focus-within) .year-heat-labels > span,
+.year-heat-labels > .is-today {
+  color: var(--year-heat-ink);
+}
+.year-day-layer {
   opacity: 0;
-  visibility: hidden;
-  transition: opacity 180ms ease-out, transform 180ms var(--motion-ease),
-    visibility 0s linear 180ms;
+  transition: opacity 180ms ease-out, transform 180ms var(--motion-ease);
 }
 .year-day-layer > span { min-width: 0; }
-.year-calendar-detail .year-day-layer:not(.year-heat-numbers),
-.year-calendar:not(.year-calendar-detail) .year-heat-numbers {
+.year-calendar-detail .year-detail-cells:not(:empty) {
   opacity: 1;
   transform: none;
-  visibility: visible;
-  transition-delay: 0s;
 }
-.year-day-surfaces > span[class] {
-  margin: 1px;
-  border-radius: max(0px, calc(var(--ui-radius) - 1px));
-  background-color: var(--year-detail-bg, var(--theme-surface-soft, #edf4f0));
+.year-detail-cell {
+  position: relative;
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius);
+  background-clip: padding-box;
 }
-.year-days :is(.year-day, .year-day-surfaces > span).is-weekend:not(.is-holiday) {
-  --year-detail-bg: color-mix(in srgb, var(--day-surface) 74%, white);
+.year-detail-colors {
+  opacity: 0;
+  transition: opacity 180ms ease-out;
 }
-.year-days :is(.year-day, .year-day-surfaces > span).is-holiday {
-  --year-detail-bg: color-mix(in srgb, #f4e7d6 68%, white);
+.year-calendar-detail .year-detail-colors { opacity: 1; }
+.year-calendar-detail.is-year-navigating .year-day { --year-card-background: transparent; }
+.year-detail-colors > span {
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius);
+  background-clip: padding-box;
 }
-.year-days :is(.year-day, .year-day-surfaces > span).is-makeup {
-  --year-detail-bg: color-mix(in srgb, #dfece4 74%, white);
-}
-.year-heat-numbers { transform: translateY(-4px); }
-.year-detail-numbers, .year-day-notes { transform: translateY(4px); }
-.year-day-badges { transform: translateY(-2px); }
-:is(.year-heat-numbers, .year-detail-numbers) > span {
+.year-detail-colors > .is-workday { background-color: var(--theme-surface-soft, #edf4f0); }
+.year-detail-colors > .is-weekend { background-color: color-mix(in srgb, #dce8e3 74%, white); }
+.year-detail-colors > .is-holiday { background-color: color-mix(in srgb, #f4e7d6 68%, white); }
+.year-detail-colors > .is-makeup { background-color: color-mix(in srgb, #dfece4 74%, white); }
+.year-detail-cells { transform: translateY(4px); }
+.year-detail-cells > span, body button.year-day {
   font-weight: 600;
   line-height: 1.05;
   font-variant-numeric: tabular-nums;
 }
-.year-heat-numbers > span {
-  padding-top: calc((var(--year-card-height) - 12px) / 2);
-  font-size: 12px;
-  opacity: 0.28;
-}
-.year-month:is(:hover, :focus-within) .year-heat-numbers > span,
-.year-heat-numbers > .is-today {
-  opacity: 1;
-}
-.year-heat-numbers > .is-today {
-  position: relative;
-}
-.year-heat-numbers > .is-today::after {
+.year-heat-labels > .is-today { position: relative; }
+.year-heat-labels > .is-today::after {
   content: "";
   position: absolute;
   bottom: 5px;
@@ -1827,25 +1929,31 @@ body button.year-day:hover:not(:disabled) {
   background: currentColor;
   transform: translateX(-50%);
 }
-.year-detail-numbers > span {
-  padding-top: calc((var(--year-card-height) - var(--year-detail-stack)) / 2 + 2px);
+.year-detail-cell {
+  padding-top: calc((var(--year-card-height) - var(--year-detail-stack)) / 2);
   color: var(--theme-text, #35453e);
-  font-size: 14px;
+  font-size: 12px;
 }
-.year-detail-numbers > .is-today {
+.year-detail-cells > .is-today {
   color: var(--red);
   font-weight: 700;
 }
-:is(.year-day-note-slot, .year-day-badge-slot) { position: relative; }
+.year-detail-cell[data-note]::after {
+  content: attr(data-note);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.year-detail-cell[data-note]::after,
 .year-day-note {
   position: absolute;
   inset-inline: 1px;
-  bottom: calc((var(--year-card-height) - var(--year-detail-stack)) / 2);
+  bottom: calc((var(--year-card-height) - var(--year-detail-stack)) / 2 + 1px);
   height: var(--year-note-height);
   overflow: hidden;
   font-size: 9px;
   line-height: var(--year-note-height);
   text-align: center;
+  font-weight: 400;
   color: var(--theme-text-muted, #7c8f86);
 }
 .year-day-note-track {
@@ -1883,8 +1991,8 @@ body button.year-day:hover:not(:disabled) {
   background: #dbeee5;
 }
 @media (max-width: 540px) {
-  .year-detail-numbers > span { font-size: 15px; }
-  .year-day-note { font-size: 10px; }
+  .year-detail-cell { font-size: 13px; }
+  .year-detail-cell[data-note]::after, .year-day-note { font-size: 10px; }
   .year-day-badge { font-size: 8px; }
 }
 
@@ -1925,13 +2033,13 @@ body .calendar-footer .year-gradient {
 }
 body .calendar-footer .year-scale > :is(.year-min, .year-max) {
   flex: 0 0 auto;
-  width: 0;
-  overflow: hidden;
+  width: auto;
   white-space: nowrap;
+  opacity: 1;
+  transition: opacity 260ms ease;
+}
+body .calendar-footer .year-scale > :is(.year-min, .year-max)[aria-hidden="true"] {
   opacity: 0;
-  transition:
-    width 360ms var(--motion-ease),
-    opacity 260ms ease;
 }
 body .calendar-footer .year-scale > .year-min {
   justify-content: flex-end;
@@ -2035,7 +2143,7 @@ body .calendar .day-lunar {
   margin-left: auto;
   padding-top: 5px;
   color: color-mix(in srgb, var(--theme-text-muted, #8a9c91) 68%, transparent);
-  font-size: 0.714286rem;
+  font-size: clamp(10px, 0.642857rem, 11px);
   font-weight: 400;
   line-height: 1.3;
   text-align: right;
@@ -2047,17 +2155,15 @@ body .calendar .day-lunar::before {
   top: 1px;
   right: 0;
   width: calc(100% + 4px);
-  height: 1px;
-  background: currentColor;
-  opacity: 0.45;
 }
 body .calendar .day-lunar:empty {
   display: none;
 }
 body .calendar .worktime-corner {
-  position: absolute;
-  right: 4px;
-  bottom: 4px;
+  position: relative;
+  grid-column: 2;
+  align-self: center;
+  justify-self: end;
   width: 16px;
   height: 16px;
   filter: opacity(1);
@@ -2066,6 +2172,8 @@ body .calendar .worktime-corner {
   pointer-events: none;
 }
 body .calendar .worktime-corner > svg {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -2076,8 +2184,8 @@ body .calendar.is-batch-editing .worktime-corner {
 body .calendar .payday-icon {
   --date-marker-background: #efd5ce;
   display: block;
-  width: calc(var(--date-ink-height, 1em) + 8px);
-  height: calc(var(--date-ink-height, 1em) + 8px);
+  width: var(--date-marker-size, calc(0.8em + 8px));
+  height: var(--date-marker-size, calc(0.8em + 8px));
   flex: none;
   color: #bd514b;
 }
@@ -2104,7 +2212,6 @@ body .calendar .day.today .day-date .daynum {
 body .calendar .day-date .daynum-text {
   display: inline-block;
   line-height: 1.3;
-  transform: translate(var(--ui-ink-offset-x, 0px), var(--ui-ink-offset, 0px));
 }
 body .calendar .day-date .daynum-text > .summary-number {
   vertical-align: baseline;
@@ -2157,11 +2264,34 @@ body .calendar .day-date .daynum-text .summary-number-column {
     flex-wrap: wrap;
   }
 }
-@media (min-width: 1301px) {
+/* Size against the stationary panel, including six-week months in every row. */
+@media (min-width: 1151px) {
+  .panel-content-viewport:has(.year-calendar) {
+    container-type: size;
+  }
   body .workspace .calendar.year-calendar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-content: space-evenly;
-    row-gap: 0;
-    padding-block: 0;
+    gap: 8px 14px;
+    padding-block: 8px;
+  }
+  .year-month {
+    padding-block: 4px;
+  }
+  .year-days {
+    --year-card-height: clamp(24px, calc((100cqh - 204px) / 18), 56px);
+    --year-detail-stack: min(var(--year-card-height), clamp(28px, calc(var(--year-card-height) - 6px), 40px));
+    --year-note-height: clamp(8px, calc(var(--year-card-height) - 24px), 14px);
+  }
+  .year-heat-labels > span {
+    font-size: clamp(12px, calc(var(--year-card-height) * 0.375), 18px);
+  }
+  .year-detail-cell {
+    font-size: clamp(11px, calc(var(--year-card-height) * 0.4 - 0.6px), 18px);
+  }
+  .year-detail-cell[data-note]::after,
+  .year-day-note {
+    font-size: clamp(9px, calc(var(--year-card-height) * 0.27), 13px);
   }
 }
 .calendar .day > :is(.calendar-weather-icon, .calendar-weather-outgoing) {
@@ -2321,8 +2451,8 @@ body .calendar .date-markers {
   z-index: 3;
   pointer-events: auto;
   display: inline-flex;
-  width: calc(var(--date-ink-height, 1em) + 8px);
-  height: calc(var(--date-ink-height, 1em) + 8px);
+  width: var(--date-marker-size, calc(0.8em + 8px));
+  height: var(--date-marker-size, calc(0.8em + 8px));
   flex: none;
   overflow: hidden;
   border-radius: 50%;
@@ -2358,24 +2488,27 @@ body .calendar .date-markers:has(> :nth-child(2)) > .payday-icon:nth-child(2) {
   body .workspace .calendar > .day {
     --day-inline-padding: 2px;
   }
-  body .calendar .dayhours,
-  body .calendar .day-average {
+  body .calendar .dayhours {
     font-size: 0.714286rem;
+  }
+  body .calendar .dayhours :is(.day-overtime, .day-total-hours:not(.day-planned-hours)) {
+    font-size: 1em;
+  }
+  body .calendar .day-average {
+    font-size: 0.785714rem;
   }
   body .calendar .day-date {
     flex-wrap: wrap;
     max-width: 100%;
     gap: 2px;
   }
-  .day-average .trend-icon {
-    width: 8px;
-    height: 8px;
-  }
 }
 @media (max-width: 360px) {
-  body .calendar .dayhours,
-  body .calendar .day-average {
+  body .calendar .dayhours {
     font-size: 0.642857rem;
+  }
+  body .calendar .day-average {
+    font-size: 0.714286rem;
   }
 }
 /* Keep selection and weather fades independent of the card surface. */
@@ -2392,34 +2525,17 @@ body .calendar .date-markers:has(> :nth-child(2)) > .payday-icon:nth-child(2) {
 }
 .calendar .day-average.batch-average-affected {
   display: grid;
-  grid-template-columns: max-content max-content max-content;
+  grid-template-columns: max-content;
   align-items: center;
 }
 .calendar .day-average.batch-average-affected > .day-average-value {
-  grid-column: 2;
-  grid-row: 1;
-}
-.calendar .day-average.batch-average-affected > .trend-icon {
-  grid-column: 3;
+  grid-column: 1;
   grid-row: 1;
 }
 @container calendar-panel (max-width: 699px) {
   .calendar .day-average {
     display: grid;
     grid-template-columns: max-content;
-  }
-  .calendar .day-average > .trend-icon {
-    grid-column: 1;
-    grid-row: 2;
-    justify-self: end;
-  }
-  .calendar .day-average.batch-average-affected {
-    grid-template-columns: max-content max-content;
-  }
-  .calendar .day-average.batch-average-affected > .trend-icon {
-    grid-column: 2;
-    grid-row: 2;
-    justify-self: end;
   }
 }
 body .calendar.is-batch-editing > .day[aria-disabled="true"] {
@@ -2443,6 +2559,16 @@ body #monthTitle[aria-disabled="true"] {
   pointer-events: none !important;
   animation: none !important;
   transition: none !important;
+}
+/* Keep this layer out of the flex layout, including on holidays and leave days. */
+.calendar .day > .calendar-day-content-outgoing {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.calendar-day-content-outgoing * {
+  pointer-events: none !important;
 }
 
 /* A retained selection remains recognizable on the month grid's adjacent dates. */
@@ -2502,13 +2628,6 @@ body .calendar-footer:has(.year-legend:not(.hidden)) .site-footer-status {
   grid-column: 3;
   grid-row: 1;
 }
-body .calendar-footer:has(.year-legend:not(.hidden)) .calendar-foot {
-  transform: translateX(0);
-  transition: transform 180ms var(--motion-ease);
-}
-body .calendar-footer:has(.year-legend.is-inactive) .calendar-foot {
-  transform: translateX(calc(var(--year-footer-shift, 0px) * -1));
-}
 @media (max-width: 699px) {
   body .calendar-footer .site-footer-status {
     grid-column: 1;
@@ -2535,10 +2654,10 @@ body .editor.is-year-view #dayEditor,
 body .editor.is-year-view #batchBar { display: none !important; }
 .year-analysis-sidebar[hidden] { display: none !important; }
 .year-analysis-sidebar {
-  flex: 1;
+  flex: none;
   min-height: 0;
-  margin: calc(-1 * var(--editor-gutter)) calc(-1 * var(--editor-gutter)) 0;
-  overflow-y: auto;
+  margin: 0;
+  overflow: visible;
   color: var(--ink);
 }
 .year-analysis-header {
@@ -2561,7 +2680,6 @@ body .editor.is-year-view #batchBar { display: none !important; }
   line-height: 1.3;
   font-variant-numeric: tabular-nums;
   text-align: center;
-  transform: translateY(var(--ui-ink-offset, 0px));
 }
 body .editor .year-analysis-header > h2 {
   font-family: var(--font-ui);
@@ -2577,7 +2695,7 @@ body .editor .year-analysis-header > h2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  padding: var(--editor-gutter);
+  padding: 0;
 }
 .year-analysis-cards > .card {
   display: flex;
@@ -2603,3 +2721,26 @@ body .editor .year-analysis-header > h2 {
 .year-analysis-cards > .card.average-card::after { display: none; }
 .year-analysis-cards > .card.average-card .card-label { align-self: start; color: var(--ui-muted, var(--muted)); }
 .year-analysis-cards > .card.average-card .metric { align-self: end; min-width: 0; font-size: clamp(34px, 3vw, 42px); text-align: right; }
+/* Emphasize dates, workday ordinals, planned hours and daily averages. */
+body .calendar .day,
+body .calendar .day * {
+  font-family: var(--font-calendar-numeric);
+  font-weight: 500;
+}
+body .calendar .day .day-average-value,
+body .calendar .day .day-average-value *,
+body .calendar .day .day-planned-hours,
+body .calendar .day .day-planned-hours *,
+body .calendar .day .daynum,
+body .calendar .day .daynum *,
+body .calendar .day .daykind .calendar-label-number {
+  font-family: var(--font-ui);
+  font-weight: 700;
+}
+body .calendar .day .calendar-label-number {
+  font-size: calc(1em + 1px);
+}
+body .calendar .day .calendar-leave-duration {
+  font-family: var(--font-ui);
+  font-weight: 700;
+}

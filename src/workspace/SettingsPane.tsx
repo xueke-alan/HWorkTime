@@ -1,26 +1,15 @@
+import Input from "antd/es/input";
+import { NumberField } from "./number-field";
 import SettingsTabs from "./SettingsTabs";
 import { SidebarHeader } from "./SidebarLayout";
 import Button from "antd/es/button";
-import { lazy, Suspense, useLayoutEffect, useRef, useState } from "react";
-const PreferenceFields = lazy(() => import("./PreferenceFields"));
-const CalendarMascotSetting = lazy(() =>
-  import("./PreferenceFields").then(({ CalendarMascotSetting }) => ({
-    default: CalendarMascotSetting,
-  })),
-);
+import PreferenceFields, { CalendarMascotSetting } from "./PreferenceFields";
+import useDevelopmentEnabled from "../useDevelopmentEnabled";
 export default function SettingsPane() {
-  const pane = useRef<HTMLElement>(null);
-  const [opened, setOpened] = useState(false);
-  useLayoutEffect(() => {
-    const host = pane.current!;
-    const open = () => setOpened(true);
-    host.addEventListener("settings-open", open);
-    return () => host.removeEventListener("settings-open", open);
-  }, []);
+  const development = useDevelopmentEnabled();
   return (
     <>
       <section
-        ref={pane}
         id="settingsPane"
         className="page-settings-pane"
         hidden
@@ -86,11 +75,49 @@ export default function SettingsPane() {
           aria-labelledby="settingsGeneralTab"
         >
           <div className="page-settings-body">
-            <Suspense fallback={null}>
-              {opened && <PreferenceFields />}
-            </Suspense>
+            <PreferenceFields />
             <hr className="settings-content-divider" />
-            <div className="auto-backup-settings"></div>
+            <div className="auto-backup-settings">
+              <div className="field auto-backup-folder" id="autoBackupFolder">
+                <label id="autoBackupFolderLabel" />
+                <div
+                  className="auto-backup-folder-control"
+                  role="group"
+                  aria-labelledby="autoBackupFolderLabel"
+                >
+                  <Button
+                    id="autoBackupFolderChoose"
+                    htmlType="button"
+                    className="auto-backup-folder-action"
+                    aria-describedby="autoBackupFolderStatus"
+                  >
+                    <span className="auto-backup-folder-name" />
+                  </Button>
+                </div>
+                <p id="autoBackupFolderStatus" className="help" role="status" />
+                <div className="row">
+                  <Button
+                    id="autoBackupFolderRetry"
+                    htmlType="button"
+                    aria-describedby="autoBackupFolderStatus"
+                  />
+                </div>
+              </div>
+              <label
+                id="appInstallLabel"
+                className="label"
+                htmlFor="appInstallButton"
+              />
+              <Button
+                id="appInstallButton"
+                htmlType="button"
+                icon={
+                  <svg className="ui-icon" aria-hidden="true">
+                    <use href="#icon-install-desktop" />
+                  </svg>
+                }
+              />
+            </div>
           </div>
         </section>
         <section
@@ -117,16 +144,16 @@ export default function SettingsPane() {
                       >
                         标准上班时间
                       </label>
-                      <input
+                      <Input
                         id="standardStart"
                         pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
                         required
-                        value="08:00"
+                        defaultValue="08:00"
                         className="clock-input hw-field"
                         inputMode="numeric"
                         maxLength={5}
                         autoComplete="off"
-                        spellCheck="false"
+                        spellCheck={false}
                       />
                     </div>
                     <div className="field" data-ui="field">
@@ -136,16 +163,16 @@ export default function SettingsPane() {
                       >
                         标准下班时间
                       </label>
-                      <input
+                      <Input
                         id="standardEnd"
                         pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
                         required
-                        value="17:30"
+                        defaultValue="17:30"
                         className="clock-input hw-field"
                         inputMode="numeric"
                         maxLength={5}
                         autoComplete="off"
-                        spellCheck="false"
+                        spellCheck={false}
                       />
                     </div>
                     <Button
@@ -196,12 +223,13 @@ export default function SettingsPane() {
                     >
                       0天
                     </label>
-                    <input
+                    <NumberField
                       id="overtimeRequirement0"
-                      type="number"
-                      min="0"
-                      max="24"
-                      step="0.1"
+
+                      min={0}
+                      max={24}
+                      step={0.1}
+                      precision={1}
                       required
                       className="hw-field number-input"
                     />
@@ -213,12 +241,13 @@ export default function SettingsPane() {
                     >
                       1天
                     </label>
-                    <input
+                    <NumberField
                       id="overtimeRequirement1"
-                      type="number"
-                      min="0"
-                      max="24"
-                      step="0.1"
+
+                      min={0}
+                      max={24}
+                      step={0.1}
+                      precision={1}
                       className="hw-field number-input"
                     />
                   </div>
@@ -229,12 +258,13 @@ export default function SettingsPane() {
                     >
                       2天
                     </label>
-                    <input
+                    <NumberField
                       id="overtimeRequirement2"
-                      type="number"
-                      min="0"
-                      max="24"
-                      step="0.1"
+
+                      min={0}
+                      max={24}
+                      step={0.1}
+                      precision={1}
                       className="hw-field number-input"
                     />
                   </div>
@@ -245,12 +275,13 @@ export default function SettingsPane() {
                     >
                       3天
                     </label>
-                    <input
+                    <NumberField
                       id="overtimeRequirement3"
-                      type="number"
-                      min="0"
-                      max="24"
-                      step="0.1"
+
+                      min={0}
+                      max={24}
+                      step={0.1}
+                      precision={1}
                       className="hw-field number-input"
                     />
                   </div>
@@ -261,12 +292,13 @@ export default function SettingsPane() {
                     >
                       ≥4天
                     </label>
-                    <input
+                    <NumberField
                       id="overtimeRequirement4"
-                      type="number"
-                      min="0"
-                      max="24"
-                      step="0.1"
+
+                      min={0}
+                      max={24}
+                      step={0.1}
+                      precision={1}
                       className="hw-field number-input"
                     />
                   </div>
@@ -298,7 +330,7 @@ export default function SettingsPane() {
                   >
                     入职日期
                   </label>
-                  <input
+                  <Input
                     id="employmentDate"
                     data-hint-text="分段填写年月日，支持自动补零和跳段，也可粘贴 2000-9-9 或 20000909"
                     data-i18n-hint-text="copy.3e413a048b"
@@ -306,7 +338,7 @@ export default function SettingsPane() {
                     inputMode="numeric"
                     maxLength={10}
                     autoComplete="off"
-                    spellCheck="false"
+                    spellCheck={false}
                     type="text"
                     placeholder="YYYY-MM-DD"
                     pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}"
@@ -314,23 +346,14 @@ export default function SettingsPane() {
                 </div>
                 <div className="field" data-ui="field">
                   <label
-                    htmlFor="workCity"
+                    id="workCityLabel"
+                    htmlFor="workCityTrigger"
                     data-i18n-text='{"0":"copy.acb666728b"}'
                   >
                     工作城市
                   </label>
-                  <input
-                    id="workCity"
-                    type="text"
-                    readOnly
-                    autoComplete="off"
-                    role="combobox"
-                    aria-autocomplete="none"
-                    aria-haspopup="listbox"
-                    aria-expanded="false"
-                    aria-controls="workCityOptions"
-                    className="hw-field"
-                  />
+                  <input id="workCity" type="hidden" />
+                  <div id="workCityField" />
                 </div>
               </div>
               <p
@@ -339,29 +362,14 @@ export default function SettingsPane() {
                 role="alert"
               ></p>
             </form>
-            <hr className="settings-content-divider" />
-            <Suspense fallback={null}>
-              {opened && <CalendarMascotSetting />}
-            </Suspense>
+            {development && (
+              <>
+                <hr className="settings-content-divider" />
+                <CalendarMascotSetting />
+              </>
+            )}
           </div>
         </section>
-        <div className="settings-pane-actions" data-ui="toolbar">
-          <Button
-            id="personalSettingsCancel"
-            htmlType="button"
-            className="hw-button ui-button"
-          >
-            <svg className="ui-icon" aria-hidden="true">
-              <use href="#icon-chevron-left" />
-            </svg>
-            <span
-              className="button-label"
-              data-i18n-text='{"0":"copy.11d0241540"}'
-            >
-              返回
-            </span>
-          </Button>
-        </div>
       </section>
     </>
   );

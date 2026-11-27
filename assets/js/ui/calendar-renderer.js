@@ -7,6 +7,9 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
   numbers,
 }) {
   let calendarMarkup = "";
+  let renderedYear = null,
+    parkedYear = null;
+  const preparedYears = new WeakMap();
   const calendarNodes = new Map(),
     markup = new WeakMap();
   const plannedAnimations = new WeakMap();
@@ -86,6 +89,40 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
     ".day-overtime",
     ".day-average-value",
   ];
+  function emphasizeMixedLabelNumbers(label) {
+    const text = label.textContent;
+    const leaveDuration =
+      label.matches(".pill.leave .pill-text") &&
+      text.match(/\d+(?:[.,]\d+)*h$/);
+    if (leaveDuration) {
+      const duration = document.createElement("strong");
+      duration.className = "calendar-leave-duration";
+      duration.textContent = leaveDuration[0];
+      label.replaceChildren(
+        document.createTextNode(
+          text
+            .slice(0, leaveDuration.index)
+            .replace(/(\p{Script=Han})\s+$/u, "$1"),
+        ),
+        duration,
+      );
+      return;
+    }
+    if (
+      !/\d/.test(text) ||
+      (!label.matches(".daykind") && !/\p{Script=Han}/u.test(text))
+    )
+      return;
+    label.replaceChildren(
+      ...text.split(/(\d+(?:[.,]\d+)*)/g).map((part, index) => {
+        if (index % 2 === 0) return document.createTextNode(part);
+        const number = document.createElement("span");
+        number.className = "calendar-label-number";
+        number.textContent = part;
+        return number;
+      }),
+    );
+  }
   const artworkKey = (card) =>
     ["weekend", "full-leave", "rest-overtime"]
       .map((name) => card.classList.contains(name))
@@ -124,24 +161,39 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
       };
     });
   }
-  function attributeValue(element, attribute) {
-    if (attribute.name !== "class") return attribute.value;
-    // Font profiles belong to alignment, not the calendar's business markup.
-    const profiles = [...element.classList].filter((token) =>
-      ["ui-font-13", "ui-font-14-plus"].includes(token),
-    );
-    return [attribute.value, ...profiles].join(" ");
-  }
-
   function syncAttributes(element, next) {
     for (const attribute of [...element.attributes])
       if (!next.hasAttribute(attribute.name))
         element.removeAttribute(attribute.name);
     for (const attribute of next.attributes) {
-      const value = attributeValue(element, attribute);
+      const value = attribute.value;
       if (element.getAttribute(attribute.name) !== value)
         element.setAttribute(attribute.name, value);
     }
+  }
+
+  // Reconcile the path around a retained source control without detaching it.
+  // Moving a focused button through the template fires blur/pointer exit events
+  // and closes its tooltip even when it is mounted again in the same render.
+  function updateSourceContent(element, candidate, source, nextSource) {
+    syncAttributes(element, candidate);
+    if (element === source) return;
+    const retained = [...element.children].find((child) =>
+      child.contains(source),
+    );
+    const replacement = [...candidate.children].find((child) =>
+      child.contains(nextSource),
+    );
+    updateSourceContent(retained, replacement, source, nextSource);
+    const children = [...candidate.childNodes].map((child) =>
+      child === replacement ? retained : child,
+    );
+    for (const child of [...element.childNodes])
+      if (!children.includes(child)) child.remove();
+    children.forEach((child, index) => {
+      if (element.childNodes[index] !== child)
+        element.insertBefore(child, element.childNodes[index] || null);
+    });
   }
 
   function updateHTML(element, html) {
@@ -154,47 +206,250 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
     if (element.textContent !== text) element.textContent = text;
   }
 
-  function updateYearMonth(element, candidate) {
-    const buttons = new Map(
-      [...element.querySelectorAll("[data-year-date]")].map((button) => [
-        button.dataset.yearDate,
-        button,
-      ]),
-    );
-    const nextButtons = [...candidate.querySelectorAll("[data-year-date]")];
-    if (
-      buttons.size !== nextButtons.length ||
-      nextButtons.some((button) => !buttons.has(button.dataset.yearDate))
-    )
-      return false;
-    // The same year/month has fixed day order and blank offsets. Keep every day
-    // button and its text layers, including keyboard focus and animation.
+  let yearFade = null;
+  function finishYearFade(keepOutgoing = false) {
+    if (!yearFade) return;
+    clearTimeout(yearFade.timer);
+    for (const { outgoing, incoming } of yearFade.months) {
+      if (!keepOutgoing) {
+        outgoing.remove();
+        outgoing.classList.remove("is-outgoing");
+      }
+      incoming.classList.remove("is-entering");
+    }
+    yearFade = null;
+  }
+
+  const yearButtons = new WeakMap();
+  function detailColor(day) {
+    if (!day) return "";
+    if (day.makeup) return "is-makeup";
+    if (day.holiday) return "is-holiday";
+    return day.weekend ? "is-weekend" : "is-workday";
+  }
+  function applyYearColors(drawing, month) {
+    const previous = drawing.colorMonth;
+    if (month === previous) return;
+    for (let i = 0; i < drawing.slots.length; i++) {
+      const day = month.days[i - month.offset];
+      const old = previous?.days[i - previous.offset];
+      const slot = drawing.slots[i];
+      if (day?.color.background !== old?.color.background) {
+        if (day) slot.style.setProperty("--year-heat-bg", day.color.background);
+        else slot.style.removeProperty("--year-heat-bg");
+      }
+      const color = detailColor(day);
+      if (color !== detailColor(old)) drawing.colors[i].className = color;
+    }
+    drawing.colorMonth = month;
+  }
+
+  function updateYearSlots(grid, month, previous, section) {
+    // Compare plain day data and write directly to the original 42 buttons.
+    let drawing = yearButtons.get(grid);
+    if (!drawing) {
+      const palette = document.createElement("div");
+      palette.className = "year-detail-colors";
+      palette.setAttribute("aria-hidden", "true");
+      const slots = Array.from({ length: 42 }, () => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "year-day";
+        return button;
+      });
+      const colors = slots.map(() => document.createElement("span"));
+      palette.append(...colors);
+      drawing = { slots, colors, palette };
+      yearButtons.set(grid, drawing);
+    }
+    const focused = document.activeElement;
+    for (let i = 0; i < 42; i++) {
+      const day = month.days[i - month.offset];
+      const old = previous?.days[i - previous.offset];
+      const slot = drawing.slots[i];
+      if (!previous || Boolean(day) !== Boolean(old)) {
+        if (!day && slot === focused) section.focus({ preventScroll: true });
+        slot.disabled = !day;
+        if (day) {
+          slot.removeAttribute("aria-hidden");
+          slot.setAttribute("data-ui", "button");
+        } else {
+          slot.setAttribute("aria-hidden", "true");
+          slot.removeAttribute("data-ui");
+        }
+      }
+      if (day === old) continue;
+      if (day?.date !== old?.date) {
+        if (day) slot.dataset.yearDate = day.date;
+        else delete slot.dataset.yearDate;
+      }
+      if (day?.description !== old?.description) {
+        if (day) slot.setAttribute("aria-label", day.description);
+        else slot.removeAttribute("aria-label");
+      }
+      if (Boolean(day?.today) !== Boolean(old?.today)) {
+        if (day?.today) slot.setAttribute("aria-current", "date");
+        else slot.removeAttribute("aria-current");
+      }
+    }
+    applyYearColors(drawing, month);
+    if (!previous) grid.prepend(...drawing.slots, drawing.palette);
+  }
+
+  function updateYearMonth(element, grid, { section, ink }, outgoing, fade) {
     updateHTML(
       element.querySelector(".year-month-stats"),
-      candidate.querySelector(".year-month-stats").innerHTML,
+      section.querySelector(".year-month-stats").innerHTML,
     );
     updateText(
       element.querySelector(".year-month-number"),
-      candidate.querySelector(".year-month-number").textContent,
+      section.querySelector(".year-month-number").textContent,
     );
-    for (const next of nextButtons)
-      syncAttributes(buttons.get(next.dataset.yearDate), next);
-    const layers = element.querySelectorAll(".year-day-layer");
-    candidate.querySelectorAll(".year-day-layer").forEach((layer, index) => {
-      updateHTML(layers[index], layer.innerHTML);
-    });
+    if (fade) {
+      outgoing.classList.add("is-outgoing");
+      if (ink.parentElement === grid) {
+        // Reversing a running fade lets CSS continue from the current opacity.
+        ink.classList.remove("is-outgoing");
+      } else {
+        ink.classList.add("is-entering");
+        grid.append(ink);
+      }
+      fade.push({ outgoing, incoming: ink });
+    } else outgoing.replaceWith(ink);
+  }
+
+  function yearSections(snapshot) {
+    let sections = preparedYears.get(snapshot);
+    if (!sections) {
+      const template = document.createElement("template");
+      template.innerHTML = snapshot.markup;
+      sections = Array.from(template.content.children, (section) => ({
+        section,
+        ink: section.querySelector(".year-days").lastElementChild,
+      }));
+      preparedYears.set(snapshot, sections);
+    }
+    return sections;
+  }
+
+  function prepareYearGrid(snapshot, entryDeadline) {
+    if (
+      renderedYear?.snapshot === snapshot ||
+      parkedYear?.snapshot === snapshot
+    )
+      return true;
+    const sections = yearSections(snapshot);
+    if (entryDeadline) {
+      for (const [index, { section }] of sections.entries()) {
+        const grid = section.querySelector(".year-days");
+        if (yearButtons.has(grid)) continue;
+        if (entryDeadline.timeRemaining() < 3) return false;
+        updateYearSlots(grid, snapshot.months[index], null, section);
+      }
+    }
     return true;
   }
 
+  function updateYearGrid(snapshot, animateYear) {
+    const parked = parkedYear?.snapshot === snapshot;
+    const candidates = yearSections(snapshot);
+    const surfaces = WorkTimeApp.ui.calendarCells(
+      candidates.map(({ section }, index) => ({
+        key: "year-month:" + index,
+        tag: section.localName,
+      })),
+    );
+    $("calendar").classList.toggle("is-year-navigating", Boolean(animateYear));
+    const previous = renderedYear && yearSections(renderedYear.snapshot);
+    const fade = animateYear && renderedYear ? [] : null;
+    finishYearFade(Boolean(fade && yearFade?.from === snapshot));
+    const grids = candidates.map((candidate, index) => {
+      const { section, ink } = candidate;
+      const surface = surfaces[index];
+      syncAttributes(surface, section);
+      const month = snapshot.months[index];
+      if (renderedYear) {
+        const grid = renderedYear.grids[index];
+        updateYearSlots(
+          grid,
+          month,
+          renderedYear.snapshot.months[index],
+          surface,
+        );
+        updateYearMonth(surface, grid, candidate, previous[index].ink, fade);
+        return grid;
+      }
+      if (parked) {
+        const grid = parkedYear.grids[index];
+        surface.replaceChildren(...parkedYear.nodes[index].childNodes);
+        return grid;
+      }
+      // Keep the small heading template and the actual ink reusable on reversal.
+      const grid = section.querySelector(".year-days");
+      const heading = Array.from(section.children)
+        .filter((node) => node !== grid)
+        .map((node) => node.cloneNode(true));
+      grid.replaceWith(grid.cloneNode(false));
+      if (ink.parentElement !== grid) grid.append(ink);
+      if (!yearButtons.has(grid)) updateYearSlots(grid, month, null, surface);
+      surface.replaceChildren(...heading, grid);
+      return grid;
+    });
+    parkedYear = null;
+    // Both ink layers and the target colors are committed before the same paint.
+    // The timer only retires the old nodes. It never gates the incoming text.
+    if (fade)
+      yearFade = {
+        from: renderedYear.snapshot,
+        months: fade,
+        timer: setTimeout(finishYearFade, 150),
+      };
+    calendarNodes.clear();
+    if (!renderedYear) weatherLayer.refresh();
+    renderedYear = { snapshot, nodes: surfaces, grids };
+    calendarMarkup = "";
+  }
+
+  function updateYearCalendar(year, { month, animateYear = false } = {}) {
+    if (year !== renderedYear?.snapshot) updateYearGrid(year, animateYear);
+    if (month && renderedYear.month !== month) {
+      for (const section of renderedYear.nodes) {
+        if (section.dataset.yearMonth === month)
+          section.setAttribute("aria-current", "true");
+        else if (section.hasAttribute("aria-current"))
+          section.removeAttribute("aria-current");
+      }
+      renderedYear.month = month;
+    }
+  }
+
   function updateCalendar(html, { animateContent = true } = {}) {
-    if (html === calendarMarkup) return;
+    if (!renderedYear && html === calendarMarkup) return;
     const focused = document.activeElement,
       focusDate = focused?.closest(".day[data-date]")?.dataset.date,
       focusSource = focused?.matches(".source-toggle");
     const container = $("calendar"),
-      template = document.createElement("template"),
       next = new Map();
+    // React can remove its cell shells while the detached drawing nodes remain
+    // reusable. Keep only the last year, and only reuse an exact markup match.
+    if (renderedYear) {
+      finishYearFade();
+      container.classList.remove("is-year-navigating");
+      parkedYear = renderedYear;
+      renderedYear = null;
+    }
+    const travel = container.dataset.calendarTravel;
+    const template = document.createElement("template");
     template.innerHTML = html;
+    for (const label of template.content.querySelectorAll(
+      ".day .daykind, .day .daystatus .pill-text, .day .day-lunar, .day .daynum small, .day .day-planned-label",
+    )) {
+      if (label.matches(".pill-text")) {
+        const badge = label.closest(".pill");
+        if (!badge.dataset.hintText) badge.dataset.hintText = label.textContent;
+      }
+      emphasizeMixedLabelNumbers(label);
+    }
     for (const card of template.content.querySelectorAll(
       "div.day[data-date]",
     )) {
@@ -208,23 +463,22 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
       }
       card.prepend(select);
     }
-    const candidates = [...template.content.children],
-      nodeKey = (candidate, index) =>
-        candidate.tagName +
-        ":" +
-        (candidate.dataset.date ||
-          candidate.dataset.previewDate ||
-          candidate.dataset.yearMonth ||
-          candidate.getAttribute("aria-label") ||
-          index);
+    const candidates = [...template.content.children];
+    const nodeKey = (candidate, index) =>
+      candidate.tagName +
+      ":" +
+      (candidate.dataset.date ||
+        candidate.dataset.previewDate ||
+        candidate.dataset.yearMonth ||
+        candidate.getAttribute("aria-label") ||
+        index);
     const surfaces = WorkTimeApp.ui.calendarCells(
       candidates.map((candidate, index) => ({
         key: nodeKey(candidate, index),
         tag: candidate.localName,
       })),
     );
-    const headerAlignment = [],
-      artworkMotions = [],
+    const artworkMotions = [],
       sourceMotions = [],
       plannedMotions = [];
     candidates.forEach((candidate, index) => {
@@ -244,29 +498,41 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
                 selector,
                 index,
                 value: field.textContent,
+                minutes: field.dataset.minutes,
                 previous: previous?.element.querySelectorAll(selector)[index],
               })),
             )
           : [];
       const element = surfaces[index];
-      let sourceMotion;
+      let sourceMotion, retainedTime;
       const currentCard =
           previous?.element.parentElement === container
             ? previous.element
             : null,
+        // The navigation layer owns the visual handoff when a retained date
+        // switches between the current month and the adjacent preview.
+        pageTravel =
+          travel === "horizontal" ||
+          (travel === "month" &&
+            currentCard &&
+            currentCard.classList.contains("adjacent") !==
+              candidate.classList.contains("adjacent")),
         oldSummary = currentCard?.querySelector(".day-planned-summary"),
         nextSummary = candidate.querySelector(".day-planned-summary"),
         animatePlanned =
+          !pageTravel &&
           !WorkTimeApp.ui.animationCompat.preference().matches &&
           !document.hidden &&
           !container.closest(".agenda-mode");
       if (Boolean(oldSummary) !== Boolean(nextSummary)) {
         const active = currentCard && plannedAnimations.get(currentCard),
-          opacity = oldSummary
-            ? getComputedStyle(oldSummary).opacity
-            : active?.outgoing
-              ? getComputedStyle(active.element).opacity
-              : 0,
+          opacity = !animatePlanned
+            ? 0
+            : oldSummary
+              ? getComputedStyle(oldSummary).opacity
+              : active?.outgoing
+                ? getComputedStyle(active.element).opacity
+                : 0,
           outgoing =
             oldSummary && animatePlanned
               ? plannedSnapshot(currentCard, oldSummary)
@@ -284,6 +550,7 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
       if (previous && previous.element.parentElement === container) {
         if (previous.source !== source) {
           if (
+            !pageTravel &&
             element.matches(".day") &&
             artworkKey(element) !== artworkKey(candidate) &&
             !WorkTimeApp.ui.animationCompat.preference().matches &&
@@ -298,17 +565,11 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
             if (!candidate.hasAttribute(attribute))
               element.removeAttribute(attribute);
           for (const attribute of candidate.attributes) {
-            const value = attributeValue(element, attribute);
+            const value = attribute.value;
             if (element.getAttribute(attribute.name) !== value)
               element.setAttribute(attribute.name, value);
           }
-          if (
-            previous.content !== candidateContent &&
-            !(
-              element.matches(".year-month") &&
-              updateYearMonth(element, candidate)
-            )
-          ) {
+          if (previous.content !== candidateContent) {
             // Keep the painted positions so redraws and rapid clicks stay smooth.
             const sourceToggle = element.querySelector(".source-toggle"),
               nextSourceToggle = candidate.querySelector(".source-toggle");
@@ -318,20 +579,24 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
               previous.bodyMarkup[0] !== bodyMarkup[0]
             ) {
               if (
+                !pageTravel &&
                 sourceToggle.getAttribute("aria-pressed") !==
                   nextSourceToggle.getAttribute("aria-pressed") &&
                 !WorkTimeApp.ui.animationCompat.preference().matches
               )
-                sourceMotion = [...sourceToggle.children].map((dot) => ({
+                sourceMotion = [
+                  ...sourceToggle.querySelectorAll(".record-source-dot"),
+                ].map((dot) => ({
                   dot,
                   transform: getComputedStyle(dot).transform,
                 }));
-              for (const attribute of [...sourceToggle.attributes])
-                if (!nextSourceToggle.hasAttribute(attribute.name))
-                  sourceToggle.removeAttribute(attribute.name);
-              for (const attribute of nextSourceToggle.attributes)
-                sourceToggle.setAttribute(attribute.name, attribute.value);
-              nextSourceToggle.replaceWith(sourceToggle);
+              retainedTime = sourceToggle.closest(".daytime");
+              updateSourceContent(
+                retainedTime,
+                nextSourceToggle.closest(".daytime"),
+                sourceToggle,
+                nextSourceToggle,
+              );
             }
             const header = element.querySelector(".daytop"),
               nextHeader = candidate.querySelector(".daytop"),
@@ -346,9 +611,7 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
               markers.outerHTML === nextMarkers.outerHTML
             )
               nextMarkers.replaceWith(markers);
-            // Selection only changes the day surface. Keep its already aligned
-            // header, otherwise the replacement's taller raw line boxes move
-            // agenda contents until the next alignment frame.
+            // Keep unchanged date headers and their active number animations.
             const preserved = new Map();
             const select = element.querySelector(":scope > .day-select"),
               nextSelect = candidate.querySelector(":scope > .day-select");
@@ -357,7 +620,6 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
               preserved.set(nextSelect, select);
             }
             if (preserveHeader) preserved.set(nextHeader, header);
-            else if (nextHeader) headerAlignment.push(nextHeader);
             const currentBodies = [...element.children].filter((child) =>
               child.matches(".daytime, .dayhours, .day-footer"),
             );
@@ -375,17 +637,11 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
               nextSummary.replaceWith(oldSummary);
             }
             bodies.forEach((body, index) => {
-              if (previous.bodyMarkup[index] === bodyMarkup[index])
+              if (body.matches(".daytime") && retainedTime)
+                preserved.set(body, retainedTime);
+              else if (previous.bodyMarkup[index] === bodyMarkup[index])
                 preserved.set(body, currentBodies[index]);
             });
-            // Batch mode fades this layer like weather; keep its node so the
-            // transition survives reconciliation of the attendance content.
-            const corner = element.querySelector(":scope > .worktime-corner"),
-              nextCorner = candidate.querySelector(":scope > .worktime-corner");
-            if (corner && nextCorner) {
-              corner.className = nextCorner.className;
-              preserved.set(nextCorner, corner);
-            }
             const children = [...candidate.childNodes].map(
               (child) => preserved.get(child) || child,
             );
@@ -413,8 +669,6 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
         for (const attribute of candidate.attributes)
           element.setAttribute(attribute.name, attribute.value);
         element.replaceChildren(...candidate.childNodes);
-        const header = element.querySelector(".daytop");
-        if (header) headerAlignment.push(header);
       }
       for (const motion of plannedMotions)
         if (motion.candidate === candidate) motion.card = element;
@@ -433,7 +687,6 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
       for (const field of numberFields) {
         let current = element.querySelectorAll(field.selector)[field.index];
         if (field.previous && field.previous !== current) {
-          const aligned = field.previous.classList.contains("ui-aligned-text");
           for (const attribute of [...field.previous.attributes])
             if (
               attribute.name !== "style" &&
@@ -441,17 +694,27 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
             )
               field.previous.removeAttribute(attribute.name);
           for (const attribute of current.attributes)
-            field.previous.setAttribute(
-              attribute.name,
-              attributeValue(field.previous, attribute),
-            );
-          if (aligned) field.previous.classList.add("ui-aligned-text");
+            field.previous.setAttribute(attribute.name, attribute.value);
           current.replaceWith(field.previous);
           current = field.previous;
         }
-        const duration = field.value.match(/^([+-]?[\d.,]+)( h)$/);
+        if (field.selector === ".day-overtime") {
+          WorkTimeApp.ui.renderHourMinutes(current, Number(field.minutes), {
+            numbers,
+            motion: animateContent && !pageTravel,
+          });
+          continue;
+        }
+        const duration = field.value.match(/^([+-]?[\d.,]+)( h)$/),
+          unit =
+            duration &&
+            field.selector === ".day-total-hours" &&
+            !current.classList.contains("day-planned-hours")
+              ? "h"
+              : "";
         numbers.set(current, duration ? duration[1] : field.value, {
-          suffix: duration?.[2] || "",
+          suffix: unit ? "" : duration?.[2] || "",
+          unit,
           integerDigits: [".day-overtime", ".day-average-value"].includes(
             field.selector,
           )
@@ -462,7 +725,7 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
           ),
           animateInitial: false,
           preserveText: true,
-          motion: animateContent,
+          motion: animateContent && !pageTravel,
         });
       }
       for (const { dot, transform } of sourceMotion || []) {
@@ -481,12 +744,6 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
     calendarNodes.clear();
     for (const [key, value] of next) calendarNodes.set(key, value);
     calendarMarkup = html;
-    // Agenda measures header geometry in this render, before observers run.
-    // Finish new/changed headers now so layout and animation share one height.
-    // Attendance can use the normal batched alignment frame. Only the agenda
-    // measures these headers synchronously to place its overlay lanes.
-    if (headerAlignment.length && container.closest(".agenda-mode"))
-      WorkTimeApp.ui.alignment?.refresh(headerAlignment);
     weatherLayer.refresh();
     for (const { card, outgoing, entering, opacity } of plannedMotions) {
       const field = entering
@@ -516,6 +773,11 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
       layers,
       next: artworkLayers(card),
     }));
+    // Capture the painted start above, then release the previous effect before
+    // reading the new class's resting transform. Otherwise rapid switches read
+    // the running effect as their destination and snap when it is cancelled.
+    for (const { dot } of sourceMotions)
+      for (const animation of dot.getAnimations?.() || []) animation.cancel();
     const plans = sourceMotions.map(({ dot, transform }) => ({
       element: dot,
       frames: [{ transform }, { transform: getComputedStyle(dot).transform }],
@@ -524,8 +786,6 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
         easing: WorkTimeApp.ui.motion.calendar.easing,
       },
     }));
-    for (const { dot } of sourceMotions)
-      for (const animation of dot.getAnimations?.() || []) animation.cancel();
     WorkTimeApp.ui.motion.animateCalendar(plans);
     for (const { card, layers, next } of artworkPlans) {
       const timing = {
@@ -560,5 +820,12 @@ WorkTimeApp.ui.createCalendarRenderer = function ({
       }
     }
   }
-  return { updateHTML, updateText, updateCalendar };
+  return {
+    updateHTML,
+    updateText,
+    updateCalendar,
+    updateYearCalendar,
+    finishYearFade,
+    prepareYearGrid,
+  };
 };

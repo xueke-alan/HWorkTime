@@ -76,7 +76,7 @@ WorkTimeApp.ui.runtimeFolderText = (() => {
       "기존 파일 이전",
     ],
     migrateHelp: [
-      "复制 backups、ebooks、music、english、game 的全部内容和子目录，保留原文件；其他文件不迁移。",
+      "复制应用数据文件夹下的所有文件，保留原文件。",
       "複製 backups、ebooks、music、english、game 的全部內容及子資料夾，保留原檔；其他檔案不遷移。",
       "複製 backups、ebooks、music、english、game 的全部內容及子資料夾，保留原檔；其他檔案不遷移。",
       "Copy all contents and subfolders of backups, ebooks, music, english and game. Originals and other files remain in place.",

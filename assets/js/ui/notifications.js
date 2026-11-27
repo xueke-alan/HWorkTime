@@ -8,12 +8,12 @@ WorkTimeApp.ui.createNotifications = function (options) {
     getState,
     getView,
     getRange: monthBounds,
-    icon,
     timeAnomaly,
     document,
   } = options;
   const timers = new Set(),
-    feedback = new Map();
+    feedback = new Map(),
+    noticeViews = new Map();
   let mounted = true;
   function later(action, delay) {
     const timer = setTimeout(() => {
@@ -29,20 +29,23 @@ WorkTimeApp.ui.createNotifications = function (options) {
     mounted = false;
     for (const timer of timers) clearTimeout(timer);
     timers.clear();
-    for (const item of feedback.keys()) item.remove();
+    for (const item of feedback.keys()) {
+      noticeViews.get(item)?.dispose();
+      noticeViews.delete(item);
+      item.remove();
+    }
     feedback.clear();
+    for (const [item, view] of noticeViews) {
+      const body = item.querySelector(".notification-body");
+      if (body) body.remove();
+      view.dispose();
+      if (body) item.append(body);
+    }
+    noticeViews.clear();
     updateNotificationEmptyState();
   }
-  function notificationIcon(type) {
-    const graphic =
-      type === "countdown"
-        ? '<svg class="countdown-icon" viewBox="0 0 24 24"><circle class="ring-track" cx="12" cy="12" r="9.5"/><circle class="ring-progress" cx="12" cy="12" r="9.5"/><text class="ring-count" x="12" y="12">3</text></svg>'
-        : icon(type);
-    return (
-      '<span class="notification-icon" aria-hidden="true">' +
-      graphic +
-      "</span>"
-    );
+  function countdownIcon() {
+    return '<span class="notification-icon" aria-hidden="true"><svg class="countdown-icon" viewBox="0 0 24 24"><circle class="ring-track" cx="12" cy="12" r="9.5"/><circle class="ring-progress" cx="12" cy="12" r="9.5"/><text class="ring-count" x="12" y="12">3</text></svg></span>';
   }
   function decorateStaticNotices() {
     for (const [id, type] of [
@@ -52,18 +55,21 @@ WorkTimeApp.ui.createNotifications = function (options) {
       ["setupNotice", "warning"],
       ["yearNotice", "warning"],
     ]) {
-      const item = $(id),
-        body = document.createElement("div");
-      if (item.querySelector(".notification-body")) continue;
+      const item = $(id);
+      if (noticeViews.has(item)) continue;
+      const existing = item.querySelector(".notification-body");
+      const body = existing || document.createElement("div");
       body.className = "notification-body";
       if (item.dataset.i18nText) {
         body.dataset.i18nText = item.dataset.i18nText;
         delete item.dataset.i18nText;
       }
-      while (item.firstChild) body.append(item.firstChild);
+      if (!existing) while (item.firstChild) body.append(item.firstChild);
       item.classList.add("info-notification", "tone-" + type);
-      item.insertAdjacentHTML("afterbegin", notificationIcon(type));
-      item.append(body);
+      noticeViews.set(
+        item,
+        WorkTimeApp.ui.workspaceViews.mountNotice(item, body, type),
+      );
     }
   }
   function updateNotificationEmptyState() {
@@ -83,8 +89,9 @@ WorkTimeApp.ui.createNotifications = function (options) {
     item.className =
       "info-notification tone-countdown feedback-notice" +
       (tone === "error" ? " tone-error" : "");
-    item.innerHTML =
-      notificationIcon("countdown") + '<div class="notification-body"></div>';
+    const body = document.createElement("div");
+    body.className = "notification-body";
+    item.append(body);
     const source =
       typeof message === "function"
         ? message
@@ -94,6 +101,15 @@ WorkTimeApp.ui.createNotifications = function (options) {
         ? source()
         : WorkTimeApp.i18n.message(source);
     $("feedbackList").prepend(item);
+    noticeViews.set(
+      item,
+      WorkTimeApp.ui.workspaceViews.mountNotice(
+        item,
+        body,
+        tone === "error" ? "error" : "info",
+        countdownIcon(),
+      ),
+    );
     feedback.set(item, source);
     const count = item.querySelector(".ring-count");
     later(() => {
@@ -106,6 +122,8 @@ WorkTimeApp.ui.createNotifications = function (options) {
       if (item.isConnected) item.classList.add("motion-leaving");
     }, 2820);
     later(() => {
+      noticeViews.get(item)?.dispose();
+      noticeViews.delete(item);
       item.remove();
       feedback.delete(item);
       updateNotificationEmptyState();
@@ -116,13 +134,20 @@ WorkTimeApp.ui.createNotifications = function (options) {
     const state = getState();
     const { selected } = getView();
 
-    const [first, last] = monthBounds(),
-      issues = Object.entries(state.days)
-        .filter(([k]) => k >= first && k <= last)
-        .map(([k, day]) => ({ date: k, detail: timeAnomaly(day) }))
-        .filter((issue) => issue.detail)
-        .sort((a, b) => a.date.localeCompare(b.date)),
-      notice = $("timeAnomalyNotice"),
+    const [first, last] = monthBounds();
+    const issues = [];
+    const prefix = first.slice(0, 8);
+    for (
+      let day = Number(first.slice(8));
+      day <= Number(last.slice(8));
+      day++
+    ) {
+      const date = prefix + String(day).padStart(2, "0");
+      if (!state.days[date]) continue;
+      const detail = timeAnomaly(state.days[date]);
+      if (detail) issues.push({ date, detail });
+    }
+    const notice = $("timeAnomalyNotice"),
       body = notice.querySelector(".notification-body");
     notice.classList.toggle("hidden", !issues.length);
     body.innerHTML = issues.length

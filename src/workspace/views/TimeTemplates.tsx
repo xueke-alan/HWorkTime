@@ -1,3 +1,4 @@
+import Compact from "antd/es/space/Compact";
 import Button from "antd/es/button";
 export interface TemplateItem {
   id: string;
@@ -18,7 +19,7 @@ export default function TimeTemplates({
   nextDay: string;
 }) {
   return items.map((item) => (
-    <div
+    <Compact
       key={item.id}
       className="time-template-chip"
       data-ui="group"
@@ -52,6 +53,6 @@ export default function TimeTemplates({
           <use href="#icon-more-horiz" />
         </svg>
       </Button>
-    </div>
+    </Compact>
   ));
 }

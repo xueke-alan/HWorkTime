@@ -1,6 +1,6 @@
 import Select from "antd/es/select";
 import Switch from "antd/es/switch";
-import { CaretDownIcon } from "../phosphor-icons";
+import Radio from "antd/es/radio";
 import { useState, useLayoutEffect, useRef, type CSSProperties } from "react";
 import { useLanguage } from "../ApplicationTheme";
 import { showCalendarMascot } from "./CalendarMascot";
@@ -92,31 +92,32 @@ export function ThemeSetting() {
   const service = WorkTimeApp.services.preferences.page;
   const setting = usePreference("pageTheme", currentTheme, service.saveTheme);
   const { t, message } = WorkTimeApp.i18n;
+  const themes = WorkTimeApp.domain.preferences.themes;
   return (
     <fieldset className="theme-settings" data-ui="fieldset">
       <legend>{t("copy.808b0205aa")}</legend>
-      <div className="theme-grid">
-        {WorkTimeApp.domain.preferences.themes.map((theme) => (
-          <label
+      <Radio.Group
+        disabled={setting.busy}
+        value={setting.value}
+        onChange={(event) => void setting.save(event.target.value)}
+        className="theme-grid"
+        style={{ "--theme-count": themes.length } as CSSProperties}
+      >
+        {themes.map((theme) => (
+          <Radio.Button
+            value={theme.id}
+            aria-label={message(theme.name)}
             key={theme.id}
             className="theme-card"
             data-ui="swatch-choice"
             data-hint-text={message(theme.name)}
             style={{ "--theme-option-color": theme.color } as CSSProperties}
           >
-            <input
-              className="hw-check"
-              type="radio"
-              name="pageTheme"
-              value={theme.id}
-              checked={setting.value === theme.id}
-              onChange={() => void setting.save(theme.id)}
-            />
             <span className="theme-swatch" aria-hidden="true" />
             <span className="theme-name">{message(theme.name)}</span>
-          </label>
+          </Radio.Button>
         ))}
-      </div>
+      </Radio.Group>
       <p className="theme-save-notice" data-ui="status" role="status">
         {setting.failed && t("copy.121c73541e")}
       </p>
@@ -145,25 +146,13 @@ function PreferenceSelect<T extends string | number>({
       </label>
       <Select
         id={id}
+        size="large"
         virtual={false}
-        classNames={{
-          root: "preference-select",
-          suffix: "preference-select-icon",
-        }}
-        styles={{
-          root: {
-            borderRadius: "var(--ui-radius)",
-            borderWidth: "var(--ui-stroke)",
-            borderColor: "var(--ui-border)",
-            fontSize: "var(--ui-font-size,1rem)",
-            transitionDuration: "var(--ui-motion)",
-          },
-        }}
+        classNames={{ popup: { root: "preference-select-popup" } }}
         aria-labelledby={labelId}
         aria-label={label}
         value={setting.value}
         options={options.map((option) => ({ ...option, title: "" }))}
-        suffix={<CaretDownIcon size={16} aria-hidden="true" />}
         disabled={setting.busy}
         onChange={setting.save}
       />

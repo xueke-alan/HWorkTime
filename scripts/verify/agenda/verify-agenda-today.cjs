@@ -52,15 +52,13 @@ async function verify() {
         const card = document.querySelector(
           `#calendar > .day[data-date="${today}"]`,
         );
-        const attention = card?.getAnimations().find((animation) => {
-          const effect = animation.effect;
-          return (
-            effect.getTiming().duration === 800 &&
-            effect.getKeyframes().some((frame) => frame.boxShadow)
-          );
-        });
+        const highlight = card?.querySelector(".calendar-today-attention");
+        const attention = highlight
+          ?.getAnimations()
+          .find((animation) => animation.effect.getTiming().duration === 800);
         return {
           selected: card?.classList.contains("selected"),
+          static: highlight?.classList.contains("is-static"),
           pressed: card
             ?.querySelector(".day-select")
             ?.getAttribute("aria-pressed"),
@@ -217,41 +215,31 @@ async function verify() {
     }
     await returnToday();
     await settle();
-    const checkGlow = async () => {
+    const checkHighlight = async () => {
       const lower = page.locator(
         '.timetable-bottom-card[data-timetable-date="2026-10-27"]',
       );
-      assert.equal(await page.locator(".calendar-today-glow").count(), 1);
+      assert.equal(await page.locator(".calendar-today-glow").count(), 0);
+      assert.equal(await page.locator(".calendar-today-attention").count(), 1);
       assert.equal(
-        await page.locator(".calendar-today-glow").evaluateAll((glows) =>
-          glows.every((glow, index) => {
-            const card = document.querySelector(
-                index === 0
-                  ? '#calendar > .day[data-date="2026-10-27"]'
-                  : '.timetable-bottom-card[data-timetable-date="2026-10-27"]',
-              ),
-              layers = document.querySelector(".agenda-week-layers"),
-              box = glow.getBoundingClientRect(),
-              target = card.getBoundingClientRect(),
-              viewport = glow
-                .closest(".panel-content-viewport")
-                .getBoundingClientRect(),
-              style = getComputedStyle(glow);
-            return (
-              glow.parentElement.id === "panelContent" &&
-              !glow.closest(".calendar-navigation-viewport, #calendar") &&
-              style.pointerEvents === "none" &&
-              Number(style.zIndex) > Number(getComputedStyle(layers).zIndex) &&
-              Math.abs(box.top - target.top) < 1 &&
-              Math.abs(box.left - target.left) < 1 &&
-              Math.abs(box.width - target.width) < 1 &&
-              Math.abs(box.height - target.height) < 1 &&
-              box.top - viewport.top > 16
-            );
-          }),
-        ),
+        await page.locator(".calendar-today-attention").evaluate((node) => {
+          const card = node.parentElement;
+          const bounds = node.getBoundingClientRect(),
+            target = card.getBoundingClientRect();
+          const style = getComputedStyle(node);
+          return (
+            card.dataset.date === "2026-10-27" &&
+            style.position === "absolute" &&
+            style.pointerEvents === "none" &&
+            node.getAttribute("aria-hidden") === "true" &&
+            Math.abs(bounds.top - target.top) <= 1 &&
+            Math.abs(bounds.left - target.left) <= 1 &&
+            Math.abs(bounds.width - target.width) <= 2 &&
+            Math.abs(bounds.height - target.height) <= 2
+          );
+        }),
         true,
-        "The glow follows the card above event lanes, outside both calendar clipping surfaces",
+        "The CSS highlight is attached to the date card and shares its geometry",
       );
       if (await lower.count()) {
         assert.equal(
@@ -271,8 +259,7 @@ async function verify() {
     for (const reducedMotion of ["no-preference", "reduce"]) {
       await page.emulateMedia({ reducedMotion });
       // Compare with the same shared highlight under each motion preference.
-      const expectedFrames =
-        reducedMotion === "reduce" ? [0, 1] : reference.frames;
+      const expectedFrames = reference.frames;
       for (let view = 0; view < 4; view++) {
         const visible = await dates();
         const other = visible.find(
@@ -289,13 +276,13 @@ async function verify() {
           const result = await returnToday();
           assert.equal(result.selected, true);
           assert.equal(result.pressed, "true");
-          assert.deepEqual(result.timing, reference.timing);
-          assert.deepEqual(result.frames, expectedFrames);
-          await checkGlow();
+          if (!result.static) assert.deepEqual(result.timing, reference.timing);
+          if (!result.static) assert.deepEqual(result.frames, expectedFrames);
+          await checkHighlight();
           if (view === 3 && repeat === 0 && reducedMotion === "no-preference") {
             await page.evaluate(async () => {
               for (const element of document.querySelectorAll(
-                '.calendar-today-glow, #calendar > .day[data-date="2026-10-27"]',
+                ".calendar-today-attention",
               ))
                 for (const animation of element.getAnimations()) {
                   animation.pause();
@@ -305,7 +292,7 @@ async function verify() {
             });
             fs.mkdirSync("test-results", { recursive: true });
             await page.locator("#panelContent").screenshot({
-              path: "test-results/agenda-today-glow.png",
+              path: "test-results/agenda-today-highlight.png",
             });
           }
           assert.deepEqual(
@@ -315,6 +302,9 @@ async function verify() {
           );
         }
         await settle();
+        await page
+          .locator(".calendar-today-attention")
+          .waitFor({ state: "detached" });
         assert.equal(await page.locator(".calendar-today-glow").count(), 0);
         for (let step = 0; step < 6; step++) {
           await page.locator("#nextMonth").click();
@@ -328,16 +318,14 @@ async function verify() {
           "Returning from another range selects today",
         );
         assert.equal(result.pressed, "true");
-        assert.deepEqual(result.timing, {
-          ...reference.timing,
-          delay: result.timing.delay,
-        });
-        assert.equal(
-          result.timing.delay,
-          reducedMotion === "reduce" ? 0 : result.navigationDuration - 120,
-          "The glow starts during the last 120ms of page travel",
-        );
-        assert.deepEqual(result.frames, expectedFrames);
+        if (!result.static) assert.deepEqual(result.timing, reference.timing);
+        if (!result.static)
+          assert.equal(
+            result.timing.delay,
+            0,
+            "CSS highlighting starts without sampling navigation timing",
+          );
+        if (!result.static) assert.deepEqual(result.frames, expectedFrames);
         await settle();
         await cycleAgendaView(page);
         await settle();
@@ -345,13 +333,18 @@ async function verify() {
     }
     await settle();
     await page.waitForTimeout(200);
+    await page
+      .locator(".calendar-today-attention")
+      .waitFor({ state: "detached" });
     assert.equal(await page.locator(".calendar-today-glow").count(), 0);
     const idleReads = await page.evaluate(async () => {
       const original = Element.prototype.getBoundingClientRect;
       let reads = 0;
       Element.prototype.getBoundingClientRect = function (...args) {
         if (
-          this.matches(".calendar-today-glow, #calendar > .day, .agenda-chip")
+          this.matches(
+            ".calendar-today-attention, #calendar > .day, .agenda-chip",
+          )
         )
           reads++;
         return original.apply(this, args);

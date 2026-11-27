@@ -34,8 +34,10 @@ WorkTimeApp.ui.secondary.settings = function (options) {
     loadSchedule(C.scheduleForDate(model.state, editingDate));
     const requirements = model.state.overtimeRequirements;
     for (let i = 0; i < 5; i++)
-      $("overtimeRequirement" + i).value =
-        requirements[i] === null ? "" : (requirements[i] / 60).toFixed(1);
+      WorkTimeApp.ui.workspaceViews.setNumberValue(
+        $("overtimeRequirement" + i),
+        requirements[i] === null ? "" : (requirements[i] / 60).toFixed(1),
+      );
     WorkTimeApp.ui.fieldErrors.clear($("settingsError"));
   }
   function readSettingsBreaks() {
@@ -315,7 +317,7 @@ WorkTimeApp.ui.secondary.settings = function (options) {
           value >= 0 &&
           value <= 24
         )
-          input.value = value.toFixed(1);
+          WorkTimeApp.ui.workspaceViews.setNumberValue(input, value.toFixed(1));
       });
     const saveSettings = async () => {
       try {

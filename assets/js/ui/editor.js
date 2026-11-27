@@ -60,7 +60,7 @@ WorkTimeApp.ui.createEditor = function (options) {
       while (current.childNodes.length > newChildren.length)
         current.lastChild.remove();
     }
-    sync($("dayPreview"), previous.content, next.content);
+    sync($("dayPreviewBody"), previous.content, next.content);
   }
   function updateText(id, text) {
     const element = $(id);
@@ -128,16 +128,14 @@ WorkTimeApp.ui.createEditor = function (options) {
         ...editorDate.querySelectorAll(".calendar-today-number"),
       ];
     }
-    const [year, month, date] = selected.split("-").map(Number);
-    const wordMonth = !WorkTimeApp.i18n.config.cjk;
+    const [year, month, date] = selected.split("-");
     const dateLabel = editorDate.querySelector(".year-month-label");
     const motion = editorDate.getClientRects().length > 0;
-    WorkTimeApp.ui.renderYearMonth(
-      dateLabel,
-      year,
-      wordMonth ? WorkTimeApp.i18n.monthName(selected) : String(month),
-      { wordMonth, animateInitial: false, motion, numbers },
-    );
+    WorkTimeApp.ui.renderYearMonth(dateLabel, year, month, {
+      animateInitial: false,
+      motion,
+      numbers,
+    });
     numbers.set(editorDateParts[2], date, {
       animateInitial: false,
       animateWholeOnLengthChange: true,
@@ -152,7 +150,10 @@ WorkTimeApp.ui.createEditor = function (options) {
     $("dayStart").value = r.start || "";
     $("dayEnd").value = r.end || "";
     $("dayNext").checked = !!r.nextDay;
-    $("dayLeave").value = C.hours(day.leaveMinutes || 0);
+    WorkTimeApp.ui.workspaceViews.setNumberValue(
+      $("dayLeave"),
+      C.hours(day.leaveMinutes || 0),
+    );
     $("dayLeave").max = C.hours(
       C.scheduleForDate(state, selected).standardMinutes,
     );
@@ -335,39 +336,13 @@ WorkTimeApp.ui.createEditor = function (options) {
       }
     } catch (e) {
       previewMarkup = null;
-      updateText("dayPreview", WorkTimeApp.i18n.message(e.message));
+      updateText("dayPreviewBody", WorkTimeApp.i18n.message(e.message));
     }
   }
   function setLeavePanel(open, focus = false) {
     const panel = $("dayLeavePanel"),
       toggle = $("dayLeaveToggle"),
       row = $("dayLeaveArea").closest(".day-action-row");
-    // Match the collapsed text positions before moving into the editing layout.
-    const label = $("dayLeaveLabel"),
-      text = label.firstChild,
-      match = label.textContent.match(/([\d.]+) h$/),
-      slot = toggle.getBoundingClientRect();
-    if (text && match && slot.width) {
-      const range = document.createRange(),
-        start = match.index;
-      range.setStart(text, start);
-      range.setEnd(text, start + match[1].length);
-      const value = range.getBoundingClientRect();
-      row.style.setProperty(
-        "--leave-value-offset",
-        value.left + value.width / 2 - slot.left - slot.width / 2 + "px",
-      );
-      range.setStart(text, label.textContent.length - 1);
-      range.setEnd(text, label.textContent.length);
-      const unit = range.getBoundingClientRect();
-      row.style.setProperty(
-        "--leave-unit-offset",
-        unit.right - slot.right + 10 + "px",
-      );
-    } else {
-      row.style.setProperty("--leave-value-offset", "0.6rem");
-      row.style.setProperty("--leave-unit-offset", "-0.6rem");
-    }
     panel.classList.toggle("hidden", !open);
     panel.inert = !open;
     row.classList.toggle("is-leave-editing", open);
@@ -387,8 +362,9 @@ WorkTimeApp.ui.createEditor = function (options) {
     if ($("dayLeaveToggle").getAttribute("aria-expanded") === "true") {
       setLeavePanel(false, focus);
       const { selected } = getView();
-      $("dayLeave").value = C.hours(
-        getState().days[selected]?.leaveMinutes || 0,
+      WorkTimeApp.ui.workspaceViews.setNumberValue(
+        $("dayLeave"),
+        C.hours(getState().days[selected]?.leaveMinutes || 0),
       );
       WorkTimeApp.ui.fieldErrors.clearRelated(
         $("dayError"),

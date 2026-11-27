@@ -2158,10 +2158,7 @@ async function verify() {
       await view.locator(".analysis-distribution-summary").count(),
       0,
     );
-    assert.ok(
-      structure.gutter < 108,
-      "Axis gutter should fit its labels rather than reserve a fixed blank column",
-    );
+    assert.equal(structure.gutter, 112, "Axis labels use a fixed SVG gutter");
     for (const state of [
       "workedOvertime",
       "restOvertime",
@@ -2191,7 +2188,7 @@ async function verify() {
     const layoutSnapshot = async () => {
       await view.evaluate(async () => {
         await document.fonts.ready;
-        WorkTimeApp.ui.alignment.refresh();
+
         await new Promise((resolve) => requestAnimationFrame(resolve));
       });
       return view.evaluate(() => ({

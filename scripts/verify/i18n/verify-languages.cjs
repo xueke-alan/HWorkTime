@@ -275,7 +275,7 @@ async function verify() {
             width,
             height: width === 2560 ? 1440 : width === 1920 ? 1080 : 1000,
           });
-          await page.evaluate(() => WorkTimeApp.ui.alignment?.refresh());
+
           await page.evaluate(async () => {
             await document.fonts.ready;
             await new Promise((resolve) =>
@@ -362,17 +362,20 @@ async function verify() {
         dialog.append(header);
         document.body.append(dialog);
         dialog.showModal();
-        WorkTimeApp.ui.alignment.refresh();
+
         heading.style.width = "60px";
-        WorkTimeApp.ui.alignment.refresh();
+
         const range = document.createRange();
         range.selectNodeContents(heading);
         const wrapped = range.getClientRects().length > 1;
         const offset = heading.style.getPropertyValue("--ui-ink-offset");
+        const measured = heading.classList.contains("ui-aligned-text");
         dialog.close();
         dialog.remove();
-        if (!wrapped || parseFloat(offset) !== 0)
-          throw Error("Wrapped heading must clear its single-line ink offset");
+        if (!wrapped || offset || measured)
+          throw Error(
+            "Wrapped heading must use CSS alignment without ink measurement",
+          );
       });
       await page.locator("#batchToggle").click();
       await capture("batch");
@@ -429,7 +432,7 @@ async function verify() {
                 await zoomPage.locator("#batchCancel").click();
                 await clickSettingsControl(zoomPage, "#pageSettingsOpen");
               }
-              await zoomPage.evaluate(() => WorkTimeApp.ui.alignment.refresh());
+
               const issues = await zoomPage.evaluate(auditLayout);
               checkedViews.push({
                 language,
@@ -493,7 +496,7 @@ async function verify() {
       await capture("festivals");
       await clickSettingsControl(page, "#settingsWorkTab");
       await capture("schedule");
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       await page.locator("#addTimeTemplate").click();
       await capture("template");
       await page.locator('[data-close="timeTemplateDialog"]').first().click();
@@ -526,7 +529,7 @@ async function verify() {
         cityName,
       );
       await page.locator("#workCityOption0").click();
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       await page.evaluate(() => {
         document.querySelector("#dayStart").value = "09:17";
       });

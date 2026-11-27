@@ -444,6 +444,7 @@ WorkTimeApp.ui.popover = (() => {
     close();
     if (
       !element ||
+      element.matches(".source-toggle,.record-source-dot") ||
       element.closest(".agenda-content-outgoing,.calendar-navigation-copy")
     )
       return;

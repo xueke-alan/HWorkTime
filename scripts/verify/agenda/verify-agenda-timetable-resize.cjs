@@ -498,7 +498,7 @@ const setScheduleRange = require("../../lib/agenda-test-range.cjs");
         host.className = "agenda-timetable";
         host.append(fixture);
         document.body.append(host);
-        WorkTimeApp.ui.alignment.refresh([fixture]);
+
         const time = fixture.querySelector(".agenda-chip-time");
         const failures = [];
         const states = new Set();

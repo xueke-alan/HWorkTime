@@ -2,7 +2,7 @@
 // Attendance owns the first screen. Mount the agenda before the first command
 // that shares its toolbar, or immediately when restoring an agenda/analysis view.
 WorkTimeApp.ui.createAgendaEntry = function (options) {
-  const { model, document, window, element: $ } = options;
+  const { model, document, window, element: $, actions } = options;
   const { isDevelopmentEnabled } = WorkTimeApp;
   const scope = new AbortController();
   const trigger = document.createElement("button");
@@ -11,6 +11,38 @@ WorkTimeApp.ui.createAgendaEntry = function (options) {
   trigger.hidden = !isDevelopmentEnabled();
   trigger.setAttribute("aria-pressed", "false");
   $("analysisToggle").after(trigger);
+  const yearViewToggle = document.createElement("div");
+  yearViewToggle.id = "yearViewToggle";
+  yearViewToggle.hidden = true;
+  $("batchToggle").after(yearViewToggle);
+  let yearControlDisabled = false;
+  function renderYearDisplay(disabled = false) {
+    yearControlDisabled = disabled;
+    WorkTimeApp.ui.workspaceViews.YearDisplay(yearViewToggle, {
+      getValue: () => model.yearViewMode,
+      disabled,
+      onChange: (mode) =>
+        actions.requestSettingsExit(() => {
+          if (
+            scope.signal.aborted ||
+            yearControlDisabled ||
+            mode === model.yearViewMode
+          )
+            return;
+          actions.finishCalendarNavigation();
+          if (!model.yearMode) return;
+          model.yearViewMode = mode;
+          const detail = mode === "calendar";
+          $("calendar").classList.remove("is-year-navigating");
+          $("calendar").classList.toggle("year-calendar-detail", detail);
+          $("yearLegend").classList.toggle("is-inactive", detail);
+          $("yearLegend").setAttribute("aria-hidden", String(detail));
+          $("yearWatermark").classList.add("is-mode-transition");
+          $("yearWatermark").classList.toggle("is-visible", detail);
+          document.dispatchEvent(new Event("worktime:yearviewchange"));
+        }),
+    });
+  }
   let controller, loading, requested;
   let selection = Promise.resolve();
   const viewSelectionDelay = 150;
@@ -45,7 +77,11 @@ WorkTimeApp.ui.createAgendaEntry = function (options) {
         .then(() => {
           if (scope.signal.aborted) return;
           trigger.remove();
-          controller = WorkTimeApp.ui.createAgenda(options);
+          controller = WorkTimeApp.ui.createAgenda({
+            ...options,
+            yearViewToggle,
+            renderYearDisplay,
+          });
           controller.bind();
         })
         .catch((error) => {
@@ -54,15 +90,24 @@ WorkTimeApp.ui.createAgendaEntry = function (options) {
         });
     return loading;
   };
-  function render() {
-    if (controller) return controller.render();
-    trigger.disabled = model.batchMode;
+  function renderToolbar() {
+    if (controller) controller.renderToolbar()?.();
+    else {
+      yearViewToggle.hidden = !model.yearMode;
+      $("batchToggle").hidden = model.yearMode;
+      if (model.yearMode) renderYearDisplay();
+      trigger.disabled = model.batchMode;
+    }
     const key =
-      model.month === model.today.slice(0, 7)
+      !model.yearMode && model.month === model.today.slice(0, 7)
         ? "calendarHint.today"
         : "calendarHint.thisMonth";
     $("todayButton").setAttribute("data-i18n-aria-label", key);
     $("todayButton").setAttribute("aria-label", WorkTimeApp.i18n.t(key));
+  }
+  function render() {
+    if (controller) controller.render();
+    else renderToolbar();
   }
   async function bind() {
     WorkTimeApp.ui.selectWorkspaceView = selectWorkspaceView;
@@ -84,18 +129,10 @@ WorkTimeApp.ui.createAgendaEntry = function (options) {
       "click",
       (event) => {
         const command = event.target.closest?.(
-          "#agendaMode,#analysisToggle,#monthTitle,#batchToggle",
+          "#agendaMode,#analysisToggle,#batchToggle",
         );
         if (controller || !command || command.disabled) return;
         if (command.id === "agendaMode" && !isDevelopmentEnabled()) return;
-        if (command.id === "monthTitle") {
-          // The calendar can start switching while the year display controls load.
-          if (command.getAttribute("aria-disabled") !== "true")
-            void load().catch((error) => {
-              if (!scope.signal.aborted) window.alert(error.message);
-            });
-          return;
-        }
         event.preventDefault();
         event.stopImmediatePropagation();
         const request = (requested = {});
@@ -115,6 +152,7 @@ WorkTimeApp.ui.createAgendaEntry = function (options) {
   return {
     bind,
     render,
+    renderToolbar,
     hasDraft: () => controller?.hasDraft() ?? false,
     prepareAgendaArchive: () => controller?.prepareAgendaArchive(),
     dispose() {
@@ -123,6 +161,9 @@ WorkTimeApp.ui.createAgendaEntry = function (options) {
         delete WorkTimeApp.ui.selectWorkspaceView;
       trigger.remove();
       controller?.dispose();
+      WorkTimeApp.ui.workspaceViews.dispose(yearViewToggle);
+      yearViewToggle.remove();
+      $("batchToggle").hidden = false;
     },
   };
 };

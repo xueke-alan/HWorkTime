@@ -249,7 +249,7 @@ WorkTimeApp.games.register({
     status.setAttribute("role", "status");
     const thinkingIndicator = node(controls, "div", "xiangqi-thinking");
     thinkingIndicator.setAttribute("aria-hidden", "true");
-    thinkingIndicator.innerHTML = `<svg class="xiangqi-thinking-icon" viewBox="0 0 256 256" focusable="false">
+    thinkingIndicator.innerHTML = `<svg class="xiangqi-thinking-icon" viewBox="0 0 24 24" focusable="false">
       <use class="xiangqi-thinking-gear" href="#icon-thinking-gear" />
     </svg>`;
     const actions = node(controls, "div", "xiangqi-actions");

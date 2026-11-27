@@ -59,6 +59,8 @@ declare global {
       renderAnalysisMetrics: typeof import("./analysis/metrics").renderAnalysisMetrics;
       afterAnalysisRender: typeof import("./analysis/metrics").afterAnalysisRender;
       renderAnalysisSidebar: typeof import("./analysis/sidebar").renderAnalysisSidebar;
+      renderAnalysisHover: typeof import("./analysis/hover").renderAnalysisHover;
+      positionAnalysisHover: typeof import("./analysis/hover").positionAnalysisHover;
       mountVocabularyPage: typeof import("./vocabulary/Pages").mountVocabularyPage;
       mountVocabularyNavigation: typeof import("./vocabulary/mount").mountVocabularyNavigation;
       createSelect: typeof import("./workspace/select").createWorkspaceSelect;

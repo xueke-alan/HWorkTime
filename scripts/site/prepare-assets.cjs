@@ -29,37 +29,43 @@ function prepareAssets({ check = false } = {}) {
       }
     }
   }
-  // Embed the pinned Phosphor SVGs so controls also work on file://.
-  const iconCatalog = require("../../assets/icons/phosphor.json");
-  write(
-    "assets/icons/local-cafe.svg",
-    fs.readFileSync(
-      require.resolve("@phosphor-icons/core/bold/coffee-bold.svg"),
-      "utf8",
-    ),
-  );
-  const symbols = Object.entries(iconCatalog).map(([id, glyph]) => {
-    const svg = fs.readFileSync(
-      require.resolve(`@phosphor-icons/core/bold/${glyph}-bold.svg`),
-      "utf8",
-    );
-    const match =
-      /^<svg\b[^>]*viewBox="0 0 256 256"[^>]*>([\s\S]+)<\/svg>\s*$/.exec(svg);
-    if (!match) throw Error("Unexpected Phosphor SVG for " + glyph);
-    return ` <symbol id="icon-${id}" viewBox="0 0 256 256" fill="currentColor">${match[1]}</symbol>`;
-  });
+  // Embed pinned Tabler SVGs so controls also work on file://.
+  const {
+    iconSymbols,
+    standaloneIcon,
+    controlIconCatalog,
+  } = require("./tabler-icons.cjs");
+  const symbols = iconSymbols();
+  write("assets/icons/local-cafe.svg", standaloneIcon("coffee"));
   const entryHtml = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const sprite = /(<svg class="icon-sprite"[^>]*>)[\s\S]*?<\/svg>/g;
-  const dateDivider =
-    '<symbol id="icon-calendar-date-divider" viewBox="0 0 12 24"><path d="M9 4 3 20" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></symbol>';
   if ([...entryHtml.matchAll(sprite)].length !== 1)
     throw Error("Expected one icon sprite in index.html");
   const eol = entryHtml.includes("\r\n") ? "\r\n" : "\n";
   write(
     "index.html",
     entryHtml.replace(sprite, (_, opening) =>
-      [opening, ...symbols, " " + dateDivider, "</svg>"].join(eol),
+      [opening, ...symbols, "</svg>"].join(eol),
     ),
+  );
+  // The standalone converter shares ConfigProvider icons with the workspace.
+  const converterHtml = fs.readFileSync(
+    path.join(root, "tools/convert-backup.html"),
+    "utf8",
+  );
+  const controlSprite = [
+    '<svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" style="position:absolute;overflow:hidden">',
+    ...iconSymbols(controlIconCatalog),
+    "</svg>",
+  ].join("\n");
+  write(
+    "tools/convert-backup.html",
+    converterHtml.includes('class="icon-sprite"')
+      ? converterHtml.replace(
+          /<svg class="icon-sprite"[^>]*>[\s\S]*?<\/svg>/,
+          controlSprite,
+        )
+      : converterHtml.replace("<body>", "<body>" + controlSprite),
   );
   // Generate identities/dependencies before embedding this catalog in view-runtime.
   // Classic bundles also work when a browser forbids ES module imports over file://.
@@ -348,7 +354,6 @@ function prepareAssets({ check = false } = {}) {
     [
       "agenda-schedule",
       "agenda-layout",
-      "agenda-edges",
       "agenda-drag",
       "agenda-timeline-math",
       "agenda-timetable",
@@ -489,14 +494,7 @@ function prepareAssets({ check = false } = {}) {
     ],
     [
       "startup",
-      [
-        "app",
-        "onboarding",
-        "background",
-        "ui-alignment",
-        "notification-motion",
-        "startup",
-      ],
+      ["app", "onboarding", "background", "notification-motion", "startup"],
     ],
   ]) {
     const runtime = minify(

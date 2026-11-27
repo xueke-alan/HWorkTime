@@ -1301,6 +1301,7 @@ body .summary-sidebar .card:not(.average-card) .metric {
   text-align: right;
 }
 body .summary-sidebar .card:not(.average-card):not(.surplus-card) .metric {
+  line-height: 1.3;
   position: relative;
   display: inline-flex;
 }
@@ -1408,9 +1409,6 @@ body .summary-sidebar .target-metric-values .target-metric {
     font-size: 1.571429rem;
   }
 }
-body .summary-sidebar .sidebar-brand h1 {
-  transform: translateY(var(--ui-ink-offset, 0px));
-}
 .summary-number {
   display: inline-block;
   position: relative;
@@ -1455,6 +1453,23 @@ body .summary-sidebar .card.average-card .metric > .summary-number {
 }
 .summary-number-sign {
   text-align: right;
+}
+.summary-number-sign[data-number-sign-hidden="true"] {
+  opacity: 0;
+}
+.number-sign-in {
+  animation: number-sign-fade 240ms ease-out both;
+}
+.number-sign-out {
+  animation: number-sign-fade 240ms ease-out both reverse;
+}
+@keyframes number-sign-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .summary-number-column.summary-number-word {
   width: auto;

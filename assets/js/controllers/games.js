@@ -23,13 +23,24 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
   idleDate.className = "game-idle-date";
   const idleMotto = document.createElement("div");
   idleMotto.className = "game-idle-motto";
-  idleMotto.textContent = WorkTimeApp.i18n.t("games.idleMotto");
+  const idleMottos = Array.from({ length: 5 }, (_, index) => {
+    const item = document.createElement("div");
+    item.className = "game-idle-motto-item";
+    item.textContent = WorkTimeApp.i18n.t(
+      index === 0 ? "games.idleMotto" : "games.idleMotto" + (index + 1),
+    );
+    item.classList.toggle("is-active", index === 0);
+    return item;
+  });
+  idleMotto.append(...idleMottos);
   idleCover.append(idleTime, idleDate, idleMotto);
   const hoverDevice = window.matchMedia(
     "(any-hover: hover) and (any-pointer: fine)",
   );
   let idleDelay = null,
     idleTick = null,
+    idleMottoTick = null,
+    idleMottoIndex = 0,
     idleVisible = false,
     idleWasCovered = true;
   let clockLocale, clockFormatter, dateFormatter;
@@ -65,7 +76,8 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
   function pauseIdleClock() {
     window.clearTimeout(idleDelay);
     window.clearInterval(idleTick);
-    idleDelay = idleTick = null;
+    window.clearInterval(idleMottoTick);
+    idleDelay = idleTick = idleMottoTick = null;
     WorkTimeApp.ui.numbers.settle(idleTime);
   }
   function hideIdleCover() {
@@ -119,6 +131,11 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
   function startIdleClock() {
     updateIdleClock(false);
     idleTick = window.setInterval(updateIdleClock, 1000);
+    idleMottoTick = window.setInterval(() => {
+      idleMottos[idleMottoIndex].classList.remove("is-active");
+      idleMottoIndex = (idleMottoIndex + 1) % idleMottos.length;
+      idleMottos[idleMottoIndex].classList.add("is-active");
+    }, 5000);
   }
   function showIdleCover(immediate = false) {
     startIdleClock();
@@ -540,7 +557,11 @@ WorkTimeApp.ui.createGamesController = function ({ document, window }) {
     notifySize();
   }
   function refreshLanguage() {
-    idleMotto.textContent = t("games.idleMotto");
+    idleMottos.forEach((item, index) => {
+      item.textContent = t(
+        index === 0 ? "games.idleMotto" : "games.idleMotto" + (index + 1),
+      );
+    });
     const focused = document.activeElement;
     const gameId = focused?.dataset.game;
     const menu = focused?.closest(

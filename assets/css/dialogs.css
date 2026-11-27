@@ -253,8 +253,6 @@ dialog::backdrop {
 #runtimeFolderChange .folder-change-check .ui-icon {
   width: 17px;
   height: 17px;
-  fill: currentColor;
-  stroke: none;
   opacity: 0;
 }
 #runtimeFolderChange [data-migrate]:checked + .folder-change-check {

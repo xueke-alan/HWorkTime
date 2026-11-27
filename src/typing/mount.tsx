@@ -1,5 +1,5 @@
 import Button from "antd/es/button";
-import { CalendarIcon } from "../phosphor-icons";
+import { CalendarIcon } from "../tabler-icons";
 import { useLanguage } from "../ApplicationTheme";
 import { mountView } from "../mount-view";
 import { practiceViews } from "./PracticeViews";

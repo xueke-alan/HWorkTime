@@ -285,7 +285,7 @@ body .agenda-timetable .timetable-event {
 .agenda-timetable .agenda-chip-time { flex: none; font-size: var(--ui-font-size, 10px); line-height: 13px; }
 .agenda-timetable .agenda-chip-title { flex: none; min-width: 0; margin-right: 0; padding-right: min(var(--agenda-status-space, 22px), 100%); }
 .agenda-timetable .agenda-chip-note { overflow: hidden; white-space: pre-wrap; font-size: var(--ui-font-size, 10px); }
-/* Reserve the title, the full time line and room for its ink alignment.
+/* Reserve the title and the full time line.
    Size queries also follow animated heights without a delayed observer pass.
    Visibility preserves text metrics when crossing the threshold repeatedly. */
 @container timetable-event (height < calc(1.4em + 15px)) {
@@ -330,7 +330,7 @@ body.agenda-timetable-resizing, body.agenda-timetable-resizing * { cursor: ns-re
   }
 }
 
-/* The week suffix reuses the month header's existing slash icon and typography. */
+/* The week suffix reuses the month header's text slash and typography. */
 body .agenda-mode .month-controls .month-title {
   justify-content: flex-start;
   transition: width 360ms var(--motion-ease), background-color 150ms ease;
@@ -355,9 +355,9 @@ body .month-controls .month-title.has-week-label {
   display: flex;
   align-items: center;
   width: var(--week-label-width, 2.8ch);
+  line-height: 1.3;
   text-align: left;
   font-variant-numeric: tabular-nums;
-  transform: translateY(var(--ui-ink-offset, 0px));
 }
 .month-title-week-label .summary-number-visual {
   white-space: nowrap;
@@ -383,9 +383,6 @@ body .month-controls .month-title.has-week-label {
   font-size: 0.38em;
   line-height: 1;
   pointer-events: none;
-}
-.month-title-week > .month-title-divider {
-  transform: translateY(0.035em);
 }
 @container calendar-panel (max-width: 479px) {
   body .agenda-mode .panel-head > .row .month-controls {

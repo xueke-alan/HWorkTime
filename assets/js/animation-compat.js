@@ -55,7 +55,12 @@
     } catch {
       complete();
     }
-    return { finished, cancel: complete };
+    return {
+      finished,
+      cancel: complete,
+      progress: () =>
+        nativeAnimation?.effect?.getComputedTiming()?.progress ?? 0,
+    };
   }
   function decode(image) {
     let timer, resolve;

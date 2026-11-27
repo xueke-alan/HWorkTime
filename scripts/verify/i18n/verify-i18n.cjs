@@ -351,7 +351,7 @@ async function verifyLanguageMotion(browser) {
     await page.waitForFunction(
       () => !WorkTimeApp.services.preferences.page.dirty,
     );
-    await page.locator("#personalSettingsCancel").click();
+    await page.locator("#pageSettingsOpen").click();
     assert.ok(
       await page
         .locator(".editor-content")
@@ -903,7 +903,7 @@ async function verify() {
       });
       for (const width of widths) {
         await page.setViewportSize({ width, height: 1000 });
-        await page.evaluate(() => WorkTimeApp.ui.alignment?.refresh());
+
         await page.screenshot({
           path: path.resolve(
             "test-results/i18n/" + locale + "-" + width + ".png",
@@ -921,7 +921,7 @@ async function verify() {
       if (english) {
         await clickSettingsControl(page, "#settingsWorkTab");
         await englishText(page, "work schedule");
-        await page.locator("#personalSettingsCancel").click();
+        await page.locator("#pageSettingsOpen").click();
         await page.locator("#batchToggle").click();
         await englishText(page, "bulk edit");
         await page.locator("#batchToggle").click();
@@ -1070,7 +1070,7 @@ async function verify() {
       await page.waitForFunction(
         () => !!WorkTimeApp.services.weather.snapshot().city,
       );
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       await page.locator("#date-tab-weather").click();
       await page.reload();
       await page.waitForFunction(() =>
@@ -1105,7 +1105,7 @@ async function verify() {
           (id) => WorkTimeApp.services.weather.snapshot().city?.id === id,
           city.id,
         );
-        await page.locator("#personalSettingsCancel").click();
+        await page.locator("#pageSettingsOpen").click();
         await clickSettingsControl(page, "#settingsPersonalTab");
         assert.equal(
           await page.locator("#workCity").inputValue(),
@@ -1130,7 +1130,7 @@ async function verify() {
       );
       assert.deepEqual(errors, []);
       assert.deepEqual(startupErrors, []);
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       await page.evaluate(() => {
         WorkTimeApp.services.weather.dispose();
         WorkTimeApp.ui.weather.render(

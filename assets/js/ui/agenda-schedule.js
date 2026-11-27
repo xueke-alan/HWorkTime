@@ -404,7 +404,10 @@ WorkTimeApp.ui.createAgendaSchedule = function ({ root, prefix = "agenda" }) {
       previousRange = null;
       activeEndpoint = "start";
       editingEndpoint = false;
-      field("AllDay").checked = value.allDay ?? true;
+      WorkTimeApp.ui.workspaceViews.setCheckedValue(
+        field("AllDay"),
+        value.allDay ?? true,
+      );
       field("Start").value = value.start || "";
       field("End").value = value.end || "";
       render();

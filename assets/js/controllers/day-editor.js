@@ -122,10 +122,13 @@ WorkTimeApp.ui.createDayController = function (options) {
         const input = $("dayLeave"),
           value = Number(input.value) || 0,
           delta = event.key === "ArrowUp" ? 0.5 : -0.5;
-        input.value = String(
-          Math.min(
-            Number(input.max) || 24,
-            Math.max(0, Math.round((value + delta) * 100) / 100),
+        WorkTimeApp.ui.workspaceViews.setNumberValue(
+          input,
+          String(
+            Math.min(
+              Number(input.max) || 24,
+              Math.max(0, Math.round((value + delta) * 100) / 100),
+            ),
           ),
         );
         input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -136,8 +139,9 @@ WorkTimeApp.ui.createDayController = function (options) {
       }
     });
     events.handler($("dayLeaveFull"), "onclick", async () => {
-      $("dayLeave").value = C.hours(
-        C.scheduleForDate(model.state, model.selected).standardMinutes,
+      WorkTimeApp.ui.workspaceViews.setNumberValue(
+        $("dayLeave"),
+        C.hours(C.scheduleForDate(model.state, model.selected).standardMinutes),
       );
       WorkTimeApp.ui.fieldErrors.clear($("dayLeaveError"));
       if (await saveDayEdit({ markTime: false })) {

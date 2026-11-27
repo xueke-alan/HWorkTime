@@ -1,4 +1,16 @@
 @import "./slider.css";
+/* Keep custom SVG stroke defaults; library icons use the shared Tabler weight. */
+svg:has(> use[href^="#icon-"]) {
+  --ui-icon-stroke: 2;
+}
+.tabler-spinner {
+  animation: tabler-spin 1s linear infinite;
+}
+@keyframes tabler-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .site-inset-wave-anchor {
   position: relative;
 }
@@ -48,9 +60,13 @@
   --ui-highlight: var(--accent-light, #e3f3ec);
   --ui-danger: var(--danger, #ae3340);
 }
-.hw-button,
+.hw-button:not(
+  :where(.editor .ant-input, .editor .ant-input-number-input, .editor .ant-btn)
+),
 .hw-select,
-.hw-field,
+.hw-field:not(
+  :where(.editor .ant-input, .editor .ant-input-number-input, .editor .ant-btn)
+),
 .hw-dialog,
 .hw-options {
   box-sizing: border-box;
@@ -59,35 +75,75 @@
   font-size: var(--ui-font-size, 1rem);
   line-height: var(--ui-line-height);
 }
-.hw-button,
+.hw-button:not(
+  :where(.editor .ant-input, .editor .ant-input-number-input, .editor .ant-btn)
+),
 .hw-select,
-.hw-field {
+.hw-field:not(
+  :where(.editor .ant-input, .editor .ant-input-number-input, .editor .ant-btn)
+) {
   border: var(--ui-stroke) solid var(--ui-border);
   background: var(--ui-surface);
   padding: var(--ui-space);
   max-width: 100%;
 }
 .hw-select,
-.hw-field {
+.hw-field:not(
+  :where(.editor .ant-input, .editor .ant-input-number-input, .editor .ant-btn)
+) {
   border-radius: var(--ui-radius);
 }
-:where(.hw-button) {
+:where(
+  .hw-button:not(
+    :where(
+      .editor .ant-input,
+      .editor .ant-input-number-input,
+      .editor .ant-btn
+    )
+  )
+) {
   border-radius: var(--ui-button-radius);
 }
-.hw-button {
+.hw-button:not(
+  :where(.editor .ant-input, .editor .ant-input-number-input, .editor .ant-btn)
+) {
   font-weight: var(--ui-weight);
   cursor: pointer;
 }
-.hw-button[data-size="small"] {
+.hw-button:not(
+    :where(
+      .editor .ant-input,
+      .editor .ant-input-number-input,
+      .editor .ant-btn
+    )
+  )[data-size="small"] {
   font-size: 0.875em;
 }
-.hw-button[data-size="large"] {
+.hw-button:not(
+    :where(
+      .editor .ant-input,
+      .editor .ant-input-number-input,
+      .editor .ant-btn
+    )
+  )[data-size="large"] {
   font-size: 1.125em;
 }
-.hw-button[data-variant="danger"] {
+.hw-button:not(
+    :where(
+      .editor .ant-input,
+      .editor .ant-input-number-input,
+      .editor .ant-btn
+    )
+  )[data-variant="danger"] {
   color: var(--ui-danger);
 }
-.hw-button:disabled,
+.hw-button:not(
+    :where(
+      .editor .ant-input,
+      .editor .ant-input-number-input,
+      .editor .ant-btn
+    )
+  ):disabled,
 .hw-select:disabled {
   cursor: default;
   opacity: 0.65;
@@ -186,7 +242,17 @@
 ) {
   accent-color: var(--ui-accent);
 }
-:where([data-ui="button"], .hw-button) svg[stroke="currentColor"] {
+:where(
+    [data-ui="button"],
+    .hw-button:not(
+      :where(
+        .editor .ant-input,
+        .editor .ant-input-number-input,
+        .editor .ant-btn
+      )
+    )
+  )
+  svg[stroke="currentColor"] {
   stroke-width: var(--ui-icon-stroke);
 }
 .hw-select {
@@ -196,14 +262,53 @@
 [data-ui="summary"] {
   cursor: pointer;
 }
-:is(.hw-button, [data-ui="button"], [data-ui="summary"], .ui-button)
+:is(
+    .hw-button:not(
+      :where(
+        .editor .ant-input,
+        .editor .ant-input-number-input,
+        .editor .ant-btn
+      )
+    ),
+    [data-ui="button"],
+    [data-ui="summary"],
+    .ui-button:not(
+      :where(
+        .editor .ant-input,
+        .editor .ant-input-number-input,
+        .editor .ant-btn
+      )
+    )
+  )
   svg[stroke="currentColor"],
-:is(.hw-button, [data-ui="button"], [data-ui="summary"], .ui-button)
+:is(
+    .hw-button:not(
+      :where(
+        .editor .ant-input,
+        .editor .ant-input-number-input,
+        .editor .ant-btn
+      )
+    ),
+    [data-ui="button"],
+    [data-ui="summary"],
+    .ui-button:not(
+      :where(
+        .editor .ant-input,
+        .editor .ant-input-number-input,
+        .editor .ant-btn
+      )
+    )
+  )
   svg
   [stroke-width][stroke="currentColor"] {
   stroke-width: var(--ui-icon-stroke);
 }
 
+.theme-grid {
+  position: relative;
+  grid-template-columns: repeat(var(--theme-count), minmax(0, 1fr));
+  gap: 0;
+}
 .theme-card {
   display: grid;
   place-items: center;
@@ -216,7 +321,14 @@
   background: transparent;
   cursor: pointer;
 }
-.theme-card input {
+.theme-card
+  input:not(
+    :where(
+      .editor .ant-input,
+      .editor .ant-input-number-input,
+      .editor .ant-btn
+    )
+  ) {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -228,11 +340,32 @@
   width: min(16px, calc(100% - 8px));
   aspect-ratio: 1;
   background: var(--theme-option-color);
-  border-radius: var(--ui-radius);
+  border-radius: 4px;
 }
-.theme-card:has(input:checked) .theme-swatch {
-  outline: calc(2 * var(--ui-stroke)) solid var(--theme-option-color);
-  outline-offset: 2px;
+.theme-selection {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(100% / var(--theme-count));
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  transform: translateX(calc(var(--theme-index) * 100%));
+  transition:
+    transform 280ms var(--motion-ease),
+    color 280ms var(--motion-ease);
+}
+.theme-selection::before {
+  content: "";
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-radius: 7px;
+}
+.theme-card:has(input:focus-visible) .theme-swatch {
+  box-shadow:
+    0 0 0 2px var(--ui-surface, #fff),
+    0 0 0 4px var(--theme-option-color);
 }
 .theme-name {
   position: absolute;

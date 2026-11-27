@@ -4,18 +4,15 @@ import Button from "antd/es/button";
 import Modal from "antd/es/modal";
 import Select from "antd/es/select";
 import Switch from "antd/es/switch";
-import { useRef, useState } from "react";
+import ConfigProvider from "antd/es/config-provider";
+import { useRef, useState, type ReactNode } from "react";
 import { mountView } from "../mount-view";
+import { studyCalendar, type ActivityDay } from "./calendar";
 
 const t = (key: string) => WorkTimeApp.i18n.t("vocabulary." + key);
 type Metrics = Record<string, number>;
-interface Day {
-  day: string;
-  fresh: number;
-  reviews: number;
-}
 interface Report {
-  days: Day[];
+  days: ActivityDay[];
   total: number;
   learned: number;
   feedback: number[];
@@ -43,6 +40,7 @@ function Activity({ values, report }: { values: Metrics; report: Report }) {
       <h3>{t("recentActivity")}</h3>
       <svg
         viewBox="0 0 280 114"
+        preserveAspectRatio="none"
         role="img"
         aria-label={t("recentActivity")}
         className="vocabulary-chart"
@@ -76,13 +74,19 @@ function Activity({ values, report }: { values: Metrics; report: Report }) {
       </div>
       {!report.total && <p className="vocabulary-muted">{t("noActivity")}</p>}
       <h3>{t("activityCalendar")}</h3>
+      <div className="vocabulary-calendar-weekdays" aria-hidden="true">
+        {["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((day) => (
+          <span key={day}>{WorkTimeApp.i18n.t("calendar.weekday." + day)}</span>
+        ))}
+      </div>
       <div className="vocabulary-heatmap" aria-label={t("activityCalendar")}>
-        {report.days.map((day) => {
+        {studyCalendar(report.days).map((day) => {
           const count = day.fresh + day.reviews;
           return (
             <span
               key={day.day}
               data-level={count === 0 ? 0 : count < 10 ? 1 : count < 30 ? 2 : 3}
+              data-outside-month={day.outsideMonth || undefined}
               data-hint-text={day.day + " · " + t("today") + " " + count}
             >
               {day.day.slice(-2)}
@@ -104,7 +108,6 @@ function Activity({ values, report }: { values: Metrics; report: Report }) {
           </div>
         ))}
       </div>
-      <p className="vocabulary-muted">{t("feedbackHint")}</p>
     </>
   );
 }
@@ -272,9 +275,25 @@ function Preferences(p: Settings) {
 
 export function mountVocabularyPage(host: HTMLElement) {
   const view = mountView(host);
+  const render = (children: ReactNode) =>
+    view.render(
+      <ConfigProvider
+        theme={{
+          token: {
+            borderRadius: 8,
+            borderRadiusXS: 8,
+            borderRadiusSM: 8,
+            borderRadiusLG: 8,
+            borderRadiusOuter: 8,
+          },
+        }}
+      >
+        {children}
+      </ConfigProvider>,
+    );
   return {
     home(streak: number, values: Metrics) {
-      view.render(
+      render(
         <div className="vocabulary-summary">
           <section className="vocabulary-hero">
             <span className="vocabulary-eyebrow">{t("streak")}</span>
@@ -287,22 +306,22 @@ export function mountVocabularyPage(host: HTMLElement) {
       );
     },
     analysis(values: Metrics, report: Report) {
-      view.render(<Activity values={values} report={report} />);
+      render(<Activity values={values} report={report} />);
     },
     preferences(props: Settings) {
-      view.render(<Preferences {...props} />);
+      render(<Preferences {...props} />);
     },
     books(props: BooksProps) {
-      view.render(<Books {...props} />);
+      render(<Books {...props} />);
     },
     study(props: StudyProps) {
-      view.render(<Study {...props} />);
+      render(<Study {...props} />);
     },
     mini(props: MiniProps) {
-      view.render(<MiniStudy {...props} />);
+      render(<MiniStudy {...props} />);
     },
     complete() {
-      view.render(<p className="vocabulary-complete">{t("complete")}</p>);
+      render(<p className="vocabulary-complete">{t("complete")}</p>);
     },
     dispose: view.dispose,
   };

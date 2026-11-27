@@ -70,7 +70,7 @@ async function verify() {
         assets: {
           whenIdle: async () => {},
           script: async () => {},
-          preload: async (path) => {
+          prefetch: async (path) => {
             warmed.push(path);
             if (warmed.length === 1) idleAllowed = false;
           },

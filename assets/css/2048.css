@@ -126,7 +126,6 @@ body .game-session .puzzle-ai-confirm > .game-restart-content {
   min-width: 0;
   font: inherit;
   line-height: inherit;
-  transform: translateY(var(--ui-ink-offset, 0px));
 }
 .puzzle-confirm [data-puzzle-action="confirm"],
 .puzzle-overlay [data-puzzle-action="continue"],

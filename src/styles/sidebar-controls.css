@@ -1,0 +1,499 @@
+/* Shared sidebar scale. The shell, left toolbar and expanded workspaces keep
+   their own geometry; Ant owns the internals of its controls. */
+body .editor {
+  --ui-radius: 4px;
+  --ui-button-radius: 4px;
+  --control-height: 36px;
+  --input-height: 36px;
+  --action-control-height: 36px;
+  --ui-font-family: var(--font-ui-medium);
+  --sidebar-gap: 12px;
+  font-family: var(--font-ui-medium);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.sidebar-popup {
+  --ui-radius: 4px;
+  --ui-button-radius: 4px;
+  font-family: var(--font-ui-medium);
+}
+.sidebar-popup .ant-select-item + .ant-select-item {
+  margin-block-start: 4px;
+}
+body .editor :is(.ant-input, .ant-input-number, .ant-select) {
+  width: 100%;
+  min-width: 0;
+}
+body .editor .ant-input-number-input {
+  appearance: textfield;
+  height: 34px;
+  padding-inline: 8px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+body .editor .ant-input-number-input::-webkit-inner-spin-button,
+body .editor .ant-input-number-input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+body .editor .ant-input.clock-input {
+  text-align: center;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
+}
+body .editor .ant-input.date-entry {
+  font-size: 14px;
+}
+body .editor .ant-input[aria-invalid="true"] {
+  border-color: var(--red);
+}
+body .editor .ant-btn {
+  height: 36px;
+  flex-shrink: 0;
+  box-shadow: none;
+  font-family: var(--font-ui-medium);
+}
+/* Ant rewrites the entire border on hover/active. Keep borderless variants
+   borderless at the variable source so every interaction uses the same geometry
+   and never transitions from a visible currentColor edge to transparent. */
+body .editor .ant-btn:is(.ant-btn-variant-text, .ant-btn-variant-link) {
+  --ant-btn-border-width: 0px;
+  --ant-btn-border-color: transparent;
+  --ant-btn-border-color-hover: transparent;
+  --ant-btn-border-color-active: transparent;
+  --ant-btn-border-color-disabled: transparent;
+}
+body .editor .ant-btn.danger:not(:disabled) {
+  color: var(--red);
+}
+body .editor .ant-btn[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+body
+  .editor
+  .ant-btn:not(.ant-btn-dangerous):not(.ant-btn-primary):not(.ant-btn-text):not(
+    .ant-btn-link
+  ):not([aria-pressed="true"]) {
+  border-color: var(--control-border);
+}
+body .editor .ant-btn:is(.icon-only, .nextday-toggle) {
+  width: 36px;
+  min-width: 36px;
+  padding-inline: 0;
+}
+body .editor .ant-btn > .button-label {
+  min-width: 0;
+  font: inherit;
+  transform: none;
+  white-space: inherit;
+}
+body .editor .ant-btn .ui-icon {
+  width: 18px;
+  height: 18px;
+}
+body .editor .field {
+  min-width: 0;
+  gap: 6px;
+  margin-top: 0;
+}
+body .editor .field > label,
+body .editor .label,
+body .editor .theme-settings > legend {
+  padding-inline: 0;
+  font-family: var(--font-ui-medium);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 18px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+body .editor :is(.page-settings-body, #settingsForm .dialog-body) {
+  padding-block: 16px;
+}
+body .editor .settings-layout {
+  gap: 20px;
+}
+body .editor :is(.settings-schedule, .settings-goal) {
+  min-width: 0;
+}
+body .editor .settings-goal {
+  column-gap: 8px;
+  row-gap: 6px;
+}
+body .editor .settings-work-time,
+body .editor .breakrow,
+body .editor .editor-time-fields {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 36px;
+  gap: 8px;
+  align-items: end;
+}
+body .editor #settingsForm .settings-requirement label {
+  padding: 0;
+  font-size: 12px;
+}
+body .editor #breaksList {
+  display: grid;
+  gap: 8px;
+}
+body .editor .settings-breaks {
+  margin-top: 16px;
+}
+body .editor .settings-employment,
+body .editor .settings-select-row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+body .editor .schedule-editing-date {
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+body .editor :is(.settings-content-divider, .settings-goal) {
+  border-color: var(--line);
+}
+body .editor .settings-content-divider {
+  margin-block: 20px;
+}
+body .editor .theme-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--theme-count), minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 8px;
+}
+body .editor .theme-grid .theme-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+}
+body .editor .theme-grid .theme-card::before {
+  display: none;
+}
+body .editor .theme-grid .theme-card.ant-radio-button-wrapper-checked {
+  border-color: var(--theme-option-color);
+}
+body .editor .theme-swatch {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+body .editor .theme-save-notice:empty {
+  display: none;
+}
+body .editor .theme-settings-host {
+  margin-bottom: 16px;
+}
+body .editor .calendar-mascot-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+}
+body .editor .time-template-area {
+  --template-edit-width: 36px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+body .editor .template-header-actions {
+  --template-header-height: 36px;
+  --template-header-width: 36px;
+  --icon-size: 18px;
+}
+body .editor .time-template-header {
+  gap: 8px;
+  margin-bottom: 8px;
+}
+body .editor .time-template-header h3 {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+body .editor .time-template-area .time-template-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+body .editor .time-template-area .time-template-chip {
+  width: auto;
+  max-width: 100%;
+  border: 0;
+  border-radius: 4px;
+  box-shadow: none;
+  background: transparent;
+}
+body .editor .time-template-chip .template-fill {
+  flex: 1;
+}
+body .editor .time-template-chip .template-fill {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+body .editor .editor-footer {
+  gap: 12px;
+}
+body .editor .day-action-row {
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+body
+  .editor
+  :is(
+    .ant-card,
+    .calc-preview,
+    .info-notification,
+    .vocabulary-card,
+    .vocabulary-hero,
+    .reader-book,
+    .game-menu-detail
+  ) {
+  border-color: var(--control-border);
+  border-radius: 4px;
+  box-shadow: none;
+}
+body .editor .calc-preview {
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+body .editor :is(#dayForm, #batchForm) .editor-preview {
+  block-size: auto;
+  min-block-size: 132px;
+  padding: 0;
+  border-color: var(--control-border);
+  border-radius: 4px;
+  box-shadow: none;
+}
+body .editor #dayPreview .ant-card-body {
+  padding: 12px 15px;
+}
+body .editor #dayForm #dayPreview {
+  min-block-size: 0;
+  margin-block-end: 0;
+  border-radius: var(--workspace-panel-radius, var(--ui-radius));
+  background: var(--theme-surface-subtle, var(--ui-surface));
+}
+body .editor #dayPreview .preview-day {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  color: var(--ui-muted, var(--muted));
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+body .editor #dayPreview .preview-day.has-daily-metrics > span {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  gap: 12px;
+}
+body .editor #dayPreview .preview-day strong {
+  color: var(--ui-accent);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+body .editor #dayPreview .preview-period {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-color: var(--theme-border-soft, var(--line));
+  font-size: 12px;
+  line-height: 1.5;
+}
+body .editor #dayPreview .preview-period > span {
+  white-space: normal;
+}
+body .editor #dayPreview .preview-totals {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+body .editor #dayPreview .preview-totals > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0;
+  color: var(--ui-muted, var(--muted));
+  font-size: 12px;
+  line-height: 1.5;
+}
+body .editor #dayPreview .preview-values {
+  margin: 0;
+}
+body .editor #dayPreview .preview-totals strong {
+  width: auto;
+  flex-basis: auto;
+  color: var(--ui-text);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+body .editor #dayPreview #previewAverage {
+  margin: 0;
+  color: var(--ui-accent);
+}
+body .editor .day-action-row .ant-btn {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 8px;
+}
+body .editor #editorInfo .info-notification:has(> .ant-alert) {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+body .editor .sidebar-notice-body,
+body .editor .notification-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+body .editor .ant-alert {
+  padding: 12px;
+}
+body .editor .auto-backup-folder-control {
+  border: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+}
+body .editor #pageSettingsPane #autoBackupFolderChoose {
+  width: 100%;
+  height: 36px;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  padding-inline: 12px;
+  font-size: 14px;
+  font-weight: 400;
+  box-shadow: none;
+}
+body .editor .year-analysis-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+}
+body .editor .year-report-card {
+  padding: 0;
+  margin: 0;
+}
+body .editor .analysis-sidebar-section .ant-card-body {
+  padding: 12px;
+}
+body .editor :is(.ant-alert, .ant-empty, .ant-list) {
+  font-size: 14px;
+  line-height: 1.6;
+}
+body .editor .ant-empty {
+  margin-block: 20px;
+}
+body .editor .tools-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px 6px;
+}
+body .editor .tools-cards .tool-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  height: auto;
+  min-height: 88px;
+  padding: 8px 0;
+  white-space: normal;
+  border-radius: 4px;
+}
+body
+  .editor
+  .tools-cards
+  .ant-btn.tool-card:is(:hover, :focus, :focus-visible, :active) {
+  border: 0;
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+}
+body .editor .tools-cards .tool-card:is(:hover, :focus-visible) .tool-logo {
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--ui-accent, var(--accent)) 15%, var(--ui-surface));
+}
+body .editor .tools-cards .tool-card strong {
+  font-size: 12px;
+}
+body .editor .tools-cards .tool-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  transition: box-shadow 160ms;
+}
+body
+  .editor
+  .game-menu-list
+  .ant-btn.game-menu-entry:is(:hover, :focus-visible, :active) {
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+body
+  .editor
+  .game-menu-list
+  .ant-btn.game-menu-entry:hover:not([aria-pressed="true"]) {
+  background: var(--control-hover);
+}
+body .editor :is(.reader-book-open, .vocabulary-mini-expand) {
+  height: auto;
+  white-space: normal;
+}
+body .editor .reader-book-open {
+  min-height: 100px;
+  padding: 0;
+  text-align: start;
+}
+body .editor .music-track-select {
+  height: auto;
+  min-height: 52px;
+  padding: 8px;
+  border: 0;
+  white-space: normal;
+  text-align: start;
+}
+body .editor .agenda-schedule-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+body .editor .vocabulary-mini-expand {
+  border: 0;
+  background: transparent;
+}
+.sidebar-city-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sidebar-city-option small {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: normal;
+}

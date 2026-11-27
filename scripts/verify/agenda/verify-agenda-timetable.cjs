@@ -141,47 +141,10 @@ async function verifyBrowser() {
         document.documentElement.dataset.appState === "ready" &&
         !document.documentElement.classList.contains("app-loading"),
     );
-    const idleReads = await page.evaluate(async () => {
-      const calendar = document.createElement("div");
-      calendar.style.cssText =
-        "position:fixed;left:-1000px;width:200px;height:200px";
-      const day = document.createElement("div");
-      day.className = "day";
-      day.style.cssText = "width:100px;height:100px";
-      const icon = document.createElement("span");
-      day.append(icon);
-      calendar.append(day);
-      document.body.append(calendar);
-      const animation = icon.animate([{ opacity: 0 }, { opacity: 1 }], {
-        duration: 1000,
-        iterations: Infinity,
-      });
-      let reads = 0;
-      const bounds = day.getBoundingClientRect.bind(day);
-      day.getBoundingClientRect = () => {
-        reads++;
-        return bounds();
-      };
-      const edges = WorkTimeApp.ui.createAgendaEdges({
-        calendar,
-        enabled: () => true,
-      });
-      try {
-        edges.refresh();
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        reads = 0;
-        await new Promise((resolve) => setTimeout(resolve, 200));
-        return reads;
-      } finally {
-        edges.dispose();
-        animation.cancel();
-        calendar.remove();
-      }
-    });
     assert.equal(
-      idleReads,
-      0,
-      "Looping child icons must leave date edge geometry idle",
+      await page.evaluate(() => typeof WorkTimeApp.ui.createAgendaEdges),
+      "undefined",
+      "Date cards use CSS borders without an edge controller",
     );
     await toggleAgenda(page);
     await cycleAgendaView(page);
@@ -1459,98 +1422,23 @@ async function verifyBrowser() {
           ),
           "Hidden non-working columns move right while fading",
         );
-        const borderMotion = await view.evaluate(
-          () =>
-            new Promise((resolve) => {
-              let frames = 0,
-                maxError = 0,
-                missing = 0;
-              let worst = null;
-              const sample = () => {
-                frames++;
-                for (const source of document.querySelectorAll(
-                  "#calendar > .day[data-agenda-week]",
-                )) {
-                  const date =
-                    source.dataset.date ||
-                    source.dataset.previewDate ||
-                    source.dataset.timetableDate;
-                  const kind = source.classList.contains("day")
-                    ? "day"
-                    : "timed";
-                  const edge = document.querySelector(
-                    `.agenda-date-edge[data-edge-date="${date}"][data-kind="${kind}"][data-ghost="false"]`,
-                  );
-                  if (!edge) {
-                    missing++;
-                    continue;
-                  }
-                  const a = source.getBoundingClientRect(),
-                    b = edge.getBoundingClientRect();
-                  const error = Math.max(
-                    ...["left", "top", "width", "height"].map((key) =>
-                      Math.abs(a[key] - b[key]),
-                    ),
-                  );
-                  if (error > maxError) {
-                    maxError = error;
-                    worst = {
-                      date,
-                      kind,
-                      frame: frames,
-                      source: a.toJSON(),
-                      edge: b.toJSON(),
-                    };
-                  }
-                }
-              };
-              // Sample after the stroke writer, rather than racing it with a
-              // separate requestAnimationFrame callback in the same frame.
-              const observer = new MutationObserver(sample);
-              observer.observe(document.querySelector(".agenda-date-edges"), {
-                subtree: true,
-                childList: true,
-                attributes: true,
-              });
-              const finish = () => {
-                if (
-                  document
-                    .querySelector("#calendar")
-                    .getAnimations({ subtree: true })
-                    .some((a) => a.pending || a.playState === "running")
-                )
-                  requestAnimationFrame(finish);
-                else {
-                  observer.disconnect();
-                  resolve({ frames, maxError, missing, worst });
-                }
-              };
-              requestAnimationFrame(finish);
-            }),
+        assert.equal(
+          await view.locator(".agenda-date-edges, .agenda-date-edge").count(),
+          0,
         );
         assert.ok(
-          borderMotion.frames > 1 &&
-            borderMotion.missing === 0 &&
-            borderMotion.maxError < 0.1,
-          "Date strokes follow the actual animated card bounds: " +
-            JSON.stringify(borderMotion),
-        );
-        assert.ok(
-          await view.evaluate(() => {
-            const layer = document.querySelector(".agenda-date-edges"),
-              lanes = document.querySelector(".agenda-week-layers");
-            return (
-              getComputedStyle(layer).pointerEvents === "none" &&
-              Number(getComputedStyle(layer).zIndex) >
-                Number(getComputedStyle(lanes).zIndex) &&
-              [...layer.children].every(
-                (edge) =>
-                  getComputedStyle(edge).pointerEvents === "none" &&
-                  getComputedStyle(edge).backgroundColor === "rgba(0, 0, 0, 0)",
-              )
-            );
-          }),
-          "Only transparent, non-interactive strokes are painted above agenda ribbons",
+          await view
+            .locator("#calendar > .day[data-agenda-week]")
+            .evaluateAll((cards) =>
+              cards.every((card) => {
+                const style = getComputedStyle(card);
+                return (
+                  parseFloat(style.borderTopWidth) > 0 &&
+                  style.borderTopStyle === "solid"
+                );
+              }),
+            ),
+          "Moving dates retain their native CSS borders",
         );
         await view.waitForFunction(
           () =>

@@ -340,7 +340,6 @@ body .mine-cell > .mine-incorrect-icon {
   min-width: 0;
   font: inherit;
   line-height: inherit;
-  transform: translateY(var(--ui-ink-offset, 0px));
 }
 .mine-feedback {
   width: 260px;

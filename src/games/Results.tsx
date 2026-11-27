@@ -2,7 +2,7 @@ import {
   HourglassMediumIcon,
   ArrowCounterClockwiseIcon,
   PlayIcon,
-} from "../phosphor-icons";
+} from "../tabler-icons";
 import { useLanguage } from "../ApplicationTheme";
 import Button from "antd/es/button";
 import { createRef } from "react";

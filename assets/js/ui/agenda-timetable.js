@@ -319,8 +319,7 @@ WorkTimeApp.ui.createAgendaTimetable = function ({
     }
 
     if (button.parentElement !== layer) layer.append(button);
-    if (preview && (!existing || textChanged))
-      WorkTimeApp.ui.alignment?.refresh([button]);
+
     return button;
   }
   function displayedItems(state = getState()) {

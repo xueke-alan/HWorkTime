@@ -39,33 +39,21 @@ WorkTimeApp.ui.vocabulary = (() => {
     notice = "saved",
     speechStatus = speech.status;
   const t = (key, values) => WorkTimeApp.i18n.t("vocabulary." + key, values);
-  const pageLabels = {
-    learning: "navReview",
-    books: "navWords",
-    analysis: "navStatistics",
-    preferences: "navSettings",
-  };
   const host = document.getElementById("vocabularyPanel");
   const editor = host.closest(".editor");
   const content = node("div", undefined, "vocabulary-content");
   content.id = "vocabularyContent";
   const drawerViewport = node("div", undefined, "vocabulary-drawer-viewport");
   const drawerBody = node("div", undefined, "vocabulary-drawer-body");
+  const pageSurface = node("div", undefined, "vocabulary-page-surface");
   const navigation = node("nav", undefined, "vocabulary-navigation");
-  drawerBody.append(navigation);
+  drawerBody.append(pageSurface, navigation);
+  drawerViewport.append(drawerBody);
+  content.append(drawerViewport);
+  host.replaceChildren(content);
   const navView = WorkTimeApp.ui.mountVocabularyNavigation(navigation, (id) => {
     if (!busy && !failed) id === "learning" ? enterReview() : changePage(id);
   });
-  drawerViewport.append(drawerBody);
-  const header = node(
-    "header",
-    undefined,
-    "vocabulary-header page-settings-header editor-mode-header",
-  );
-  const headerTitle = node("h2");
-  header.append(headerTitle);
-  content.append(header, drawerViewport);
-  host.replaceChildren(content);
   const fullHost = host.parentElement;
   const mini = node("div", undefined, "vocabulary-mini vocabulary-content");
   mini.dataset.page = "study";
@@ -710,13 +698,13 @@ WorkTimeApp.ui.vocabulary = (() => {
       ? { answer: "", correct: null }
       : data.draft || { answer: "", correct: null };
     const headerHost = node("div", undefined, "vocabulary-study-header");
-    drawerBody.insertBefore(headerHost, panel);
+    pageSurface.insertBefore(headerHost, panel);
     const recall = !header.revealed && header.mode === "recall";
     const actionsHost =
       detail || recall
         ? undefined
         : node("div", undefined, "vocabulary-study-actions");
-    if (actionsHost) drawerBody.insertBefore(actionsHost, navigation);
+    if (actionsHost) pageSurface.append(actionsHost);
     if (recall) {
       panel.classList.add("vocabulary-recall");
       panel.dataset.action = "reveal";
@@ -875,30 +863,22 @@ WorkTimeApp.ui.vocabulary = (() => {
       return;
     }
     const scroll = (panel.querySelector(".vocabulary-list") || panel).scrollTop;
+    const previousPage = navigation.querySelector('[aria-current="page"]')
+      ?.dataset.page;
+    WorkTimeApp.ui.motion?.stopWithin(pageSurface);
     pageView?.dispose();
     pageView = null;
     renderCount++;
-    const existingNav = navigation;
-
-    for (const child of [...drawerBody.children]) {
-      if (child !== existingNav) child.remove();
-    }
+    pageSurface.replaceChildren();
     content.dataset.page = view;
     const activePage = ["home", "study"].includes(view)
       ? "learning"
       : ["books", "book", "word"].includes(view)
         ? "books"
         : view;
-    const title = t(
-      activePage === "learning" ? "title" : pageLabels[activePage],
-    );
-    if (headerTitle.textContent !== title) {
-      headerTitle.textContent = title;
-      WorkTimeApp.ui.motion.refreshEditorTitle();
-    }
     panel = node("div", undefined, "vocabulary-page");
     panel.id = "vocabularyPage";
-    drawerBody.insertBefore(panel, existingNav);
+    pageSurface.append(panel);
     {
       const host = node("div", undefined, "vocabulary-react-content");
       panel.append(host);
@@ -935,6 +915,8 @@ WorkTimeApp.ui.vocabulary = (() => {
     );
     navView.update(activePage, planned.size);
     (panel.querySelector(".vocabulary-list") || panel).scrollTop = scroll;
+    if (previousPage && previousPage !== activePage)
+      WorkTimeApp.ui.motion?.play(pageSurface);
   }
   function flushInput() {
     clearTimeout(draftTimer);
@@ -966,6 +948,7 @@ WorkTimeApp.ui.vocabulary = (() => {
       stopModeAnimation();
     const next = !visible();
     if (next && !suspended) {
+      WorkTimeApp.ui.motion?.stop(pageSurface);
       pageView?.dispose();
       pageView = null;
       speech.stop();
@@ -983,13 +966,13 @@ WorkTimeApp.ui.vocabulary = (() => {
     miniView.mini({
       header: entry ? headerProps(entry, true, false) : null,
       streak: entry ? 0 : E.statistics(data).streak,
-      back: () => WorkTimeApp.ui.dateInfo.showToolsPanel("vocabulary"),
       expand: () => setMini(false),
     });
   }
   function setMini(value) {
     if (disposed) return;
     const changed = miniMode !== value;
+    if (changed) WorkTimeApp.ui.motion?.stop(pageSurface);
     const animate =
       changed && !host.hidden && !document.hidden && !motionPreference.matches;
     let progress = miniMode ? 1 : 0;
@@ -1211,6 +1194,8 @@ WorkTimeApp.ui.vocabulary = (() => {
     },
     dispose() {
       disposed = true;
+      WorkTimeApp.ui.motion?.stop(pageSurface);
+      WorkTimeApp.ui.motion?.stopWithin(pageSurface);
       stopModeAnimation();
       unlistenMotion();
       document.removeEventListener("visibilitychange", stopHiddenAnimation);

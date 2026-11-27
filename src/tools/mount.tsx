@@ -143,50 +143,40 @@ type ToolDirectoryProps = {
   active: string;
   development: boolean;
   open: (id: string) => void;
-  back: () => void;
 };
 function ToolDirectory({
   entries,
   active,
   development,
   open,
-  back,
 }: ToolDirectoryProps) {
   useLanguage();
   const { t } = WorkTimeApp.i18n;
   return (
-    <>
-      <Button
-        hidden={active === "tools" || active === "vocabulary"}
-        onClick={back}
-        className="hw-button ui-text-action tools-back"
-      >
-        {t("tools.back")}
-      </Button>
-      <div className="tools-cards" hidden={active !== "tools"}>
-        {entries.map((entry) => (
-          <Button
-            key={entry.id}
-            id={entry.trigger}
-            hidden={entry.development && !development}
-            data-hint-text={t(entry.description)}
-            onClick={() => open(entry.id)}
-            className="hw-button tool-card"
-          >
-            {toolIcons[entry.id]}
-            <strong>{t(entry.label)}</strong>
-            <span data-ui="status" role="status" />
-          </Button>
-        ))}
-      </div>
-    </>
+    <div className="tools-cards" hidden={active !== "tools"}>
+      {entries.map((entry) => (
+        <Button
+          type="text"
+          htmlType="button"
+          key={entry.id}
+          id={entry.trigger}
+          hidden={entry.development && !development}
+          data-hint-text={t(entry.description)}
+          onClick={() => open(entry.id)}
+          className="tool-card"
+        >
+          {toolIcons[entry.id]}
+          <strong>{t(entry.label)}</strong>
+          <span data-ui="status" role="status" />
+        </Button>
+      ))}
+    </div>
   );
 }
 export function mountToolDirectory(
   host: HTMLElement,
   entries: ToolEntry[],
   open: (id: string) => void,
-  back: () => void,
 ) {
   const view = mountView(host);
   function refresh(active: string, development: boolean) {
@@ -194,7 +184,6 @@ export function mountToolDirectory(
       <ToolDirectory
         entries={entries}
         open={open}
-        back={back}
         active={active}
         development={development}
       />,

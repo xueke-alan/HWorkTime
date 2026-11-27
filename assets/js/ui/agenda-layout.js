@@ -701,7 +701,7 @@ WorkTimeApp.ui.createAgendaLayout = function ({
           .querySelector(".agenda-chip-title-text")
           ?.style.removeProperty("max-width");
       }
-      WorkTimeApp.ui.alignment?.refresh([content]);
+
       // Batch geometry reads before adding decorative pieces.
       // A dense week must not force layout separately for each painted slice.
       const measurements = placements.map(measurePlacement);
@@ -908,7 +908,7 @@ WorkTimeApp.ui.createAgendaLayout = function ({
     const used = new Set(slots.map((s) => s.button));
     for (const node of [...content.children])
       if (!used.has(node)) node.remove();
-    WorkTimeApp.ui.alignment?.refresh([content]);
+
     for (const slot of slots)
       slot.height = slot.button.getBoundingClientRect().height;
     // A cross-date event is one ribbon. Lay out its entire span together;

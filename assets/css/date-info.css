@@ -608,7 +608,7 @@ body #dateInfoPanel.almanac-panel .date-info-date {
 }
 .almanac-guidance {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   border-block: 1px solid #e6dac6;
   text-align: left;
 }
@@ -768,9 +768,13 @@ body #dateInfoPanel.almanac-panel .almanac-column {
   padding-inline: 0.428571rem;
 }
 body #dateInfoPanel.almanac-panel .almanac-activities {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.285714rem 0.142857rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  width: 100%;
+  min-width: 0;
+  gap: 0.285714rem 0.5em;
   text-align: center;
 }
 .almanac-activities span {
@@ -778,7 +782,9 @@ body #dateInfoPanel.almanac-panel .almanac-activities {
   overflow-wrap: normal;
 }
 .almanac-activities .almanac-activity-wide {
-  grid-column: 1 / -1;
+  flex-basis: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
   text-align: center;
 }
 body .editor #dateInfoPanel.countdown-panel {
@@ -852,13 +858,13 @@ body #dateInfoPanel.almanac-panel .almanac-details {
   font-size: 0.9rem;
   padding-bottom: 0;
 }
-/* Date changes keep the same three horizontal bands. Only the middle split moves. */
+/* Guidance grows with wrapped terms while the header and footer keep their bands. */
 body .editor #dateInfoPanel.almanac-panel {
   padding-block: 0.5rem;
 }
 body #dateInfoPanel.almanac-panel .almanac-sheet {
   display: grid;
-  grid-template-rows: 4.6rem 9.6rem minmax(2.6rem, 1fr);
+  grid-template-rows: 4.6rem minmax(9.6rem, auto) minmax(2.6rem, 1fr);
   grid-template-columns: minmax(0, 1fr);
   width: 100%;
   gap: 0;
@@ -888,6 +894,7 @@ body #dateInfoPanel.almanac-panel .almanac-guidance {
   min-height: 0;
 }
 body #dateInfoPanel.almanac-panel .almanac-column {
+  min-width: 0;
   justify-content: center;
   align-items: center;
   text-align: center;
@@ -1035,7 +1042,6 @@ body #dateInfoPanel.festivals-panel .holiday-calendar-note {
   color: var(--ui-text, var(--ink));
 }
 .tools-panel[hidden], .tools-cards[hidden], .tool-card[hidden], .tools-panel > section[hidden] { display: none !important; }
-.tools-back { margin-bottom: 12px; }
 .tools-cards {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1058,6 +1064,7 @@ body #dateInfoPanel.festivals-panel .holiday-calendar-note {
   font: inherit;
   cursor: pointer;
 }
+body .editor .tools-cards .tool-card { border: 0; background: transparent; box-shadow: none; }
 .tool-card .tool-logo {
   display: block;
   flex: none;
@@ -1070,7 +1077,6 @@ body #dateInfoPanel.festivals-panel .holiday-calendar-note {
 .tool-card span { color: var(--muted); font-size: 12px; line-height: 1.4; }
 .tool-card span:empty { display: none; }
 .tool-card:hover { background: var(--theme-surface-soft, #eef5f1); }
-.tool-card:active { transform: translateY(1px); }
 @container (max-width: 259px) {
   .tools-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

@@ -116,24 +116,14 @@ WorkTimeApp.ui.autoBackupFolderText = (() => {
     if (!host || document.documentElement.dataset.appState === "failed") return;
     const service = WorkTimeApp.services.autoBackupFolder;
     const t = WorkTimeApp.ui.autoBackupFolderText;
-    const field = document.createElement("div");
-    field.className = "field auto-backup-folder";
-    field.id = "autoBackupFolder";
-    const label = document.createElement("label");
-    label.id = "autoBackupFolderLabel";
-    // The group is named via aria-labelledby; associating this heading with
-    // the button also forwards label hover outside the button's bounds.
-    const control = document.createElement("div");
-    control.className = "auto-backup-folder-control";
-    WorkTimeApp.ui.native.setGroup(control);
-    control.setAttribute("aria-labelledby", label.id);
-    const status = document.createElement("p");
-    status.id = "autoBackupFolderStatus";
-    status.className = "help";
-    status.setAttribute("role", "status");
-    const buttons = document.createElement("div");
-    buttons.className = "row";
-    const controls = {};
+    const field = document.getElementById("autoBackupFolder");
+    const label = document.getElementById("autoBackupFolderLabel");
+    const status = document.getElementById("autoBackupFolderStatus");
+    const buttons = field.querySelector(".row");
+    const controls = {
+      choose: document.getElementById("autoBackupFolderChoose"),
+      retry: document.getElementById("autoBackupFolderRetry"),
+    };
     let pending = false,
       notice = "";
     async function act(action) {
@@ -162,23 +152,15 @@ WorkTimeApp.ui.autoBackupFolderText = (() => {
       },
       retry: service.authorize,
     })) {
-      const button = WorkTimeApp.ui.native.createElement("button");
-      button.type = "button";
-      button.id = "autoBackupFolder" + key[0].toUpperCase() + key.slice(1);
-      button.className =
-        key === "retry" ? "ui-button" : "auto-backup-folder-action";
-      button.setAttribute("aria-describedby", status.id);
+      const button = controls[key];
       button.addEventListener("click", () => {
         if (pending || service.state.busy) return;
         void act(action);
       });
-      controls[key] = button;
-      if (key === "retry") buttons.append(button);
     }
-    control.append(controls.choose);
-    const chosenName = document.createElement("span");
-    chosenName.className = "auto-backup-folder-name";
-    controls.choose.append(chosenName);
+    const chosenName = controls.choose.querySelector(
+      ".auto-backup-folder-name",
+    );
     function render() {
       const state = service.state;
       label.textContent = t("label");
@@ -207,8 +189,6 @@ WorkTimeApp.ui.autoBackupFolderText = (() => {
       controls.retry.disabled = state.busy || pending;
       buttons.hidden = controls.retry.hidden;
     }
-    field.append(label, control, status, buttons);
-    host.prepend(field);
     const unsubscribe = service.subscribe(render);
     document.addEventListener("worktime:languagechange", render);
     window.addEventListener(

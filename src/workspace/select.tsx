@@ -1,5 +1,5 @@
 import Select from "antd/es/select";
-import { CaretDownIcon } from "../phosphor-icons";
+import { CaretDownIcon } from "../tabler-icons";
 import { mountView } from "../mount-view";
 export function createWorkspaceSelect({
   host,

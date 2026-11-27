@@ -45,7 +45,7 @@
 
 ### 前端维护
 
-工作台、日程编辑器和独立备份转换器使用 React、TypeScript 和 Ant Design。三个入口分别位于 `src/workspace-entry.ts`、`src/agenda/mount.ts` 和 `src/converter/mount.ts`。主题、语言和控件密度由 `src/ApplicationTheme.tsx` 统一管理，业务图标使用内嵌的 Phosphor Bold SVG。图标映射位于 `assets/icons/phosphor.json`，运行 `pnpm run prepare:assets` 可从锁定版本重新生成。
+工作台、日程编辑器和独立备份转换器使用 React、TypeScript 和 Ant Design。三个入口分别位于 `src/workspace-entry.ts`、`src/agenda/mount.ts` 和 `src/converter/mount.ts`。主题、语言和控件密度由 `src/ApplicationTheme.tsx` 统一管理，业务图标使用内嵌的 Tabler 线框 SVG（统一 2 描边）。图标映射位于 `assets/icons/tabler.json`，运行 `pnpm run prepare:assets` 可从锁定版本重新生成。
 
 改动交互时，从对应功能的 TSX 组件进入。工时计算、学习调度、备份读写和游戏规则仍由原有服务或引擎处理。音乐、打字和单词学习的视图按功能加载，本地文件入口使用同一份组件源码生成的普通脚本。
 

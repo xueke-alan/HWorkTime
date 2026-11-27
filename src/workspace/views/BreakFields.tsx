@@ -1,6 +1,6 @@
 import Button from "antd/es/button";
 import Input from "antd/es/input";
-import { TrashIcon } from "../../phosphor-icons";
+import { TrashIcon } from "../../tabler-icons";
 import type { MouseEvent } from "react";
 export interface BreakRow {
   start: string;

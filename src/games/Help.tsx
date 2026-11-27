@@ -1,5 +1,5 @@
 import Button from "antd/es/button";
-import { QuestionIcon } from "../phosphor-icons";
+import { QuestionIcon } from "../tabler-icons";
 import { createPortal } from "react-dom";
 import { useLanguage } from "../ApplicationTheme";
 import { mountView } from "../mount-view";

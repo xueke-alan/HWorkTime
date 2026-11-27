@@ -1,6 +1,6 @@
 import Button from "antd/es/button";
 import { mountReaderShelf } from "./ReaderShelf";
-import { CaretLeftIcon, BooksIcon, SidebarSimpleIcon } from "../phosphor-icons";
+import { CaretLeftIcon, BooksIcon, SidebarSimpleIcon } from "../tabler-icons";
 import { mountView } from "../mount-view";
 import { useLanguage } from "../ApplicationTheme";
 

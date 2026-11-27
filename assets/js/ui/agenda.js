@@ -9,6 +9,8 @@ WorkTimeApp.ui.createAgenda = function ({
   escape: esc,
   document,
   window,
+  yearViewToggle,
+  renderYearDisplay,
 }) {
   const { isDevelopmentEnabled } = WorkTimeApp;
   const rules = WorkTimeApp.domain.agenda;
@@ -126,35 +128,6 @@ WorkTimeApp.ui.createAgenda = function ({
       onChange: switchWeek,
     });
   }
-  const yearViewToggle = document.createElement("div");
-  yearViewToggle.id = "yearViewToggle";
-  yearViewToggle.hidden = true;
-  function renderYearDisplay() {
-    WorkTimeApp.ui.workspaceViews.YearDisplay(yearViewToggle, {
-      value: model.yearViewMode,
-      disabled: busy,
-      onChange: (mode) =>
-        actions.requestSettingsExit(() => selectYearDisplay(mode)),
-    });
-  }
-  function selectYearDisplay(mode) {
-    if (disposed || !model.yearMode || busy || mode === model.yearViewMode)
-      return;
-    actions.finishCalendarNavigation?.();
-    if (!model.yearMode) return;
-    const detail = mode === "calendar";
-    model.yearViewMode = mode;
-    renderYearDisplay();
-    // Measure the segmented control before changing the styles of the year grid.
-    calendar.classList.toggle("year-calendar-detail", detail);
-    const legend = $("yearLegend");
-    legend.classList.toggle("is-inactive", detail);
-    legend.setAttribute("aria-hidden", String(detail));
-    const watermark = $("yearWatermark");
-    watermark.classList.add("is-mode-transition");
-    watermark.classList.toggle("is-visible", detail);
-    document.dispatchEvent(new Event("worktime:yearviewchange"));
-  }
   const toolbarSlot = $("batchToggle").closest(".agenda-toolbar-slot");
   const toolbarRegion = toolbarSlot.closest(".workspace-context-actions");
   const toolbarDivider = toolbarRegion.querySelector(
@@ -170,17 +143,11 @@ WorkTimeApp.ui.createAgenda = function ({
     agenda: viewToggle,
     analysis: null,
   };
-  toolbarSlot.append(viewToggle, yearViewToggle);
+  toolbarSlot.append(viewToggle);
   let toolbarKey = null;
   let toolbarAnimations = [];
   const toolbarGhosts = new Map();
   const calendar = $("calendar");
-  const dateEdges = WorkTimeApp.ui.createAgendaEdges({
-    calendar,
-    // Attendance cards paint their own strokes. Keeping the agenda overlay
-    // alive during their return leaves a second, independently sampled outline.
-    enabled: () => active,
-  });
   const weekdays = calendar.previousElementSibling;
   const weekdayLabels = [...weekdays.children];
   const workdaySwitch = (() => {
@@ -475,8 +442,7 @@ WorkTimeApp.ui.createAgenda = function ({
     if (!canAnimate()) return;
     stopOutgoing(card);
     for (const element of elements)
-      // Date labels use transform for ink alignment. Animate only opacity so
-      // cancelling the reveal cannot restore a different vertical position.
+      // Fade date labels within their fixed CSS line boxes.
       revealIncoming(
         element,
         delay,
@@ -761,9 +727,7 @@ WorkTimeApp.ui.createAgenda = function ({
       weekView > 1 ? "4.5ch" : "2.8ch",
     );
     weekLabelText = value;
-    // Complete ink alignment before the first visible frame; opacity never
-    // changes the baseline or interferes with the alignment transform.
-    WorkTimeApp.ui.alignment?.refresh([title]);
+
     if (appearing && canAnimate()) {
       const animation = animationCompat.animate(
         label,
@@ -965,7 +929,6 @@ WorkTimeApp.ui.createAgenda = function ({
     timetable.render();
     fitMonthCards();
     agendaLayout.render();
-    dateEdges.refresh();
   }
   function captureWeekendColumns() {
     const lanes = [
@@ -1036,9 +999,6 @@ WorkTimeApp.ui.createAgenda = function ({
     return layout ? animateWeekendColumns(layout) : Promise.resolve(true);
   }
   function animateWeekendColumns(layout) {
-    // Settle ink alignment before capturing destinations. Deferred alignment
-    // otherwise moves newly rebuilt timed-event text after the first frame.
-    WorkTimeApp.ui.alignment?.refresh([calendar, weekdays]);
     const transition = {
       animations: [],
       styles: new Map(),
@@ -2704,8 +2664,7 @@ WorkTimeApp.ui.createAgenda = function ({
       node.removeAttribute("id");
       if (node.matches("input[type=radio]")) node.removeAttribute("name");
       for (const { name } of [...node.attributes])
-        if (name.startsWith("data-") && name !== "data-positioned")
-          node.removeAttribute(name);
+        if (name.startsWith("data-")) node.removeAttribute(name);
     }
     ghost.dataset.toolbarSource = control.dataset.toolbarSource || control.id;
     ghost.setAttribute("inert", "");
@@ -2764,7 +2723,7 @@ WorkTimeApp.ui.createAgenda = function ({
     ];
     viewToggle.dataset.agendaView = String(weekView);
     if (key === "agenda") renderAgendaDisplay();
-    if (key === "year") renderYearDisplay();
+    if (key === "year") renderYearDisplay(busy);
     if (animate) return () => animateToolbar(incoming, previous, permanent);
   }
   // Measure after the page has rendered its new layout, including the month label.
@@ -2890,7 +2849,6 @@ WorkTimeApp.ui.createAgenda = function ({
     if (!active) {
       agendaLayout.render();
       timetable.render();
-      dateEdges.refresh();
       playToolbar?.();
       return;
     }
@@ -3095,7 +3053,6 @@ WorkTimeApp.ui.createAgenda = function ({
     times();
     agendaDrag?.refresh();
     timetable.render();
-    dateEdges.refresh();
     playToolbar?.();
   }
   function select(
@@ -3419,13 +3376,7 @@ WorkTimeApp.ui.createAgenda = function ({
             ],
           };
         });
-      // Labels can change after the calendar renderer aligns its header.
-      // Resolve the new glyph baseline before snapshots and reveals are painted.
-      WorkTimeApp.ui.alignment?.refresh(
-        reveals.flatMap(({ elements }) =>
-          elements.filter((element) => element.matches(".daykind")),
-        ),
-      );
+
       // Week layout owns card opacity while it moves the shared dates.
       const surfacePlans = dayCards().flatMap((card) => {
         const previous = surfaces.get(cardDate(card));
@@ -3825,6 +3776,7 @@ WorkTimeApp.ui.createAgenda = function ({
   return {
     bind,
     render,
+    renderToolbar,
     selectView,
     hasDraft: () => hasDraft() || memoDirty || memoSaving || agendaDrag?.active,
     async prepareAgendaArchive() {
@@ -3834,10 +3786,8 @@ WorkTimeApp.ui.createAgenda = function ({
     dispose() {
       disposed = true;
       WorkTimeApp.ui.workspaceViews.dispose(viewToggle);
-      WorkTimeApp.ui.workspaceViews.dispose(yearViewToggle);
       agendaDrag.dispose();
       agendaLayout.dispose();
-      dateEdges.dispose();
       timetable.dispose();
       schedule.dispose();
       formController?.dispose();
@@ -3877,7 +3827,6 @@ WorkTimeApp.ui.createAgenda = function ({
         summary,
         controls,
         viewToggle,
-        yearViewToggle,
         overviewDialog,
         drawerGrip,
       ])

@@ -8,6 +8,7 @@ import { renderGameMenu, mountGameToolbar } from "./games/menu";
 import { mountPlayback } from "./music/playback";
 import { mountToolDirectory } from "./tools/mount";
 import { renderAnalysisSidebar } from "./analysis/sidebar";
+import { renderAnalysisHover, positionAnalysisHover } from "./analysis/hover";
 import { renderAnalysisMetrics, afterAnalysisRender } from "./analysis/metrics";
 import { confirmations } from "./imports/confirmations";
 import { records } from "./imports/records";
@@ -45,6 +46,8 @@ export async function mountWorkspace(signal?: AbortSignal) {
   WorkTimeApp.ui.workspaceViews = workspaceViews;
   WorkTimeApp.ui.renderWorkspaceTabs = renderWorkspaceTabs;
   WorkTimeApp.ui.renderAnalysisSidebar = renderAnalysisSidebar;
+  WorkTimeApp.ui.renderAnalysisHover = renderAnalysisHover;
+  WorkTimeApp.ui.positionAnalysisHover = positionAnalysisHover;
   WorkTimeApp.ui.renderAnalysisMetrics = renderAnalysisMetrics;
   WorkTimeApp.ui.afterAnalysisRender = afterAnalysisRender;
   WorkTimeApp.ui.confirmations = confirmations;

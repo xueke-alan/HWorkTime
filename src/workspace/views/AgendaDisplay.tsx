@@ -3,7 +3,7 @@ import {
   CalendarDotsIcon,
   CalendarGridIcon,
   ColumnsIcon,
-} from "../../phosphor-icons";
+} from "../../tabler-icons";
 import ToolbarSegmented from "../ToolbarSegmented";
 
 const modes = [

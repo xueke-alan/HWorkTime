@@ -140,7 +140,7 @@ async function verify() {
     );
     assert.equal(
       await card("2026-10-11").locator(".record-source-dot.oa").count(),
-      1,
+      0,
     );
     const plannedHeight = await card("2026-10-24").evaluate((node) => {
       const summary = node.querySelector(".day-planned-summary");

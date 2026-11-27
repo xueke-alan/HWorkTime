@@ -60,7 +60,6 @@ const { chromium } = require("playwright");
         height: width === 1920 ? 1080 : 1440,
       });
       async function inspect(scene) {
-        await page.evaluate(() => WorkTimeApp.ui.alignment.refresh());
         const issues = await page.evaluate(() => {
           const issues = [];
           const visible = (e) =>
@@ -168,12 +167,12 @@ const { chromium } = require("playwright");
         await page.locator("dialog:modal [data-close]").first().click();
       }
       await clickSettingsControl(page, "#pageSettingsOpen");
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       await clickSettingsControl(page, "#settingsWorkTab");
       await page.locator("#scheduleApplyOpen").click();
       await inspect("schedule-range");
       await page.locator("dialog:modal [data-close]").first().click();
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       await page.locator("#monthTitle").click();
       await inspect("year");
       await page.locator("#monthTitle").click();
@@ -192,7 +191,7 @@ const { chromium } = require("playwright");
         await inspect(id.slice(1));
         await page.locator(id).click();
       }
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       await page.locator("#prevMonth").click();
       await inspect("september");
       for (let i = 0; i < 6; i++) await page.locator("#prevMonth").click();

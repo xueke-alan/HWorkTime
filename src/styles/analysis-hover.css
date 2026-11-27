@@ -1,0 +1,96 @@
+.analysis-hover-anchor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+body .analysis-hover-popover {
+  max-width: calc(100vw - 24px);
+  pointer-events: none;
+  font-family: var(--font-ui);
+}
+
+.analysis-hover-content {
+  width: 168px;
+  max-width: calc(100vw - 48px);
+  color: var(--ink);
+  text-align: start;
+}
+
+.analysis-hover-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  line-height: 20px;
+}
+
+.analysis-hover-heading strong {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.analysis-hover-heading > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+body .analysis-hover-popover .analysis-hover-row-tag {
+  margin: 0;
+  padding-inline: 4px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 400;
+  white-space: normal;
+}
+
+.analysis-hover-values {
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+
+body .analysis-hover-values .ant-descriptions-item-container {
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  line-height: 20px;
+}
+
+body .analysis-hover-values .ant-descriptions-item-label {
+  flex: 1 0 auto;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+body .analysis-hover-values .ant-descriptions-item-content {
+  flex: 0 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.analysis-hover-values .ant-descriptions-item-content > span:not(.ant-tag) {
+  white-space: nowrap;
+}
+
+/* Isolate Ant's description table from the site's general table padding/borders. */
+#analysisHover .ant-descriptions-row > td {
+  padding: 2px 0;
+  border: 0;
+}
+
+.analysis-hover-overtime {
+  color: var(--accent);
+}

@@ -10,7 +10,7 @@ const WorkTimeDomainStatistics = (() => {
     businessMinutes,
   } = WorkTimeApp.domain.time;
   const { DEFAULT_START } = WorkTimeApp.domain.state;
-  const { calendarInfo } = WorkTimeApp.domain.calendar;
+  const { calendarInfo, holidays } = WorkTimeApp.domain.calendar;
   const { effectiveRecord, complete, duration, calculate } =
     WorkTimeApp.domain.records;
   /** @param {WorkStateData} state */
@@ -88,6 +88,10 @@ const WorkTimeDomainStatistics = (() => {
         overtime: result.overtime,
         work,
         manual,
+        manualStart: !!(record.manual || record.filledStart),
+        manualEnd: !!(record.manual || record.filledEnd),
+        // Only published holiday schedules qualify, never festival fallbacks.
+        holiday: !work && !!holidays[date],
       };
       chartDays.push(item);
       // Future manual plans are visible without changing observed statistics.
@@ -350,6 +354,7 @@ const WorkTimeDomainStatistics = (() => {
       workOvertime: 0,
       restOvertime: 0,
       attendance: 0,
+      leaveMinutes: 0,
       completeDays: 0,
       pending: 0,
       estimatedDays: 0,
@@ -357,7 +362,13 @@ const WorkTimeDomainStatistics = (() => {
     };
     for (const [k, day] of Object.entries(state.days)) {
       if (k < start || k > end) continue;
-      const c = calculate(k, day, scheduleForDate(state, k), includeEstimate);
+      const schedule = scheduleForDate(state, k),
+        c = calculate(k, day, schedule, includeEstimate);
+      if (c.work)
+        out.leaveMinutes += Math.min(
+          schedule.standardMinutes,
+          Math.max(0, day.leaveMinutes || 0),
+        );
       if (
         day.oa &&
         day.oa.status === "pending" &&

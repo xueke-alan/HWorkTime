@@ -1,6 +1,21 @@
 "use strict";
 (() => {
   const labels = {
+    "zh-CN": ["经典黑", "樱花粉"],
+    "zh-TW": ["經典黑", "櫻花粉"],
+    "zh-HK": ["經典黑", "櫻花粉"],
+    en: ["Classic black", "Cherry blossom pink"],
+    ja: ["クラシックブラック", "桜ピンク"],
+    ko: ["클래식 블랙", "벚꽃 핑크"],
+  };
+  for (const [language, [black, pink]] of Object.entries(labels))
+    Object.assign(WorkTimeApp.data.locales[language], {
+      "theme.black": black,
+      "theme.pink": pink,
+    });
+})();
+(() => {
+  const labels = {
     "zh-CN": "等下班",
     "zh-TW": "等下班",
     "zh-HK": "等下班",
@@ -589,15 +604,55 @@ for (const [language, label] of Object.entries({
   ko: "클립보드 접근 권한이 없습니다. 브라우저 사이트 설정에서 허용하거나 OA 정보를 직접 붙여넣으세요.",
 }))
   WorkTimeApp.data.locales[language]["clipboard.permissionRequired"] = label;
-for (const [language, label] of Object.entries({
-  "zh-CN": "我爱上班，从不摸鱼",
-  "zh-TW": "我愛上班，絕不摸魚",
-  "zh-HK": "我愛返工，絕不偷懶",
-  en: "All work, no slacking!",
-  ja: "仕事大好き、サボりません！",
-  ko: "일이 좋아요, 딴짓은 안 해요!",
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "多干多错、少干少错\n不干不错、不错不错",
+    "不清楚、不了解、不知道、不是我\n上班直接睡、下班直接走",
+    "上班三要素\n把电冲绿、把尿喝白、把事办黄",
+    "大事办不成\n小事办成大事",
+    "上班拉屎\n带薪年假",
+  ],
+  "zh-TW": [
+    "多幹多錯、少幹少錯\n不幹不錯、不錯不錯",
+    "不清楚、不瞭解、不知道、不是我\n上班直接睡、下班直接走",
+    "上班三要素\n把電衝綠、把尿喝白、把事辦黃",
+    "大事辦不成\n小事辦成大事",
+    "上班拉屎\n帶薪年假",
+  ],
+  "zh-HK": [
+    "多幹多錯、少幹少錯\n不幹不錯、不錯不錯",
+    "不清楚、不了解、不知道、不是我\n上班直接睡、下班直接走",
+    "上班三要素\n把電衝綠、把尿喝白、把事辦黃",
+    "大事辦不成\n小事辦成大事",
+    "上班拉屎\n帶薪年假",
+  ],
+  en: [
+    "Do more, err more. Do less, err less.\nDo nothing, make no mistakes. All good!",
+    "Not sure. No idea. Don't know. Wasn't me.\nClock in, sleep. Clock out, leave.",
+    "Three essentials of work\nCharge till green, drink till clear, mess things up.",
+    "Big tasks go nowhere.\nSmall tasks become big problems.",
+    "Pooping at work\nPaid vacation",
+  ],
+  ja: [
+    "働くほどミス、減らせばミスも減る\n手を出さなければミスもなし、よしよし",
+    "不明、理解不能、知らない、私じゃない\n出勤したら寝る、退勤したら帰る",
+    "仕事の三要素\n充電は緑まで、水分は尿が透明になるまで、仕事は台無しに",
+    "大仕事は片付かず\n小仕事は大ごとに",
+    "勤務中のトイレ\n有給休暇",
+  ],
+  ko: [
+    "많이 하면 실수도 많고, 적게 하면 실수도 적다\n안 하면 실수도 없다, 좋아 좋아",
+    "불분명, 이해 못 함, 모름, 나 아님\n출근하면 자고, 퇴근하면 간다",
+    "직장 생활의 세 가지 요소\n배터리는 초록까지, 물은 소변이 맑아질 때까지, 일은 망칠 때까지",
+    "큰일은 못 끝내고\n작은 일은 큰일로 만든다",
+    "근무 중 화장실\n유급 휴가",
+  ],
 }))
-  WorkTimeApp.data.locales[language]["games.idleMotto"] = label;
+  labels.forEach((label, index) => {
+    WorkTimeApp.data.locales[language][
+      index === 0 ? "games.idleMotto" : "games.idleMotto" + (index + 1)
+    ] = label;
+  });
 for (const [language, labels] of Object.entries({
   "zh-CN": ["正在加载，请稍候…", "加载失败，请重试。"],
   "zh-TW": ["正在載入，請稍候…", "載入失敗，請重試。"],
@@ -1026,13 +1081,14 @@ for (const [language, labels] of Object.entries({
   WorkTimeApp.data.locales[language]["batch.autoSelectHint"] = labels[1];
 }
 for (const [language, labels] of Object.entries({
-  "zh-CN": ["工时溢出", "工时仍欠"],
-  "zh-TW": ["工時溢出", "工時仍欠"],
-  "zh-HK": ["工時溢出", "工時仍欠"],
-  en: ["Hours surplus", "Hours owed"],
-  ja: ["超過時間", "不足時間"],
-  ko: ["초과 시간", "부족 시간"],
+  "zh-CN": ["工时差值", "工时差值"],
+  "zh-TW": ["工時差值", "工時差值"],
+  "zh-HK": ["工時差值", "工時差值"],
+  en: ["Hours balance", "Hours balance"],
+  ja: ["勤務時間差", "勤務時間差"],
+  ko: ["근무 시간 차이", "근무 시간 차이"],
 })) {
+  WorkTimeApp.data.locales[language]["summary.hoursBalance"] = labels[0];
   WorkTimeApp.data.locales[language]["summary.hoursSurplus"] = labels[0];
   WorkTimeApp.data.locales[language]["summary.hoursOwed"] = labels[1];
 }
@@ -2302,6 +2358,7 @@ for (const [language, value] of Object.entries({
     "short.target",
     "short.workOT",
     "short.restOT",
+    "short.monthOT",
     "short.averageFormula",
     "short.balanceFormula",
     "short.restOvertimeDays",
@@ -2311,13 +2368,15 @@ for (const [language, value] of Object.entries({
     "short.preview.through",
     "short.preview.employment",
     "short.preview.starts",
+    "summary.leaveHours",
   ];
   const rows = {
     "zh-CN": [
       "工时记录",
-      "月度加班目标",
+      "日均加班目标",
       "工作日加班",
       "休息日加班",
+      "当月计划加班天数",
       "工作日加班 ÷ 出勤",
       "工作日加班 − 目标 × 出勤",
       "休息日加班：{count} d",
@@ -2327,12 +2386,14 @@ for (const [language, value] of Object.entries({
       "本月至 {date}",
       "入职 {count} 天",
       "距入职 {count} 天",
+      "请假时长",
     ],
     "zh-TW": [
       "工時記錄",
-      "每月加班目標",
+      "日均加班目標",
       "工作日加班",
       "休息日加班",
+      "當月計劃加班天數",
       "工作日加班 ÷ 出勤",
       "工作日加班 − 目標 × 出勤",
       "休息日加班：{count} d",
@@ -2342,12 +2403,14 @@ for (const [language, value] of Object.entries({
       "本月至 {date}",
       "到職 {count} 天",
       "距到職 {count} 天",
+      "請假時長",
     ],
     "zh-HK": [
       "工時記錄",
-      "每月加班目標",
+      "日均加班目標",
       "工作日加班",
       "休息日加班",
+      "當月計劃加班天數",
       "工作日加班 ÷ 出勤",
       "工作日加班 − 目標 × 出勤",
       "休息日加班：{count} d",
@@ -2357,14 +2420,16 @@ for (const [language, value] of Object.entries({
       "本月至 {date}",
       "入職 {count} 天",
       "距入職 {count} 天",
+      "請假時長",
     ],
     en: [
       "Timesheet",
-      "Monthly OT target",
+      "Daily OT target",
       "Weekday OT",
       "Rest-day OT",
-      "Weekday OT ÷ attendance",
-      "Weekday OT − target × attendance",
+      "Planned OT days this month",
+      "OT ÷ days",
+      "OT − goal × days",
       "Rest-day OT: {count} d",
       "Hours",
       "OT",
@@ -2372,12 +2437,14 @@ for (const [language, value] of Object.entries({
       "Through {date}",
       "Day {count} at work",
       "Starts in {count} days",
+      "Leave hours",
     ],
     ko: [
       "근무 기록",
-      "월 초과근무 목표",
+      "일평균 초과근무 목표",
       "평일 초과",
       "휴일 초과",
+      "이번 달 초과근무 예정 일수",
       "평일 초과 ÷ 출근일수",
       "평일 초과 − 목표 × 출근일수",
       "휴일 초과근무: {count} d",
@@ -2387,12 +2454,14 @@ for (const [language, value] of Object.entries({
       "이달 {date}까지",
       "입사 {count}일째",
       "입사까지 {count}일",
+      "휴가 시간",
     ],
     ja: [
       "勤務記録",
-      "月間残業目標",
+      "日平均残業目標",
       "平日残業",
       "休日残業",
+      "今月の残業予定日数",
       "平日残業 ÷ 出勤日数",
       "平日残業 − 目標 × 出勤日数",
       "休日残業：{count} d",
@@ -2402,6 +2471,7 @@ for (const [language, value] of Object.entries({
       "今月{date}まで",
       "勤続{count}日目",
       "開始まで{count}日",
+      "休暇時間",
     ],
   };
   for (const [locale, values] of Object.entries(rows))
@@ -2409,6 +2479,28 @@ for (const [language, value] of Object.entries({
       WorkTimeApp.data.locales[locale],
       Object.fromEntries(keys.map((key, index) => [key, values[index]])),
     );
+})();
+/** Compact summary labels retain their full wording in hints and ARIA. */
+(() => {
+  for (const [locale, catalog] of Object.entries(WorkTimeApp.data.locales)) {
+    const labels =
+      locale === "en"
+        ? ["OT goal", "Balance", "Total", "Planned OT"]
+        : [
+            catalog["short.target"],
+            catalog["summary.hoursBalance"],
+            catalog["copy.016315b388"],
+            catalog["short.monthOT"],
+          ];
+    [
+      "short.targetHeading",
+      "short.hoursBalance",
+      "short.totalHours",
+      "short.plannedOT",
+    ].forEach((key, index) => {
+      catalog[key] = labels[index];
+    });
+  }
 })();
 /** Complete contextual messages shared by the new presentation paths. */
 (() => {
@@ -2632,6 +2724,28 @@ for (const [language, value] of Object.entries({
     });
 })();
 
+// Compact headings and supporting copy for the structured source tooltip.
+(() => {
+  const rows = {
+    "zh-CN": ["OA 优先", "手录优先", "缺失时间由手录补齐"],
+    "zh-TW": ["OA 優先", "手動記錄優先", "缺少時間由手動記錄補齊"],
+    "zh-HK": ["OA 優先", "手動記錄優先", "缺少時間由手動記錄補齊"],
+    en: [
+      "OA first",
+      "Manual first",
+      "Missing times are filled from manual entries",
+    ],
+    ja: ["OA 優先", "手入力優先", "不足時刻は手入力で補完"],
+    ko: ["OA 우선", "수동 우선", "누락 시간은 수동 기록으로 보완"],
+  };
+  for (const [language, [oaTitle, manualTitle, oaNote]] of Object.entries(rows))
+    Object.assign(WorkTimeApp.data.locales[language], {
+      "source.oaTitle": oaTitle,
+      "source.manualTitle": manualTitle,
+      "source.oaNote": oaNote,
+    });
+})();
+
 // Per-card source preference and field-level OA completion.
 (() => {
   const rows = {
@@ -2706,6 +2820,18 @@ for (const [language, text] of Object.entries({
   ko: "수동 입력 포함",
 }))
   WorkTimeApp.data.locales[language]["analysis.manualRecord"] = text;
+
+for (const [language, values] of Object.entries({
+  "zh-CN": ["手录数据", "节假日加班"],
+  "zh-TW": ["手動資料", "節假日加班"],
+  "zh-HK": ["手動資料", "節假日加班"],
+  en: ["Manual entry", "Public-holiday overtime"],
+  ja: ["手入力", "祝日出勤"],
+  ko: ["수동 입력", "공휴일 초과근무"],
+}))
+  ["manualTag", "holidayOvertime"].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["analysis." + key] = values[index];
+  });
 
 (() => {
   const keys = [
@@ -4246,6 +4372,164 @@ for (const [language, labels] of Object.entries({
   WorkTimeApp.data.locales[language]["yearView.analysisTitle"] = labels[0];
   WorkTimeApp.data.locales[language]["yearView.totalOvertime"] = labels[1];
   WorkTimeApp.data.locales[language]["yearView.completeDays"] = labels[2];
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "全年平均加班",
+    "请假天数",
+    "周末加班",
+    "节假日加班",
+    "按各日标准工时折算请假天数，半天计 0.5 天，包含无打卡记录的全天请假。",
+    "有正加班记录的休息日天数，含周末、节假日及手动休息日；节假日期间的周末只计入节假日加班。",
+  ],
+  "zh-TW": [
+    "全年平均加班",
+    "請假天數",
+    "週末加班",
+    "節假日加班",
+    "按各日標準工時折算請假天數，半天計 0.5 天，包含無打卡記錄的全天請假。",
+    "有正加班記錄的休息日天數，含週末、節假日及手動休息日；節假日期間的週末只計入節假日加班。",
+  ],
+  "zh-HK": [
+    "全年平均加班",
+    "請假日數",
+    "週末加班",
+    "公眾假期加班",
+    "按各日標準工時折算請假日數，半天計 0.5 天，包含無打卡記錄的全日請假。",
+    "有正加班記錄的休息日日數，含週末、公眾假期及手動休息日；假期期間的週末只計入假期加班。",
+  ],
+  en: [
+    "Annual average overtime",
+    "Leave days",
+    "Weekend overtime",
+    "Holiday overtime",
+    "Leave days are prorated by each day's standard hours; half a day is 0.5. Full-day leave without clock records is included.",
+    "Rest days with positive overtime, including weekends, holidays and custom rest days. Weekends within published holidays count only as holiday overtime.",
+  ],
+  ja: [
+    "年間平均残業",
+    "休暇日数",
+    "週末の残業",
+    "祝休日の残業",
+    "各日の所定労働時間で休暇日数を換算し、半日は0.5日とします。打刻のない全日休暇も含みます。",
+    "週末、祝休日、手動設定の休日で残業時間が正の日数。公表済みの祝休日期間内の週末は祝休日の残業にのみ計上します。",
+  ],
+  ko: [
+    "연간 평균 초과 근무",
+    "휴가 일수",
+    "주말 초과 근무",
+    "공휴일 초과 근무",
+    "각 날짜의 표준 근무 시간으로 휴가 일수를 환산하며 반차는 0.5일입니다. 출퇴근 기록이 없는 종일 휴가도 포함합니다.",
+    "주말, 공휴일 및 수동 지정 휴일 중 초과 근무가 양수인 일수입니다. 공표된 공휴일 기간의 주말은 공휴일 초과 근무에만 포함합니다.",
+  ],
+})) {
+  [
+    "annualAverage",
+    "leaveDays",
+    "weekendOvertime",
+    "holidayOvertime",
+    "leaveDaysHint",
+    "restDaysHint",
+  ].forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["yearView." + key] = labels[index];
+  });
+}
+for (const [language, labels] of Object.entries({
+  "zh-CN": [
+    "净加班差额",
+    "日均工时",
+    "加班天数",
+    "工作日加班天数",
+    "休息日加班天数",
+    "单日最高加班",
+    "工作日加班差额 ÷ 折算出勤天数，不含休息日加班。",
+    "工作日加班差额与休息日加班之和；负值表示净工时不足。",
+    "总工时 ÷ 完整记录天数，包含工作日和休息日。",
+    "完整记录中加班时长大于 0 的天数，不与工时不足的日期抵消。",
+    "按所选年份的完整记录汇总，含手动补全与预估；负加班值表示工时差额。",
+  ],
+  "zh-TW": [
+    "淨加班差額",
+    "日均工時",
+    "加班天數",
+    "工作日加班天數",
+    "休息日加班天數",
+    "單日最高加班",
+    "工作日加班差額 ÷ 折算出勤天數，不含休息日加班。",
+    "工作日加班差額與休息日加班之和；負值表示淨工時不足。",
+    "總工時 ÷ 完整記錄天數，包含工作日和休息日。",
+    "完整記錄中加班時數大於 0 的天數，不與工時不足的日期抵銷。",
+    "按所選年份的完整記錄彙總，含手動補全與預估；負加班值表示工時差額。",
+  ],
+  "zh-HK": [
+    "淨加班差額",
+    "日均工時",
+    "加班日數",
+    "工作日加班日數",
+    "休息日加班日數",
+    "單日最高加班",
+    "工作日加班差額 ÷ 折算出勤日數，不含休息日加班。",
+    "工作日加班差額與休息日加班之和；負值表示淨工時不足。",
+    "總工時 ÷ 完整記錄日數，包含工作日和休息日。",
+    "完整記錄中加班時數大於 0 的日數，不與工時不足的日期抵銷。",
+    "按所選年份的完整記錄彙總，含手動補全與預估；負加班值表示工時差額。",
+  ],
+  en: [
+    "Net overtime",
+    "Hours per record day",
+    "Overtime days",
+    "Weekday overtime days",
+    "Rest-day overtime days",
+    "Peak daily overtime",
+    "Workday overtime balance divided by equivalent attendance days; excludes rest-day overtime.",
+    "Workday overtime balance plus rest-day overtime; negative values indicate a net shortfall.",
+    "Total hours divided by complete record days, including workdays and rest days.",
+    "Complete record days with positive overtime; shortfalls on other days do not offset this count.",
+    "Complete records in the selected year, including manual fills and estimates. Negative overtime indicates a shortfall.",
+  ],
+  ja: [
+    "残業時間の差引",
+    "記録日平均工数",
+    "残業日数",
+    "勤務日の残業日数",
+    "休日の残業日数",
+    "1日の最大残業",
+    "勤務日の残業差額 ÷ 換算出勤日数。休日の残業は含みません。",
+    "勤務日の残業差額と休日の残業の合計。負の値は労働時間の不足を示します。",
+    "総工数 ÷ 完全な記録の日数。勤務日と休日を含みます。",
+    "完全な記録で残業時間が正の日数。他の日の不足時間とは相殺しません。",
+    "選択年の完全な記録を集計。手動補完と推定を含み、負の残業値は労働時間の不足を示します。",
+  ],
+  ko: [
+    "순 초과 근무",
+    "기록일 평균 근무",
+    "초과 근무 일수",
+    "근무일 초과 근무 일수",
+    "휴일 초과 근무 일수",
+    "하루 최대 초과 근무",
+    "근무일 초과 근무 차이 ÷ 환산 출근 일수. 휴일 초과 근무는 제외합니다.",
+    "근무일 초과 근무 차이와 휴일 초과 근무의 합계. 음수는 순 근무 시간 부족을 뜻합니다.",
+    "총 근무 시간 ÷ 완전한 기록 일수. 근무일과 휴일을 포함합니다.",
+    "완전한 기록 중 초과 근무 시간이 양수인 일수. 다른 날의 부족 시간과 상계하지 않습니다.",
+    "선택한 연도의 완전한 기록을 집계하며 수동 보완과 추정을 포함합니다. 음수는 근무 시간 부족을 뜻합니다.",
+  ],
+})) {
+  const keys = [
+    "netOvertime",
+    "dailyHours",
+    "overtimeDays",
+    "workOvertimeDays",
+    "restOvertimeDays",
+    "maximumOvertime",
+    "averageHint",
+    "netHint",
+    "dailyHoursHint",
+    "overtimeDaysHint",
+    "reportScope",
+  ];
+  keys.forEach((key, index) => {
+    WorkTimeApp.data.locales[language]["yearView." + key] = labels[index];
+  });
 }
 for (const [language, label] of Object.entries({
   "zh-CN": "闰",

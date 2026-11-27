@@ -149,7 +149,7 @@ async function verify() {
     assert.doesNotMatch(await detail.textContent(), /未来手录计划/);
     await clickSettingsControl(page, "#settingsWorkTab");
     assert.equal(await page.locator("#analysisSidebar").isVisible(), false);
-    await page.locator("#personalSettingsCancel").click();
+    await page.locator("#pageSettingsOpen").click();
     assert.equal(await page.locator("#analysisSidebar").isVisible(), true);
     await page.locator("#prevMonth").click();
     assert.match(await detail.textContent(), /9\/16/);

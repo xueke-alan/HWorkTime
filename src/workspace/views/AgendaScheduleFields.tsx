@@ -1,3 +1,5 @@
+import { SwitchField } from "../SwitchField";
+import Input from "antd/es/input";
 import Button from "antd/es/button";
 export default function AgendaScheduleFields({ prefix }: { prefix: string }) {
   return (
@@ -35,21 +37,14 @@ export default function AgendaScheduleFields({ prefix }: { prefix: string }) {
           </strong>
         </div>
         <div className="agenda-schedule-options">
-          <label className="agenda-schedule-toggle">
-            <input
-              data-ui="input"
+          <div className="agenda-schedule-toggle">
+            <SwitchField
               id={prefix + "AllDay"}
-              type="checkbox"
-              role="switch"
+              labelId={prefix + "AllDayLabel"}
               defaultChecked
-              className="hw-check"
             />
-            <span
-              className="agenda-schedule-toggle-track"
-              aria-hidden="true"
-            ></span>
-            <span data-schedule-label="allDay"></span>
-          </label>
+            <span id={prefix + "AllDayLabel"} data-schedule-label="allDay" />
+          </div>
         </div>
         <div className="agenda-schedule-range" role="group">
           <div className="agenda-field" data-schedule-endpoint="start">
@@ -58,7 +53,7 @@ export default function AgendaScheduleFields({ prefix }: { prefix: string }) {
               data-schedule-label="startDate"
             ></label>
             <div className="agenda-date-input">
-              <input
+              <Input
                 data-ui="input"
                 id={prefix + "DateInput"}
                 type="date"
@@ -89,7 +84,7 @@ export default function AgendaScheduleFields({ prefix }: { prefix: string }) {
               data-schedule-label="endDate"
             ></label>
             <div className="agenda-date-input">
-              <input
+              <Input
                 data-ui="input"
                 id={prefix + "EndDateInput"}
                 type="date"
@@ -126,7 +121,7 @@ export default function AgendaScheduleFields({ prefix }: { prefix: string }) {
               htmlFor={prefix + "Start"}
               data-schedule-label="start"
             ></label>
-            <input
+            <Input
               data-ui="input"
               id={prefix + "Start"}
               type="time"
@@ -135,7 +130,7 @@ export default function AgendaScheduleFields({ prefix }: { prefix: string }) {
           </div>
           <div className="agenda-field agenda-schedule-time" hidden>
             <label htmlFor={prefix + "End"}></label>
-            <input
+            <Input
               data-ui="input"
               id={prefix + "End"}
               type="time"

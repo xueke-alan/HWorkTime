@@ -173,7 +173,7 @@ async function ready(page) {
   );
 }
 async function verifyOfficialIcons(page) {
-  const catalog = require("../../../assets/icons/phosphor.json");
+  const catalog = require("../../../assets/icons/tabler.json");
   const source = fs.readFileSync(entry, "utf8");
   const symbols = new Map(
     [...source.matchAll(/<symbol id="([^"]+)"[^>]*>([\s\S]*?)<\/symbol>/g)].map(
@@ -201,13 +201,10 @@ async function verifyOfficialIcons(page) {
     const id = ref.slice(1),
       glyph = catalog[id.slice("icon-".length)];
     assert.ok(glyph && symbols.has(id), "official icon exists: " + id);
-    const official = fs.readFileSync(
-      require.resolve(`@phosphor-icons/core/bold/${glyph}-bold.svg`),
-      "utf8",
-    );
+    const official = require("../../site/tabler-icons.cjs").symbolBody(glyph);
     assert.equal(
       symbols.get(id),
-      official.match(/<svg[^>]*>([\s\S]+)<\/svg>/)[1],
+      official,
       "game icon matches its pinned official source: " + id,
     );
   }

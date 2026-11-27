@@ -73,7 +73,9 @@ const { chromium } = require("playwright");
       );
       assert.equal(await cover.getAttribute("aria-hidden"), "true");
       const motto = cover.locator(".game-idle-motto");
-      assert.equal(await motto.textContent(), "我爱上班，从不摸鱼");
+      const activeMotto = motto.locator(".is-active");
+      assert.equal(await motto.locator(".game-idle-motto-item").count(), 5);
+      assert.equal(await activeMotto.count(), 1);
       assert.ok(
         await motto.evaluate((el) => {
           const style = getComputedStyle(el);
@@ -125,16 +127,13 @@ const { chromium } = require("playwright");
         "00:00:01",
       );
       assert.match(await cover.locator(".game-idle-date").textContent(), /12/);
-      for (const [language, expected] of Object.entries({
-        "zh-TW": "我愛上班，絕不摸魚",
-        "zh-HK": "我愛返工，絕不偷懶",
-        ja: "仕事大好き、サボりません！",
-        ko: "일이 좋아요, 딴짓은 안 해요!",
-        "zh-CN": "我爱上班，从不摸鱼",
-        en: "All work, no slacking!",
-      })) {
+      for (const language of ["zh-TW", "zh-HK", "ja", "ko", "zh-CN", "en"]) {
         await page.evaluate((id) => WorkTimeApp.i18n.setLanguage(id), language);
-        assert.equal(await motto.textContent(), expected);
+        assert.equal(await activeMotto.count(), 1);
+        assert.equal(
+          await motto.locator(".game-idle-motto-item").first().textContent(),
+          await page.evaluate(() => WorkTimeApp.i18n.t("games.idleMotto")),
+        );
         assert.ok(
           await motto.evaluate((el) => el.scrollWidth <= el.clientWidth),
           language + " motto fits the cover",

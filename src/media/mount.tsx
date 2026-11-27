@@ -11,7 +11,7 @@ import {
   RepeatIcon,
   PauseIcon,
   PlayIcon,
-} from "../phosphor-icons";
+} from "../tabler-icons";
 import { mountView } from "../mount-view";
 import { useLanguage } from "../ApplicationTheme";
 

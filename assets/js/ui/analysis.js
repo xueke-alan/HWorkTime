@@ -26,7 +26,6 @@ WorkTimeApp.ui.createAnalysis = function ({
   const { clock, chart, timelineLegend } =
     WorkTimeApp.ui.createAnalysisGraphics({
       escape: esc,
-      window,
       t,
       number,
       date,
@@ -87,67 +86,69 @@ WorkTimeApp.ui.createAnalysis = function ({
     };
   }
   function positionTooltip() {
-    const tooltip = $("analysisHover"),
-      point = plot.querySelector(
-        '.analysis-range.is-selected [data-lane="start"]',
-      );
-    if (tooltip.hidden || !point) return;
+    const point = plot.querySelector(
+      '.analysis-range.is-selected [data-lane="start"]',
+    );
+    if (!selectedDate || !point) return;
     const chartBox = $("analysisChart").getBoundingClientRect(),
-      pointBox = point.getBoundingClientRect(),
-      tooltipBox = tooltip.getBoundingClientRect(),
-      pageBox = $("analysisPage").getBoundingClientRect(),
-      center = pointBox.left + pointBox.width / 2 - chartBox.left,
-      left = Math.max(
-        8,
-        Math.min(
-          center - tooltipBox.width / 2,
-          chartBox.width - tooltipBox.width - 8,
-        ),
-      );
-    tooltip.style.left = left + "px";
-    tooltip.style.top =
-      Math.max(
-        pageBox.top - chartBox.top + 8,
-        pointBox.top - chartBox.top - tooltipBox.height - 12,
-      ) + "px";
-    WorkTimeApp.ui.popover.point(tooltip, point);
+      pointBox = point.getBoundingClientRect();
+    WorkTimeApp.ui.positionAnalysisHover(
+      pointBox.left + pointBox.width / 2 - chartBox.left,
+      pointBox.top - chartBox.top - 4,
+    );
   }
   function selectDate(value) {
     const day = currentData?.chartDays.find(
       (item) => item.date === (value || linkedDate),
     );
     const next = day?.date || null;
-    if (next === selectedDate && $("analysisHover").childElementCount) return;
-    const appearing = Boolean(day && $("analysisHover").hidden);
+    if (next === selectedDate) return;
     selectedDate = next;
     renderSidebar(next);
     for (const group of plot.querySelectorAll(".analysis-range"))
       group.classList.toggle("is-selected", group.dataset.date === next);
-    $("analysisHover").hidden = !day;
-    $("analysisHover").innerHTML = day
-      ? '<div class="analysis-tooltip"><strong>' +
-        esc(
-          date(day.date) +
-            " · " +
-            WorkTimeApp.i18n.weekday(day.date) +
-            (!day.work ? " · " + t("restOvertime") : "") +
-            (day.manual ? " · " + t("manualRecord") : ""),
-        ) +
-        "</strong>" +
-        [
-          ["start", clock(day.start)],
-          ["end", clock(day.end)],
-          ["overtime", WorkTimeApp.i18n.duration(day.overtime)],
-        ]
-          .map(
-            ([key, value]) =>
-              "<span>" + esc(t(key)) + "<b>" + esc(value) + "</b></span>",
-          )
-          .join("") +
-        "</div>"
-      : "";
     positionTooltip();
-    if (appearing || !day) feedback($("analysisHover"), appearing);
+    WorkTimeApp.ui.renderAnalysisHover(
+      day
+        ? {
+            date: date(day.date),
+            weekday: WorkTimeApp.i18n.weekday(day.date),
+            rows: [
+              {
+                key: "start",
+                label: t("start"),
+                value: clock(day.start),
+                tags: day.manualStart
+                  ? [{ key: "manual", label: t("manualTag") }]
+                  : [],
+              },
+              {
+                key: "end",
+                label: t("end"),
+                value: clock(day.end),
+                tags: day.manualEnd
+                  ? [{ key: "manual", label: t("manualTag") }]
+                  : [],
+              },
+              {
+                key: "overtime",
+                label: t("overtime"),
+                value: WorkTimeApp.i18n.duration(day.overtime),
+                tags: !day.work
+                  ? [
+                      {
+                        key: "overtimeKind",
+                        label: t(
+                          day.holiday ? "holidayOvertime" : "restOvertime",
+                        ),
+                      },
+                    ]
+                  : [],
+              },
+            ],
+          }
+        : null,
+    );
   }
   function suggestedDays() {
     if (!currentData) return [];
@@ -238,7 +239,13 @@ WorkTimeApp.ui.createAnalysis = function ({
       );
       detail = {
         title: date(focus.date) + " · " + WorkTimeApp.i18n.weekday(focus.date),
-        kind: t(focus.work ? "sidebarWorkday" : "restOvertime"),
+        kind: t(
+          focus.work
+            ? "sidebarWorkday"
+            : focus.holiday
+              ? "holidayOvertime"
+              : "restOvertime",
+        ),
         times: [focus.start, focus.end].map((minutes) => ({
           next: minutes >= 1440,
           clock: clock(minutes >= 1440 ? minutes % 1440 : minutes),
@@ -405,22 +412,6 @@ WorkTimeApp.ui.createAnalysis = function ({
         : ".analysis-range";
     lastSize = size;
     syncMarkup(plot, chart(currentData, width, height));
-    const svg = plot.querySelector(".analysis-plot"),
-      matrix = svg.getScreenCTM(),
-      anchor = Number(svg.dataset.legendX),
-      marker = $("analysisDetails").querySelector(
-        ".analysis-chart-legend .analysis-legend-dot",
-      ),
-      // Match the centers of the first legend dot and the first date's endpoints.
-      inset =
-        (matrix
-          ? matrix.a * anchor + matrix.e - svg.getBoundingClientRect().left
-          : anchor) -
-        marker.getBoundingClientRect().width / 2;
-    $("analysisDetails").style.setProperty(
-      "--analysis-legend-inset",
-      inset + "px",
-    );
     const previous = selectedDate;
     selectedDate = null;
     selectDate(previous);
@@ -716,11 +707,10 @@ WorkTimeApp.ui.createAnalysis = function ({
     renderSidebar();
     lastSize = "";
     selectedDate = null;
-    $("analysisHover").replaceChildren();
-    $("analysisHover").hidden = true;
+    WorkTimeApp.ui.renderAnalysisHover(null);
     syncMarkup($("analysisTimelineLegend"), timelineLegend(data), 220);
     drawChart();
-    if (sameMonth) {
+    if (sameMonth && view.analysisMode) {
       selectedDate = null;
       selectDate(previousSelection);
     }
@@ -751,6 +741,8 @@ WorkTimeApp.ui.createAnalysis = function ({
   });
   const visibility = new window.MutationObserver(() => {
     if ($("analysisPage").hidden) {
+      selectedDate = null;
+      WorkTimeApp.ui.renderAnalysisHover(null);
       stopMotion();
       stopFeedback();
       wasVisible = false;
@@ -763,6 +755,7 @@ WorkTimeApp.ui.createAnalysis = function ({
   return {
     render,
     dispose() {
+      WorkTimeApp.ui.renderAnalysisHover(null);
       stopMotion();
       stopFeedback();
       visibility.disconnect();

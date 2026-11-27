@@ -1,0 +1,50 @@
+.calendar-source-hint-anchor {
+  position: fixed;
+  pointer-events: none;
+}
+
+body .calendar-source-tooltip {
+  max-width: calc(100vw - 24px);
+  pointer-events: none;
+  font-family: var(--font-ui);
+}
+
+.calendar-source-hint-content {
+  width: max-content;
+  max-width: calc(100vw - 44px);
+  font-size: 12px;
+  line-height: 1.65;
+  text-align: start;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.calendar-source-hint-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+
+.calendar-source-hint-heading strong {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 20px;
+}
+
+.calendar-source-hint-dot {
+  width: 1em;
+  height: 1em;
+  flex: none;
+  border-radius: 50%;
+  background: #19876b;
+}
+
+.calendar-source-hint-dot.manual {
+  background: #e58a2b;
+}
+
+.calendar-source-hint-action {
+  margin-top: 4px;
+  color: var(--theme-accent-dark, var(--accent));
+}

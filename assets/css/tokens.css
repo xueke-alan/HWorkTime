@@ -1,4 +1,19 @@
 /* Shared theme, scale and motion tokens. Component overrides stay with their owners. */
+@font-face {
+  font-family: "HWorkTime HarmonyOS Sans";
+  src: url("../fonts/HarmonyOS_Sans_Bold.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+/* Keep Medium separate from the default bold UI family. */
+@font-face {
+  font-family: "HWorkTime HarmonyOS Sans Medium";
+  src: url("../fonts/HarmonyOS_Sans_Medium.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
 :root {
   --ink: #233c3a;
   --muted: #738681;
@@ -36,13 +51,19 @@
   --motion-enter: 360ms;
   --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --font-ui:
-    "Bahnschrift", "Segoe UI Variable", "Segoe UI", "Microsoft YaHei",
-    sans-serif;
+    "HWorkTime HarmonyOS Sans", "Segoe UI Variable", "Segoe UI",
+    "Microsoft YaHei", sans-serif;
   --font-numeric:
-    "Bahnschrift", "Cascadia Mono", "Consolas", "Microsoft YaHei", sans-serif;
-  --font-almanac: "Bahnschrift", "Noto Serif SC", "Songti SC", "SimSun", serif;
-  --font-countdown: "Bahnschrift", "Cascadia Mono", "Consolas", monospace;
-  --font-feedback: "Bahnschrift", "Segoe UI", sans-serif;
+    "HWorkTime HarmonyOS Sans", "Cascadia Mono", "Consolas", "Microsoft YaHei",
+    sans-serif;
+  --font-almanac:
+    "HWorkTime HarmonyOS Sans", "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --font-countdown:
+    "HWorkTime HarmonyOS Sans", "Cascadia Mono", "Consolas", monospace;
+  --font-feedback: "HWorkTime HarmonyOS Sans", "Segoe UI", sans-serif;
+  --font-ui-medium:
+    "HWorkTime HarmonyOS Sans Medium", "Segoe UI", "Microsoft YaHei", sans-serif;
+  --font-calendar-numeric: var(--font-ui-medium);
   /* Active bottom-tab bubble keeps the original green when no palette is set. */
   --theme-tab-active: #e7f2ed;
 }
@@ -69,6 +90,8 @@
 :root[data-theme="olive"],
 :root[data-theme="gold"],
 :root[data-theme="red"],
+:root[data-theme="pink"],
+:root[data-theme="black"],
 :root[data-theme="brown"] {
   --theme-icon-color: var(--accent);
   --accent-light: color-mix(in srgb, var(--accent) 9%, white);
@@ -187,4 +210,20 @@
   --theme-rgb: 128, 91, 67;
   --ink: #40352e;
   --muted: #78695e;
+}
+
+:root[data-theme="pink"] {
+  --accent: #c44782;
+  --theme-chart-secondary: #487da1;
+  --theme-rgb: 196, 71, 130;
+  --ink: #4d2e3e;
+  --muted: #855e74;
+}
+
+:root[data-theme="black"] {
+  --accent: #222222;
+  --theme-chart-secondary: #657e92;
+  --theme-rgb: 34, 34, 34;
+  --ink: #262626;
+  --muted: #686868;
 }

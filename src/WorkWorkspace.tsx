@@ -30,19 +30,7 @@ export default function WorkWorkspace({ stage }: { stage: number }) {
               <span className="site-meta">
                 <span>HWorkTime</span> <span id="siteVersion">{version}</span>
                 <span className="site-copyright">
-                  <svg
-                    className="copyright-mark"
-                    viewBox="0 0 16 16"
-                    role="img"
-                    aria-label="版权"
-                    data-i18n-aria-label="copy.b72ca18819"
-                  >
-                    <circle cx="8" cy="8" r="6.25" />
-                    <path
-                      transform="translate(0.7 0)"
-                      d="M10 5.5C9.4 4.9 8.7 4.6 8 4.6C3.5 4.6 3.5 11.4 8 11.4C8.7 11.4 9.4 11.1 10 10.5"
-                    />
-                  </svg>
+                  ©
                   <a
                     href="https://github.com/xueke-alan/HWorkTime"
                     target="_blank"

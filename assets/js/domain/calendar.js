@@ -17,13 +17,13 @@ const WorkTimeDomainCalendar = (() => {
       movableFestivals.set(key, names);
     });
   function festivalNames(date) {
-    return [
-      festivalData.fixed[date.slice(5)],
-      ...(movableFestivals.get(date) || []),
-    ].filter(Boolean);
+    const fixed = festivalData.fixed[date.slice(5)];
+    const movable = movableFestivals.get(date);
+    return fixed ? [fixed, ...(movable || [])] : movable;
   }
-  function festivalName(date) {
-    return festivalNames(date)
+  function formatFestivals(names) {
+    if (!names) return "";
+    return names
       .map((name) => (name.endsWith("节") ? name : name + "节"))
       .join("、");
   }
@@ -41,8 +41,9 @@ const WorkTimeDomainCalendar = (() => {
     Object.hasOwn(calendarSchedules, Number(date.slice(0, 4)));
   function calendarInfo(k, day = {}) {
     const weekend = [0, 6].includes(localDate(k).getDay()),
-      festival = festivalName(k),
-      holiday = holidays[k] || (!calendarKnown(k) ? festivalNames(k)[0] : "");
+      names = festivalNames(k),
+      festival = formatFestivals(names),
+      holiday = holidays[k] || (names && !calendarKnown(k) ? names[0] : "");
     let work = !weekend,
       label = festival || (weekend ? "周末" : "工作日");
     if (holiday) {
@@ -104,7 +105,7 @@ const WorkTimeDomainCalendar = (() => {
     calendarKnown,
     calendarInfo,
     attendanceFocusDate,
-    festivalName,
+    festivalName: (date) => formatFestivals(festivalNames(date)),
   };
 })();
 

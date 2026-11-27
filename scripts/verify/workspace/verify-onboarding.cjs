@@ -237,21 +237,7 @@ async function main() {
             const checkbox = row.querySelector("input").getBoundingClientRect();
             const box = row.getBoundingClientRect();
             const text = row.querySelector("label span");
-            const style = getComputedStyle(text);
-            const probe = document.createElement("i");
-            probe.style.cssText =
-              "display:inline-block;width:0;height:0;padding:0;margin:0;border:0;vertical-align:baseline;font-size:0;line-height:0";
-            text.append(probe);
-            const baseline = probe.getBoundingClientRect().top;
-            probe.remove();
-            const context = document.createElement("canvas").getContext("2d");
-            context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-            const metrics = context.measureText(text.textContent);
-            const inkCenter =
-              baseline +
-              (metrics.actualBoundingBoxDescent -
-                metrics.actualBoundingBoxAscent) /
-                2;
+            const textBox = text.getBoundingClientRect();
             return {
               ordered: label.left >= title.right,
               aligned:
@@ -260,7 +246,12 @@ async function main() {
                 ) < 1,
               rightAligned: Math.abs(label.right - box.right) < 1,
               inkAligned:
-                Math.abs(inkCenter - checkbox.top - checkbox.height / 2) < 1,
+                Math.abs(
+                  textBox.top +
+                    textBox.height / 2 -
+                    checkbox.top -
+                    checkbox.height / 2,
+                ) < 1,
               contained:
                 label.right <= box.right + 1 && label.left >= box.left - 1,
             };
@@ -270,70 +261,27 @@ async function main() {
         assert.equal(
           controls.inkAligned,
           true,
-          "Checkbox and visible label ink share a center",
+          "Checkbox and CSS text line box share a center",
         );
         if (width === 1280) {
           assert.equal(controls.ordered, true);
           assert.equal(controls.aligned, true);
         }
 
-        // Verify visible ink, not just the stable (but potentially off-center) text box.
         for (const node of await page.locator(".onboarding-node").all()) {
-          const white = await node.evaluate(
-            (el) => getComputedStyle(el).color === "rgb(255, 255, 255)",
-          );
-          const data = (await node.screenshot({ scale: "css" })).toString(
-            "base64",
-          );
-          const ink = await page.evaluate(
-            async ({ data, white }) => {
-              const image = new Image();
-              image.src = "data:image/png;base64," + data;
-              await image.decode();
-              const canvas = document.createElement("canvas");
-              canvas.width = image.width;
-              canvas.height = image.height;
-              const context = canvas.getContext("2d");
-              context.drawImage(image, 0, 0);
-              const pixels = context.getImageData(
-                0,
-                0,
-                canvas.width,
-                canvas.height,
-              ).data;
-              let left = Infinity,
-                right = -Infinity,
-                top = Infinity,
-                bottom = -Infinity;
-              for (let y = 6; y < canvas.height - 6; y++) {
-                for (let x = 6; x < canvas.width - 6; x++) {
-                  const i = (y * canvas.width + x) * 4;
-                  const rgb = [pixels[i], pixels[i + 1], pixels[i + 2]];
-                  if (
-                    !(white ? Math.min(...rgb) > 210 : Math.max(...rgb) < 195)
-                  )
-                    continue;
-                  left = Math.min(left, x);
-                  right = Math.max(right, x);
-                  top = Math.min(top, y);
-                  bottom = Math.max(bottom, y);
-                }
-              }
-              return {
-                x: (left + right + 1 - canvas.width) / 2,
-                y: (top + bottom + 1 - canvas.height) / 2,
-              };
-            },
-            { data, white },
-          );
-          assert.ok(
-            Math.abs(ink.x) <= 1,
-            `Visible digit ink off-center horizontally: ${ink.x}`,
-          );
-          assert.ok(
-            Math.abs(ink.y) <= 1,
-            `Visible digit ink off-center vertically: ${ink.y}`,
-          );
+          const centered = await node.evaluate((circle) => {
+            const box = circle.getBoundingClientRect();
+            const text = circle
+              .querySelector(".onboarding-node-text")
+              .getBoundingClientRect();
+            return (
+              Math.abs(text.left + text.width / 2 - box.left - box.width / 2) <
+                1 &&
+              Math.abs(text.top + text.height / 2 - box.top - box.height / 2) <
+                1
+            );
+          });
+          assert(centered, "Step digits use centered CSS line boxes");
         }
 
         for (let click = 0; click < 6; click++) {

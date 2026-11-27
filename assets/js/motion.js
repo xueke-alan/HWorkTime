@@ -114,6 +114,11 @@
     }
     running.delete(element);
   }
+  function stopWithin(root) {
+    // Only tracked effects need cleanup, regardless of how many year cells exist.
+    for (const element of running.keys())
+      if (element !== root && root.contains(element)) stop(element);
+  }
   function setToggleIcon(button, active, inactiveHref, animate = false) {
     const use = button.querySelector("use");
     const href = active ? "#icon-close" : inactiveHref;
@@ -180,9 +185,7 @@
               : name === "motion-calendar-year"
                 ? `translateX(${distance})`
                 : "translateY(4px)";
-      // Title transforms belong to ink alignment, which can refresh mid-animation.
-      // Animate the independent translate property so releasing the effect never
-      // restores a different vertical baseline.
+      // Keep title movement independent of the fixed CSS baseline.
       const frames =
         name === "motion-title"
           ? [start || title.enterFrom, title.enterTo]
@@ -300,6 +303,7 @@
     setToggleIcon,
     play,
     stop,
+    stopWithin,
     isAnimating,
     initial,
     mount,

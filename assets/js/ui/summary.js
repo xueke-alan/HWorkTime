@@ -17,6 +17,23 @@ WorkTimeApp.ui.createSummary = function (options) {
     const [a, b] = bounds();
     return C.validDate(a) && C.validDate(b) && a <= b;
   }
+  function attendanceParts(value, standardMinutes) {
+    let days = Math.floor(value),
+      hours = Math.round(((value - days) * standardMinutes) / 6) / 10;
+    if (hours * 60 >= standardMinutes - 0.000001) {
+      days++;
+      hours = 0;
+    }
+    const { number } = WorkTimeApp.i18n;
+    return {
+      days: number(days, { useGrouping: false, minimumIntegerDigits: 2 }),
+      hours: number(hours, {
+        useGrouping: false,
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }),
+    };
+  }
   function renderStats() {
     const state = getState();
     const { today } = getView();
@@ -36,11 +53,7 @@ WorkTimeApp.ui.createSummary = function (options) {
           : actual.workOvertime - requirement * actual.attendance,
       surplusMinutes = surplus === null ? null : Math.round(Math.abs(surplus)),
       surplusNegative = surplus < 0 && surplusMinutes > 0,
-      surplusLabel = surplusNegative
-        ? "summary.hoursOwed"
-        : surplusMinutes > 0
-          ? "summary.hoursSurplus"
-          : "copy.fa91c92797";
+      surplusLabel = "summary.hoursBalance";
     const data = [
       [
         WorkTimeApp.i18n.t("copy.cc954e610b"),
@@ -49,7 +62,7 @@ WorkTimeApp.ui.createSummary = function (options) {
         { decimals: 2, unit: "h" },
       ],
       [
-        WorkTimeApp.i18n.t(surplusLabel),
+        WorkTimeApp.i18n.t("short.hoursBalance"),
         surplusMinutes,
         WorkTimeApp.i18n.t("short.balanceFormula"),
         { unit: "" },
@@ -73,7 +86,7 @@ WorkTimeApp.ui.createSummary = function (options) {
         { decimals: 2, unit: " h" },
       ],
       [
-        WorkTimeApp.i18n.t("copy.016315b388"),
+        WorkTimeApp.i18n.t("short.totalHours"),
         ready && valid ? actual.total / 60 : null,
         "",
         { decimals: 2, unit: " h" },
@@ -84,6 +97,12 @@ WorkTimeApp.ui.createSummary = function (options) {
         "",
         { unit: "d" },
       ],
+      [
+        WorkTimeApp.i18n.t("summary.leaveHours"),
+        ready && valid ? actual.leaveMinutes / 60 : null,
+        "",
+        { decimals: 2, unit: "h", reserveSign: false },
+      ],
     ];
     const titles = [
       "copy.cc954e610b",
@@ -93,6 +112,7 @@ WorkTimeApp.ui.createSummary = function (options) {
       "copy.2db287963f",
       "copy.016315b388",
       "copy.eb87bec8ca",
+      "summary.leaveHours",
     ];
     const metrics = data.map(([label, value, description, options], i) => ({
       label,
@@ -103,7 +123,14 @@ WorkTimeApp.ui.createSummary = function (options) {
         i < 2
           ? WorkTimeApp.i18n.t(i === 0 ? "copy.ae47f5dfb5" : "copy.2e0e43d0d6")
           : "",
-      options: { ...options, unit: value === null ? "" : options.unit },
+      options,
+      parts:
+        i === 2
+          ? attendanceParts(
+              ready && valid ? actual.attendance : 0,
+              state.settings.standardMinutes,
+            )
+          : undefined,
     }));
     view.render({
       metrics,

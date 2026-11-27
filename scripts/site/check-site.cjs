@@ -6,6 +6,7 @@ const assert = require("node:assert/strict");
 const postcss = require("postcss");
 const { versionHtml } = require("./version-site.cjs");
 require("./prepare-assets.cjs").prepareAssets({ check: true });
+require("../verify/site/verify-icons.cjs");
 const root = path.resolve(__dirname, "../..");
 acorn.parse(fs.readFileSync(path.join(root, "service-worker.js"), "utf8"), {
   ecmaVersion: "latest",

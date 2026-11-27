@@ -2,8 +2,8 @@ import Alert from "antd/es/alert";
 import Button from "antd/es/button";
 import ConfigProvider from "antd/es/config-provider";
 import Compact, { type SpaceCompactRef } from "antd/es/space/Compact";
-import { useEffect, useRef, useState } from "react";
-import { ArrowCircleUpRightIcon } from "../phosphor-icons";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ArrowCircleUpRightIcon } from "../tabler-icons";
 import { oaActions, useOAActions } from "./views";
 import { useLanguage } from "../ApplicationTheme";
 import { ImportRows, ImportHistory } from "../imports/ImportRecords";
@@ -14,6 +14,22 @@ export default function SummarySidebar() {
   const { back, yearMode, clipboardNotice } = useOAActions();
   const [headerBack, setHeaderBack] = useState(back);
   const header = useRef<SpaceCompactRef>(null);
+  const cards = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const element = cards.current;
+    if (!element) return;
+    // Place the native scrollbar in the outer gutter without narrowing cards.
+    const updateGutter = () => {
+      const width = Math.max(0, element.offsetWidth - element.clientWidth);
+      const value = width + "px";
+      if (element.style.getPropertyValue("--summary-scrollbar-width") !== value)
+        element.style.setProperty("--summary-scrollbar-width", value);
+    };
+    updateGutter();
+    const observer = new ResizeObserver(updateGutter);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   // Keep the outgoing button intact while it fades into the year/month label.
   if (!yearMode && headerBack !== back) setHeaderBack(back);
   useEffect(() => {
@@ -81,14 +97,9 @@ export default function SummarySidebar() {
                 className="sidebar-year-number year-month-year"
                 aria-hidden="true"
               />
-              <svg
-                className="calendar-date-divider"
-                viewBox="0 0 12 24"
-                aria-hidden="true"
-                focusable="false"
-              >
-                <use href="#icon-calendar-date-divider" />
-              </svg>
+              <span className="calendar-date-divider" aria-hidden="true">
+                /
+              </span>
               <span
                 className="sidebar-month-number year-month-month"
                 aria-hidden="true"
@@ -97,6 +108,7 @@ export default function SummarySidebar() {
           </span>
         </div>
         <section
+          ref={cards}
           id="cards"
           className="cards"
           aria-label="工时汇总"
@@ -185,8 +197,8 @@ export default function SummarySidebar() {
                         y="6"
                         width="20"
                         height="20"
-                        fill="currentColor"
-                        stroke="none"
+                        fill="none"
+                        stroke="currentColor"
                       />
                     </svg>
                   </span>

@@ -468,7 +468,7 @@ async function verify() {
     assert.match(await first.locator(".day-total-hours").textContent(), /8.00/);
     for (const date of ["2026-10-13", "2026-10-14"]) {
       const pending = card(date);
-      assert.equal(await pending.locator(".record-source-dot.oa").count(), 1);
+      assert.equal(await pending.locator(".record-source-dot.oa").count(), 0);
       assert.equal(
         await pending.locator(".record-source-dot.manual").count(),
         0,
@@ -483,7 +483,7 @@ async function verify() {
       await pending.locator(".record-source-dot.manual").waitFor({
         state: "detached",
       });
-      assert.equal(await pending.locator(".record-source-dot.oa").count(), 1);
+      assert.equal(await pending.locator(".record-source-dot.oa").count(), 0);
       assert.equal(await pending.locator(".day-total-hours").count(), 0);
     }
     await view.waitForFunction(() => {

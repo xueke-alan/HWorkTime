@@ -1,4 +1,5 @@
 import Tabs from "antd/es/tabs";
+import Button from "antd/es/button";
 import { useLayoutEffect, useRef } from "react";
 import { mountView } from "../mount-view";
 
@@ -47,7 +48,23 @@ function MusicIcon() {
   );
 }
 
-function FunctionTabs({
+function FunctionIcon({ tab }: { tab: WorkspaceTab }) {
+  return (
+    <span className="function-tab-icon" aria-hidden="true">
+      {tab.id === "music" ? (
+        <MusicIcon />
+      ) : tab.id === "games" ? (
+        <GameIcon />
+      ) : (
+        <svg className="ui-icon">
+          <use href={"#icon-" + tab.icon} />
+        </svg>
+      )}
+    </span>
+  );
+}
+
+export function FunctionTabs({
   tabs,
   active,
   activate,
@@ -57,8 +74,10 @@ function FunctionTabs({
   activate: (id: string) => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  const functionTabs = tabs.filter((tab) => !tab.divider);
+  const dateEntry = tabs.find((tab) => tab.divider);
   useLayoutEffect(() => {
-    for (const tab of tabs) {
+    for (const tab of functionTabs) {
       const node = host.current!.querySelector<HTMLElement>(
         '[data-node-key="' + tab.id + '"] [role="tab"]',
       );
@@ -76,28 +95,32 @@ function FunctionTabs({
     <div ref={host} className="function-tabs-host">
       <Tabs
         className="function-tabs"
-        activeKey={active}
+        size="small"
+        activeKey={active === dateEntry?.id ? "" : active}
         tabPlacement="bottom"
         aria-label={WorkTimeApp.i18n.t("copy.b0f0d53b40")}
         tabBarGutter={0}
         onTabClick={activate}
-        items={tabs.map((tab) => ({
+        items={functionTabs.map((tab) => ({
           key: tab.id,
-          label: (
-            <span className="function-tab-icon" aria-hidden="true">
-              {tab.id === "music" ? (
-                <MusicIcon />
-              ) : tab.id === "games" ? (
-                <GameIcon />
-              ) : (
-                <svg className="ui-icon">
-                  <use href={"#icon-" + tab.icon} />
-                </svg>
-              )}
-            </span>
-          ),
+          label: <FunctionIcon tab={tab} />,
         }))}
       />
+      {dateEntry && (
+        <Button
+          id={"date-tab-" + dateEntry.id}
+          type="text"
+          htmlType="button"
+          className="date-info-trigger"
+          data-tab={dateEntry.id}
+          data-hint-text={dateEntry.label}
+          aria-label={dateEntry.label}
+          aria-controls={dateEntry.controls}
+          aria-pressed={active === dateEntry.id}
+          icon={<FunctionIcon tab={dateEntry} />}
+          onClick={() => activate(dateEntry.id)}
+        />
+      )}
     </div>
   );
 }

@@ -8,7 +8,7 @@ body .workspace > .editor {
   padding: 0;
 }
 body .editor > .sidebar-header {
-  background: var(--paper, #fff);
+  background: var(--column-header-background, #fafcfb);
 }
 body .editor > .sidebar-header {
   flex: none;
@@ -33,7 +33,15 @@ body .editor .sidebar-header > [data-sidebar-heading] {
   border: 0;
   text-align: center;
   background: transparent;
-  font: 650 20px/1.3 var(--font-ui);
+  font: 650 28px/1.3 var(--font-ui);
+}
+/* Latin and numeric headings use 28px; CJK headings keep the matching 24px size. */
+html:is(:lang(zh), :lang(ja), :lang(ko))
+  body
+  .editor
+  .sidebar-header
+  > [data-sidebar-heading] {
+  font-size: 24px;
 }
 /* The mixed numeric/CJK font has more space below its visible strokes. */
 body
@@ -58,11 +66,18 @@ body
 body .editor .sidebar-header > [hidden] {
   display: none !important;
 }
-body .editor .sidebar-header #editorDate {
+body .editor .sidebar-header :is(#editorDate, #agendaDate) {
+  font-size: 28px;
+}
+html:is(:lang(zh), :lang(ja), :lang(ko))
+  body
+  .editor
+  .sidebar-header
+  .calendar-today-weekday {
   font-size: 24px;
 }
 body .editor .sidebar-header #editorDate .calendar-today-date {
-  gap: 0.2em;
+  gap: var(--year-month-gap);
 }
 body .editor .sidebar-header #editorDate .calendar-today-number {
   display: inline-flex;
@@ -72,14 +87,6 @@ body .editor .sidebar-header #editorDate .calendar-today-number {
 }
 body .editor .sidebar-header #editorDate .year-month-day {
   width: 2ch;
-}
-body
-  .editor
-  .sidebar-header
-  #editorDate
-  .has-word-month
-  .year-month-month:not(.year-month-day) {
-  width: auto;
 }
 body .editor .sidebar-header #editorDate .year-month-day .summary-number-digit {
   text-align: center;
@@ -93,11 +100,10 @@ body
   transform: none;
 }
 body .editor .sidebar-header #editorDate .calendar-date-divider {
-  width: 0.45em;
-  height: 0.9em;
+  width: auto;
   align-self: center;
-  /* Align with the visible digit strokes, rather than the taller line box. */
-  transform: translateY(-0.0625em);
+  /* Date digits and text slashes share the header's unshifted baseline. */
+  transform: none;
 }
 body .editor > .sidebar-content {
   display: flex;
@@ -155,7 +161,13 @@ body .editor .settings-option-tabs > .ant-tabs-nav {
 body .editor .settings-option-tabs > .ant-tabs-content-holder {
   display: none;
 }
+body .editor .settings-option-tabs .ant-tabs-nav-list {
+  width: 100%;
+}
 body .editor .settings-option-tabs .ant-tabs-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
   padding: 10px 8px;
   font-size: 14px;
 }
@@ -167,9 +179,15 @@ body .editor .settings-option-tabs .ant-tabs-ink-bar {
   background: var(--ui-accent);
 }
 body .editor > .sidebar-functions {
+  /* Keep the original content height; the synchronized Tabs height is extra. */
+  --sidebar-info-height: max(calc(18.514286rem + 1px), 29.166667%);
   display: flex;
   flex-direction: column;
-  flex: 0 0 clamp(260px, 29.166667%, 320px);
+  flex-wrap: nowrap;
+  flex: 0 0 calc(var(--sidebar-info-height) + var(--sidebar-tabs-height, 32px));
+  gap: 0;
+  margin: 0;
+  padding: 0;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -182,6 +200,10 @@ body .editor .sidebar-functions > .date-info-area {
 }
 body .editor .date-info-area > :is(#editorInfo, #dateInfoPanel, .tools-panel) {
   padding-inline: 15px;
+}
+/* The vocabulary drawer owns its reading gutters and full-width separators. */
+body .editor.is-vocabulary-open .date-info-area > #toolsPanel {
+  padding-inline: 0;
 }
 body .editor .date-context-header {
   padding-inline: 15px;
@@ -209,6 +231,8 @@ body .editor .notification-tabs {
   display: block;
   min-height: 0;
   box-sizing: border-box;
+  padding: 0 4px;
+  overflow: hidden;
   background: var(--theme-surface-paper);
 }
 .function-tabs-host,
@@ -216,25 +240,38 @@ body .editor .notification-tabs {
   height: 100%;
   min-width: 0;
 }
-.function-tabs.ant-tabs {
+body .editor .function-tabs-host {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+body .editor .function-tabs.ant-tabs {
+  flex: 0 1 auto;
   color: var(--muted);
   font-family: var(--font-ui);
 }
 .function-tabs.ant-tabs > .ant-tabs-content-holder {
   display: none;
 }
-.function-tabs.ant-tabs > .ant-tabs-nav {
+body .editor .function-tabs.ant-tabs > .ant-tabs-nav {
   height: 100%;
   margin: 0;
 }
-.function-tabs .ant-tabs-nav-wrap {
-  flex: 1;
+body .editor .function-tabs.ant-tabs > .ant-tabs-nav::before {
+  border: 0;
 }
-.function-tabs .ant-tabs-nav-list {
-  width: 100%;
+body .editor .function-tabs .ant-tabs-nav-wrap {
+  flex: 0 1 auto;
 }
-.function-tabs .ant-tabs-tab {
-  flex: 1;
+body .editor .function-tabs .ant-tabs-nav-list {
+  width: auto;
+  height: 100%;
+}
+body .editor .function-tabs.ant-tabs > .ant-tabs-nav .ant-tabs-tab {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 100%;
+  box-sizing: border-box;
   justify-content: center;
   padding: 0;
   min-width: 0;
@@ -250,6 +287,7 @@ body .editor .function-tabs .notification-tab {
   color: var(--muted);
   background: transparent;
   margin: 0;
+  line-height: 1;
 }
 body .editor .function-tabs .notification-tab::before,
 body .editor .function-tabs .notification-tab::after {
@@ -257,6 +295,10 @@ body .editor .function-tabs .notification-tab::after {
 }
 .function-tab-icon {
   display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  line-height: 1;
 }
 .function-tab-icon svg {
   width: 14px;
@@ -268,6 +310,23 @@ body .editor .function-tabs .ant-tabs-tab-active .notification-tab {
 }
 .function-tabs .ant-tabs-ink-bar {
   background: var(--ui-accent);
+}
+body .editor .notification-tabs .date-info-trigger {
+  flex: 0 0 32px;
+  width: 32px;
+  min-width: 0;
+  height: 100%;
+  margin-inline-start: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+}
+body .editor .notification-tabs .date-info-trigger[aria-pressed="true"] {
+  color: var(--ui-accent);
+  background: var(--theme-surface-subtle);
 }
 body .editor.is-vocabulary-open:not(.is-page-settings-open) > .sidebar-content {
   display: none;
@@ -285,7 +344,9 @@ body
   .agenda-mode
   .editor:is(.is-settings-open, .is-page-settings-open)
   > .sidebar-functions {
-  flex-basis: clamp(260px, 29.166667%, 320px);
+  flex-basis: calc(
+    var(--sidebar-info-height) + var(--sidebar-tabs-height, 32px)
+  );
 }
 @media (max-width: 1150px) {
   body .workspace > .editor {
@@ -293,6 +354,6 @@ body
     min-height: 600px;
   }
   body .editor > .sidebar-functions {
-    flex-basis: 260px;
+    --sidebar-info-height: 260px;
   }
 }

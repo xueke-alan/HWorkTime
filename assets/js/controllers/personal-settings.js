@@ -26,103 +26,21 @@ WorkTimeApp.ui.secondary.personal = function ({
       ].includes(text),
     );
   }
-  const cities = directory.map((city) =>
-    directory.filter((candidate) => candidate.name === city.name).length === 1
-      ? city.name
-      : city.label,
-  );
-  let cityMatches = [],
-    activeCity = -1;
-  function positionCities() {
-    const list = $("workCityOptions");
-    if (list.hidden) return;
-    const input = $("workCity");
-    const rect = input.getBoundingClientRect();
-    const row = input.closest(".settings-employment").getBoundingClientRect();
-    const width = Math.min(row.width, window.innerWidth - 16);
-    const gap = 8;
-    const below = window.innerHeight - rect.bottom - gap - 8;
-    const above = rect.top - gap - 8;
-    const height = Math.min(360, Math.max(below, above));
-    list.style.width = width + "px";
-    list.style.maxHeight = height + "px";
-    list.style.left =
-      Math.max(8, Math.min(row.left, window.innerWidth - width - 8)) + "px";
-    const openBelow =
-      below >= Math.min(list.scrollHeight, 360) || below >= above;
-    list.style.top =
-      (openBelow
-        ? rect.bottom + gap
-        : rect.top - gap - Math.min(list.scrollHeight, height)) + "px";
-    WorkTimeApp.ui.popover.point(list, input);
+  let cityView = null;
+  function syncCity() {
+    cityView?.sync(
+      directory.map((city) => ({
+        value:
+          directory.filter((other) => other.name === city.name).length > 1
+            ? city.label
+            : WorkTimeApp.i18n.city(city.name),
+        label: WorkTimeApp.i18n.city(city.name),
+        detail: WorkTimeApp.i18n.message(city.office || ""),
+      })),
+    );
   }
   function closeCities() {
-    $("workCityOptions").hidden = true;
-    $("workCity").setAttribute("aria-expanded", "false");
-    $("workCity").removeAttribute("aria-activedescendant");
-    activeCity = -1;
-  }
-  function highlightCity() {
-    $("workCityOptions")
-      .querySelectorAll("[data-city]")
-      .forEach((option, index) => {
-        option.setAttribute("aria-selected", String(index === activeCity));
-        if (index === activeCity) {
-          $("workCity").setAttribute("aria-activedescendant", option.id);
-          const list = $("workCityOptions");
-          if (option.offsetTop < list.scrollTop)
-            list.scrollTop = option.offsetTop;
-          else if (
-            option.offsetTop + option.offsetHeight >
-            list.scrollTop + list.clientHeight
-          )
-            list.scrollTop =
-              option.offsetTop + option.offsetHeight - list.clientHeight;
-        }
-      });
-  }
-  function showCities(query = "") {
-    cityMatches = cities.filter((city) => city.includes(query.trim()));
-    activeCity = -1;
-    $("workCity").removeAttribute("aria-activedescendant");
-    const list = $("workCityOptions");
-    list.replaceChildren();
-    for (const [index, city] of cityMatches.entries()) {
-      const option = WorkTimeApp.ui.native.createElement("button");
-      option.className = "ui-option";
-      option.type = "button";
-      option.id = "workCityOption" + index;
-      option.dataset.city = city;
-      option.setAttribute("role", "option");
-      option.setAttribute("aria-selected", "false");
-      option.tabIndex = -1;
-      const details = resolveCity(city);
-      const name = document.createElement("strong");
-      name.className = "work-city-name";
-      name.textContent = details ? WorkTimeApp.i18n.city(details.name) : city;
-      const office = document.createElement("small");
-      office.className = "work-city-office";
-      office.textContent = WorkTimeApp.i18n.message(details?.office || "");
-      option.dataset.hintText = name.textContent + " · " + office.textContent;
-      option.append(name, office);
-      list.append(option);
-    }
-    if (!cityMatches.length) {
-      const empty = document.createElement("div");
-      empty.className = "work-city-empty";
-      empty.textContent = WorkTimeApp.i18n.t("copy.152de8c5d8");
-      list.append(empty);
-    }
-    list.hidden = false;
-    $("workCity").setAttribute("aria-expanded", "true");
-    list.scrollTop = 0;
-    positionCities();
-  }
-  function selectCity(city) {
-    const details = resolveCity(city);
-    $("workCity").value = details ? WorkTimeApp.i18n.city(details.name) : city;
-    $("workCity").dispatchEvent(new Event("input", { bubbles: true }));
-    closeCities();
+    cityView?.close();
   }
 
   const datePlaceholders = ["YYYY", "MM", "DD"];
@@ -328,6 +246,7 @@ WorkTimeApp.ui.secondary.personal = function ({
     const selectedCity = resolveCity(model.state.personal.workCity);
     if (selectedCity)
       $("workCity").value = WorkTimeApp.i18n.city(selectedCity.name);
+    syncCity();
     closeCities();
     WorkTimeApp.ui.fieldErrors.clear($("personalSettingsError"));
   }
@@ -384,8 +303,10 @@ WorkTimeApp.ui.secondary.personal = function ({
   function bind() {
     if (bound) return;
     bound = true;
-    events.listen(window, "resize", positionCities);
-    events.listen(document, "scroll", positionCities, true);
+    cityView = WorkTimeApp.ui.workspaceViews.mountCityField(
+      $("workCityField"),
+      $("workCity"),
+    );
     events.listen($("settingsPane"), "settings-closed", closeCities);
     events.listen(
       $("personalSettingsPane"),
@@ -402,55 +323,9 @@ WorkTimeApp.ui.secondary.personal = function ({
       const value = $("workCity").value;
       const city = resolveCity(value);
       if (city) $("workCity").value = WorkTimeApp.i18n.city(city.name);
-      if (!$("workCityOptions").hidden) showCities();
+      syncCity();
     });
     bindDateInput();
-    events.handler($("workCity"), "onfocus", () => showCities());
-    events.handler($("workCity"), "onclick", () => {
-      if ($("workCityOptions").hidden) showCities();
-    });
-    events.handler($("workCity"), "onblur", closeCities);
-    events.handler($("workCityOptions"), "onpointerdown", (event) =>
-      event.preventDefault(),
-    );
-    events.handler($("workCityOptions"), "onclick", (event) => {
-      const option = event.target.closest("[data-city]");
-      if (option) selectCity(option.dataset.city);
-    });
-    events.handler($("workCity"), "onkeydown", (event) => {
-      if (event.key === "Escape" && !$("workCityOptions").hidden) {
-        event.preventDefault();
-        event.stopPropagation();
-        closeCities();
-      } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-        event.preventDefault();
-        if ($("workCityOptions").hidden) showCities();
-        if (cityMatches.length) {
-          activeCity =
-            activeCity < 0
-              ? event.key === "ArrowDown"
-                ? 0
-                : cityMatches.length - 1
-              : (activeCity +
-                  (event.key === "ArrowDown" ? 1 : -1) +
-                  cityMatches.length) %
-                cityMatches.length;
-          highlightCity();
-        }
-      } else if (event.key === "Enter" && $("workCityOptions").hidden) {
-        event.preventDefault();
-        showCities();
-      } else if (
-        event.key === "Enter" &&
-        !$("workCityOptions").hidden &&
-        activeCity >= 0
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-        selectCity(cityMatches[activeCity]);
-      }
-    });
-
     const onPersonalInput = (event) => {
       if (event.target === $("employmentDate")) {
         readDateText();
@@ -467,7 +342,8 @@ WorkTimeApp.ui.secondary.personal = function ({
   function dispose() {
     events.dispose();
     bound = false;
-    closeCities();
+    cityView?.dispose();
+    cityView = null;
   }
   function hasDraft() {
     if ($("settingsPane").hidden) return false;

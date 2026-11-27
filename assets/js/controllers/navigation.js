@@ -7,12 +7,13 @@ WorkTimeApp.ui.createNavigationController = function (options) {
   const calendarMotion = WorkTimeApp.ui.motion.calendar;
   const reducedMotion = animationCompat.preference();
   let todayAttention = null,
-    todayEffects = [],
-    todayGlows = [],
-    todayGlowFrame = null,
+    todayAttentionTimer = null,
     pageTransition = null,
     monthAnimations = [],
     monthTransition = null,
+    yearDrawFrame = null,
+    yearDetailsTimer = null,
+    yearDirection = 1,
     unlistenMotion,
     resettingBatch = false;
   let batchSweep = null,
@@ -42,14 +43,10 @@ WorkTimeApp.ui.createNavigationController = function (options) {
   }
 
   function stopTodayAttention() {
-    todayAttention?.cancel();
+    if (todayAttentionTimer !== null) window.clearTimeout(todayAttentionTimer);
+    todayAttentionTimer = null;
+    todayAttention?.remove();
     todayAttention = null;
-    for (const animation of todayEffects) animation.cancel();
-    todayEffects = [];
-    if (todayGlowFrame !== null) cancelAnimationFrame(todayGlowFrame);
-    todayGlowFrame = null;
-    for (const glow of todayGlows) glow.remove();
-    todayGlows = [];
   }
 
   function commitPageTransition(transition) {
@@ -57,7 +54,12 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     transition.committed = true;
     const wasYearMode = model.yearMode;
     transition.update();
-    actions.render();
+    if (transition.yearTitle === true && model.yearMode) {
+      // Entering the year keeps the same selected month and records. The
+      // summary, hidden day form and agenda do not need a workspace render.
+      actions.renderYearToolbar();
+      actions.renderCalendar();
+    } else actions.render();
     if (transition.sidebarTransition) actions.closeImport();
     if (wasYearMode !== model.yearMode && $("settingsPane").hidden) {
       const content = document.querySelector(".editor .editor-content");
@@ -69,8 +71,7 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     }
     transition.afterRender?.();
     // Page transitions own the entire content surface; suppress nested reveals.
-    for (const element of $("panelContent").querySelectorAll("*"))
-      WorkTimeApp.ui.motion?.stop(element);
+    WorkTimeApp.ui.motion?.stopWithin($("panelContent"));
   }
 
   function stopPageTransition(settle = true) {
@@ -250,112 +251,19 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       ".day[data-date=" + JSON.stringify(model.today) + "]",
     );
     if (!card || document.hidden) return;
-    const cards = [card];
-    const agenda = $("calendar").closest(".agenda-mode") !== null;
-    const timing = {
-      duration: 800,
-      easing: "ease-out",
-      // Let the page arrive first; overlap only its final 120ms with the glow.
-      delay: Math.max(
-        0,
-        ...(monthTransition?.element.getAnimations() || []).map(
-          (animation) =>
-            animation.effect.getComputedTiming().endTime -
-            Number(animation.currentTime || 0) -
-            120,
-        ),
-      ),
-    };
-    const followers = [];
-    const attentions = cards.map((card) => {
-      // Read the final selected surface, rather than an in-flight hover/selection color.
-      for (const animation of card.getAnimations?.() || []) {
-        if (
-          ["background-color", "box-shadow"].includes(
-            animation.transitionProperty,
-          )
-        )
-          animation.finish();
-      }
-      const style = getComputedStyle(card),
-        background = style.backgroundColor,
-        accent = style.getPropertyValue("--accent").trim() || "#439e7f",
-        shadow = style.boxShadow === "none" ? "" : style.boxShadow + ", ",
-        bright = `color-mix(in srgb, ${background} 88%, white)`,
-        ring = (spread, blur, opacity) =>
-          `${shadow}0 0 ${blur}px ${spread}px color-mix(in srgb, ${accent} ${opacity}%, transparent)`;
-      const frames = reducedMotion.matches
-        ? [
-            { backgroundColor: bright, boxShadow: ring(3, 0, 22) },
-            { backgroundColor: bright, boxShadow: ring(3, 0, 22) },
-          ]
-        : [
-            {
-              offset: 0,
-              backgroundColor: background,
-              boxShadow: ring(0, 0, 0),
-            },
-            {
-              offset: 0.3,
-              backgroundColor: bright,
-              boxShadow: ring(3, 10, 32),
-            },
-            {
-              offset: 1,
-              backgroundColor: background,
-              boxShadow: ring(8, 16, 0),
-            },
-          ];
-      if (agenda) {
-        // Paint outside the clipped calendar/navigation page and above event lanes.
-        // This transparent layer follows the live card without intercepting events.
-        const host = $("panelContent"),
-          glow = document.createElement("span");
-        glow.className = "calendar-today-glow";
-        glow.setAttribute("aria-hidden", "true");
-        glow.style.borderRadius = style.borderRadius;
-        host.append(glow);
-        todayGlows.push(glow);
-        followers.push({ card, glow, host });
-        todayEffects.push(
-          animationCompat.animate(
-            glow,
-            frames.map(({ offset, boxShadow }) => ({ offset, boxShadow })),
-            timing,
-          ),
-        );
-      }
-      return animationCompat.animate(
-        card,
-        agenda
-          ? frames.map((frame) => ({ ...frame, boxShadow: style.boxShadow }))
-          : frames,
-        timing,
-      );
-    });
-    const attention = attentions[0];
-    todayEffects.push(...attentions.slice(1));
+    // A fresh child restarts the CSS effect without a layout flush or tracking frame.
+    const attention = document.createElement("span");
+    attention.className = "calendar-today-attention";
+    attention.setAttribute("aria-hidden", "true");
+    if (reducedMotion.matches) attention.classList.add("is-static");
     todayAttention = attention;
-    // Both cards share one tracking frame and one cleanup lifetime.
-    const follow = () => {
-      if (todayAttention !== attention) return;
-      for (const { card, glow, host } of followers) {
-        if (!card.isConnected) return stopTodayAttention();
-        const bounds = card.getBoundingClientRect(),
-          origin = host.getBoundingClientRect();
-        Object.assign(glow.style, {
-          left: bounds.left - origin.left + "px",
-          top: bounds.top - origin.top + "px",
-          width: bounds.width + "px",
-          height: bounds.height + "px",
-        });
-      }
-      if (followers.length) todayGlowFrame = requestAnimationFrame(follow);
-    };
-    follow();
-    attention.finished.then(() => {
+    card.append(attention);
+    const finish = () => {
       if (todayAttention === attention) stopTodayAttention();
-    });
+    };
+    attention.addEventListener("animationend", finish, { once: true });
+    // Also clean up when animations are disabled or the node leaves the document.
+    todayAttentionTimer = window.setTimeout(finish, 900);
   }
 
   function stopMonthTransition() {
@@ -364,7 +272,13 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     for (const animation of monthAnimations) animation.cancel();
     monthAnimations = [];
     if (!transition) return;
-    const { element, viewport, style, suffixes } = transition;
+    if (transition.copy) {
+      transition.copy.remove();
+      transition.onComplete();
+      return;
+    }
+    const { element, viewport, style, suffixes, outgoingContents } = transition;
+    for (const content of outgoingContents) content.remove();
     for (const suffix of suffixes) {
       suffix.parentElement?.classList.remove("calendar-month-suffix-host");
       suffix.remove();
@@ -375,6 +289,57 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     transition.onComplete?.();
   }
 
+  const monthContentSelector =
+    ":scope > .daytime, :scope > .dayhours, :scope > .day-footer, .date-markers";
+  const monthWeatherSelector =
+    ":scope > .calendar-weather-icon, :scope > .calendar-weather-outgoing";
+  function snapshotMonthContent(card, target, edge) {
+    const bounds = card.getBoundingClientRect();
+    const fromBottom = edge === "bottom";
+    const border = fromBottom
+      ? parseFloat(getComputedStyle(target).borderBottomWidth) || 0
+      : target.clientTop;
+    const outgoing = document.createElement("div");
+    outgoing.className = "calendar-day-content-outgoing";
+    outgoing.setAttribute("aria-hidden", "true");
+    outgoing.inert = true;
+    for (const field of card.querySelectorAll(monthContentSelector)) {
+      const rect = field.getBoundingClientRect();
+      if (!rect.width || !rect.height) continue;
+      const clone = field.cloneNode(true);
+      const originals = [field, ...field.querySelectorAll("*")];
+      const copies = [clone, ...clone.querySelectorAll("*")];
+      // Freeze the old page's ink and layout before moving it into a card with
+      // different adjacent-day styles and possibly a different row height.
+      originals.forEach((original, index) => {
+        const computed = getComputedStyle(original),
+          copy = copies[index];
+        copy.removeAttribute("id");
+        for (const property of computed)
+          copy.style.setProperty(property, computed.getPropertyValue(property));
+        copy.style.animation = "none";
+        copy.style.transition = "none";
+      });
+      Object.assign(clone.style, {
+        position: "absolute",
+        left: rect.left - bounds.left - target.clientLeft + "px",
+        top: fromBottom ? "auto" : rect.top - bounds.top - border + "px",
+        right: "auto",
+        bottom: fromBottom
+          ? bounds.bottom - rect.bottom - border + "px"
+          : "auto",
+        width: rect.width + "px",
+        height: rect.height + "px",
+        margin: "0",
+        transform: "none",
+        translate: "none",
+        boxSizing: "border-box",
+      });
+      outgoing.append(clone);
+    }
+    return outgoing;
+  }
+
   function animateMonth(
     direction,
     update = () => {},
@@ -382,7 +347,6 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     { axis = "y" } = {},
   ) {
     actions.closeImport();
-    stopMonthTransition();
     const element = $("calendar");
     const enabled =
       direction &&
@@ -390,9 +354,16 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       !reducedMotion.matches &&
       !document.hidden &&
       typeof element.animate === "function";
-    let copy, previousBounds;
+    stopMonthTransition();
+    if (model.yearMode) {
+      update(enabled);
+      return onComplete();
+    }
+    let copy, previousBounds, oldTop;
     const scrolls = [];
+    const horizontal = axis === "x";
     const previousDays = new Map();
+    const weatherPositions = new Map();
     const attendance = !element.closest(".agenda-mode");
     const daySelector = attendance ? ":scope > .day" : ".day[data-agenda-week]";
     function numberPosition(card, bounds) {
@@ -407,7 +378,9 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     if (enabled) {
       WorkTimeApp.ui.motion?.stop(element);
       previousBounds = element.getBoundingClientRect();
-      for (const card of element.querySelectorAll(daySelector)) {
+      for (const card of horizontal
+        ? []
+        : element.querySelectorAll(daySelector)) {
         const rect = card.getBoundingClientRect();
         if (!rect.height) continue;
         previousDays.set(card.dataset.date || card.dataset.previewDate, {
@@ -417,52 +390,117 @@ WorkTimeApp.ui.createNavigationController = function (options) {
           monthSuffix: card.querySelector(".daynum small")?.textContent || "",
           number: attendance ? numberPosition(card, rect) : null,
         });
+        if (attendance)
+          for (const picture of card.querySelectorAll(monthWeatherSelector))
+            weatherPositions.set(picture, picture.getBoundingClientRect());
       }
+      if (horizontal) oldTop = element.offsetTop;
       copy = element.cloneNode(true);
+      if (attendance && !horizontal)
+        for (const card of copy.querySelectorAll(daySelector)) {
+          const previous = previousDays.get(
+            card.dataset.date || card.dataset.previewDate,
+          );
+          if (previous) previous.card = card;
+        }
       if (element.scrollTop || element.scrollLeft)
         scrolls.push([copy, element.scrollTop, element.scrollLeft]);
       copy.removeAttribute("id");
-      for (const node of copy.querySelectorAll("[id]"))
-        node.removeAttribute("id");
-      const selector =
-        ".agenda-card-items, .agenda-week-lane, .timetable-scroll";
-      const sources = element.querySelectorAll(selector);
-      const copies = copy.querySelectorAll(selector);
-      sources.forEach((source, index) => {
-        const node = copies[index];
-        if (source.scrollTop || source.scrollLeft)
-          scrolls.push([node, source.scrollTop, source.scrollLeft]);
-      });
-      // Only an open agenda editor supplies ID-dependent selected-day colors.
-      // Ordinary days inherit their resting class styles instead of freezing a
-      // half-completed hover/selection transition into the entire outgoing page.
-      if (element.querySelector(".agenda-chip.is-selected")) {
-        const source = element.querySelector(".day.selected");
-        const node = copy.querySelector(".day.selected");
-        if (source && node) {
-          const style = getComputedStyle(source);
-          for (const property of ["background", "border-color", "box-shadow"])
-            node.style.setProperty(property, style.getPropertyValue(property));
+
+      if (!attendance) {
+        const selector =
+          ".agenda-card-items, .agenda-week-lane, .timetable-scroll";
+        const sources = element.querySelectorAll(selector);
+        const copies = copy.querySelectorAll(selector);
+        sources.forEach((source, index) => {
+          const node = copies[index];
+          if (source.scrollTop || source.scrollLeft)
+            scrolls.push([node, source.scrollTop, source.scrollLeft]);
+        });
+        // Only an open agenda editor supplies ID-dependent selected-day colors.
+        // Ordinary days inherit their resting class styles instead of freezing a
+        // half-completed hover/selection transition into the entire outgoing page.
+        if (element.querySelector(".agenda-chip.is-selected")) {
+          const source = element.querySelector(".day.selected");
+          const node = copy.querySelector(".day.selected");
+          if (source && node) {
+            const style = getComputedStyle(source);
+            for (const property of ["background", "border-color", "box-shadow"])
+              node.style.setProperty(
+                property,
+                style.getPropertyValue(property),
+              );
+          }
         }
       }
       copy.classList.add("calendar-navigation-copy");
       copy.inert = true;
       copy.setAttribute("aria-hidden", "true");
     }
-    update();
-    // Rendering may have triggered selection/content reveals. The whole calendar
-    // is the only moving surface during date navigation.
+    const travel = enabled && (horizontal || attendance);
+    if (travel)
+      element.dataset.calendarTravel = horizontal ? "horizontal" : "month";
+    try {
+      update();
+    } finally {
+      if (travel) delete element.dataset.calendarTravel;
+    }
+    // Page travel owns selection/content reveals during navigation. Retained
+    // attendance dates get their own synchronized content crossfade below.
     if (!enabled || !copy) {
       onComplete();
       return;
     }
     WorkTimeApp.ui.motion?.stop(element);
-    for (const child of element.querySelectorAll("*"))
-      WorkTimeApp.ui.motion?.stop(child);
-    if (attendance)
-      WorkTimeApp.ui.alignment?.refresh([
-        ...element.querySelectorAll(".daytop"),
+    WorkTimeApp.ui.motion?.stopWithin(element);
+    for (const node of copy.querySelectorAll("[id]"))
+      node.removeAttribute("id");
+    if (horizontal) {
+      // Both pages have the same width. Keep the live grid in flow and use its
+      // normal responsive sizing; reading it after the redraw forces layout.
+      Object.assign(copy.style, {
+        position: "absolute",
+        top: oldTop + "px",
+        left: "0",
+        margin: "0",
+        width: previousBounds.width + "px",
+        height: previousBounds.height + "px",
+      });
+      element.after(copy);
+      for (const [node, top, left] of scrolls) {
+        node.scrollTop = top;
+        node.scrollLeft = left;
+      }
+      const short = element.classList.contains("agenda-week-view");
+      const timing = {
+        duration: short
+          ? calendarMotion.navigationDuration
+          : calendarMotion.pageNavigationDuration,
+        easing: short
+          ? calendarMotion.easing
+          : calendarMotion.pageNavigationEasing,
+        fill: "both",
+      };
+      const offset = direction * previousBounds.width;
+      const slide = (surface, from, to) => ({
+        element: surface,
+        frames: [from, to].map((x) => ({
+          transform: "translateX(" + x + "px)",
+        })),
+        options: timing,
+      });
+      const transition = { copy, onComplete };
+      monthTransition = transition;
+      monthAnimations = WorkTimeApp.ui.motion.animateCalendar([
+        slide(copy, 0, -offset),
+        slide(element, offset, 0),
       ]);
+      Promise.all(monthAnimations.map((handle) => handle.finished)).then(() => {
+        if (monthTransition === transition) stopMonthTransition();
+      });
+      return;
+    }
+
     const bounds = element.getBoundingClientRect();
     if (!bounds.height || !previousBounds.height) {
       onComplete();
@@ -473,32 +511,23 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     const nextDays = [...element.querySelectorAll(daySelector)].filter(
       (card) => card.getBoundingClientRect().height > 0,
     );
+    // The outgoing content needs the same anchor as its shared row. On
+    // return the bottom edges match, so top offsets would move the old tag
+    // by the full height difference before the fade even starts.
+    const edge = attendance && direction < 0 ? "bottom" : "top";
     const sharedOffsets = nextDays.flatMap((card) => {
       const previous = previousDays.get(
         card.dataset.date || card.dataset.previewDate,
       );
-      // Month grids can have different row heights (four, five or six weeks).
-      // Join the top edge when moving forward and the bottom edge on return.
-      const edge = attendance && direction < 0 ? "bottom" : "top";
       return previous
         ? [previous[edge] - (card.getBoundingClientRect()[edge] - bounds.top)]
         : [];
     });
-    const horizontal = axis === "x";
-    const translate = (value) =>
-      horizontal ? `translateX(${value}px)` : `translateY(${value}px)`;
+    const translate = (value) => `translateY(${value}px)`;
     let offset =
-      direction *
-      (horizontal
-        ? direction > 0
-          ? previousBounds.width
-          : bounds.width
-        : direction > 0
-          ? previousBounds.height
-          : bounds.height);
+      direction * (direction > 0 ? previousBounds.height : bounds.height);
     const sharedOffset = sharedOffsets[0];
     const partial =
-      !horizontal &&
       (attendance ||
         (element.classList.contains("agenda-week-view") &&
           previousDays.size === nextDays.length &&
@@ -549,8 +578,16 @@ WorkTimeApp.ui.createNavigationController = function (options) {
       node.scrollTop = top;
       node.scrollLeft = left;
     }
-    const suffixes = [];
-    const transition = { element, viewport, style, suffixes, onComplete };
+    const suffixes = [],
+      outgoingContents = [];
+    const transition = {
+      element,
+      viewport,
+      style,
+      suffixes,
+      outgoingContents,
+      onComplete,
+    };
     monthTransition = transition;
     const pageTravel =
       !element.classList.contains("agenda-week-view") ||
@@ -558,14 +595,12 @@ WorkTimeApp.ui.createNavigationController = function (options) {
         (nextDays.length > 7 ||
           element.classList.contains("agenda-dual-card-view")));
     const timing = {
-      duration:
-        horizontal || !pageTravel
-          ? calendarMotion.navigationDuration
-          : calendarMotion.pageNavigationDuration,
-      easing:
-        horizontal || !pageTravel
-          ? calendarMotion.easing
-          : calendarMotion.pageNavigationEasing,
+      duration: !pageTravel
+        ? calendarMotion.navigationDuration
+        : calendarMotion.pageNavigationDuration,
+      easing: !pageTravel
+        ? calendarMotion.easing
+        : calendarMotion.pageNavigationEasing,
       fill: "both",
     };
     const details = [];
@@ -575,6 +610,52 @@ WorkTimeApp.ui.createNavigationController = function (options) {
           card.dataset.date || card.dataset.previewDate,
         );
         if (!previous) continue;
+        if (weatherPositions.size)
+          for (const picture of card.querySelectorAll(monthWeatherSelector)) {
+            const before = weatherPositions.get(picture);
+            if (!before) continue;
+            const after = picture.getBoundingClientRect();
+            if (!before.width || !after.width) continue;
+            // The weather node survives the date redraw. Keep it at its old
+            // screen position when the new row starts sliding, then let it
+            // settle against the new card's bottom edge with the page.
+            const x = before.left - after.left;
+            const y = before.top - after.top - offset;
+            if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1) continue;
+            details.push({
+              element: picture,
+              frames: [
+                { translate: x + "px " + y + "px" },
+                { translate: "0px 0px" },
+              ],
+              options: timing,
+            });
+          }
+
+        if (
+          previous.card &&
+          previous.card.classList.contains("adjacent") !==
+            card.classList.contains("adjacent")
+        ) {
+          const outgoing = snapshotMonthContent(previous.card, card, edge);
+          const fields = [...card.querySelectorAll(monthContentSelector)];
+          card.append(outgoing);
+          outgoingContents.push(outgoing);
+          details.push({
+            element: outgoing,
+            frames: [{ opacity: 1 }, { opacity: 0 }],
+            options: timing,
+          });
+          for (const field of fields)
+            details.push({
+              element: field,
+              frames: [
+                { opacity: 0 },
+                { opacity: getComputedStyle(field).opacity },
+              ],
+              options: timing,
+            });
+        }
         const opacity = getComputedStyle(card).opacity;
         if (previous.opacity !== opacity)
           details.push({
@@ -670,6 +751,60 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     model.selected = visible ? selected : fallback;
   }
 
+  function drawYearStep(animated) {
+    yearDrawFrame = null;
+    if (!model.yearMode || model.analysisMode) return;
+    const month = model.month;
+    const updateReport = actions.renderYearNavigation({
+      deferDetails: animated,
+    });
+    const finish = () => {
+      yearDetailsTimer = null;
+      if (!model.yearMode || model.analysisMode || model.month !== month)
+        return;
+      updateReport?.();
+      actions.renderStats();
+    };
+    if (animated) yearDetailsTimer = window.setTimeout(finish, 200);
+    else finish();
+    actions.prepareNeighboringYears(yearDirection);
+  }
+
+  function startYearNavigation(year) {
+    yearDirection = Math.sign(year - model.viewYear);
+    if (yearDetailsTimer !== null) window.clearTimeout(yearDetailsTimer);
+    yearDetailsTimer = null;
+    animateMonth(yearDirection, (animated) => {
+      model.viewYear = year;
+      model.month = year + "-" + model.month.slice(5);
+      model.returnMonth = model.month;
+      retainCalendarSelection();
+      // Account for every click immediately, but only build a year that can paint.
+      if (animated && window.requestAnimationFrame) {
+        yearDrawFrame ??= window.requestAnimationFrame(() =>
+          drawYearStep(true),
+        );
+      } else {
+        if (yearDrawFrame !== null) window.cancelAnimationFrame(yearDrawFrame);
+        drawYearStep(false);
+      }
+    });
+  }
+
+  function stepCalendar(direction) {
+    stopPageTransition();
+    if (model.batchMode) return;
+    stopTodayAttention();
+    if (!model.yearMode) {
+      const month = C.localDate(model.month + "-01");
+      month.setMonth(month.getMonth() + direction);
+      navigateMonth(C.dateKey(month).slice(0, 7));
+      return;
+    }
+    const target = model.viewYear + direction;
+    if (target >= 1900 && target <= 9999) startYearNavigation(target);
+  }
+
   function navigateMonth(v, selectToday = false) {
     stopPageTransition();
     if (resettingBatch || model.batchMode) return;
@@ -703,10 +838,8 @@ WorkTimeApp.ui.createNavigationController = function (options) {
     };
     model.batchDraft = { reset: "none" };
     model.batchPreview = null;
-    $("batchStart").value =
-      $("batchEnd").value =
-      $("batchCalcOvertime").value =
-        "";
+    $("batchStart").value = $("batchEnd").value = "";
+    WorkTimeApp.ui.workspaceViews.setNumberValue($("batchCalcOvertime"), "");
     $("batchStart").placeholder = schedule.workStart;
     $("batchEnd").placeholder = schedule.workEnd;
     $("batchNext").checked = false;
@@ -762,7 +895,10 @@ WorkTimeApp.ui.createNavigationController = function (options) {
           input.direct.start ||
           C.scheduleForDate(model.state, model.selected).workStart;
       $("batchStart").value = input.overtime.start;
-      $("batchCalcOvertime").value = input.overtime.hours;
+      WorkTimeApp.ui.workspaceViews.setNumberValue(
+        $("batchCalcOvertime"),
+        input.overtime.hours,
+      );
     } else {
       $("batchStart").value = input.direct.start;
       $("batchEnd").value = input.direct.end;
@@ -1175,8 +1311,11 @@ WorkTimeApp.ui.createNavigationController = function (options) {
         if (!$("settingsPane").hidden) actions.refreshSettings();
       }
     });
+    events.listen($("monthTitle"), "pointerenter", actions.prepareYearEntry);
+    events.listen($("monthTitle"), "focus", actions.prepareYearEntry);
     events.handler($("monthTitle"), "onclick", () => {
       if (resettingBatch || model.batchMode || model.analysisMode) return;
+      if (!model.yearMode) actions.prepareYearEntry();
       return transitionPage({
         direction: model.yearMode ? -1 : 1,
         sidebarTransition: true,
@@ -1197,40 +1336,49 @@ WorkTimeApp.ui.createNavigationController = function (options) {
           // Reveal only the destination sidebar when the page commits.
           actions.closeSettings({ animate: false });
         },
+        afterRender: () => actions.prepareNeighboringYears(),
       });
     });
     events.listen($("calendar"), "keydown", (e) => {
+      const button = e.target.closest("[data-year-date]");
+      if (button && ["Enter", " "].includes(e.key)) {
+        e.preventDefault();
+        openYearDate(button);
+        return;
+      }
       if (!e.target.matches(".year-month") || !["Enter", " "].includes(e.key))
         return;
       e.preventDefault();
       e.target.click();
     });
-    events.listen($("calendar"), "click", (e) => {
+    function openYearDate(button) {
+      if (resettingBatch || model.batchMode || !model.yearMode) return;
+      const date = button.dataset.yearDate;
+      const month = date.slice(0, 7);
+      return transitionPage({
+        direction: -1,
+        update() {
+          model.yearMode = false;
+          model.month = month;
+          model.selected = model.calendarSelected = date;
+        },
+        afterRender() {
+          if (!$("settingsPane").hidden) actions.refreshSettings();
+        },
+        onComplete() {
+          $("calendar")
+            .querySelector(
+              "[data-date=" + JSON.stringify(model.selected) + "] .day-select",
+            )
+            ?.focus({ preventScroll: true });
+        },
+      });
+    }
+    events.listen($("calendar"), "dblclick", (e) => {
       const button = e.target.closest("[data-year-date]");
-      if (button) {
-        if (model.batchMode) return;
-        const month = button.dataset.yearDate.slice(0, 7);
-        return transitionPage({
-          direction: -1,
-          update() {
-            model.yearMode = false;
-            model.month = month;
-            model.selected = model.calendarSelected = button.dataset.yearDate;
-          },
-          afterRender() {
-            if (!$("settingsPane").hidden) actions.refreshSettings();
-          },
-          onComplete() {
-            $("calendar")
-              .querySelector(
-                "[data-date=" +
-                  JSON.stringify(model.selected) +
-                  "] .day-select",
-              )
-              ?.focus({ preventScroll: true });
-          },
-        });
-      }
+      if (button) return openYearDate(button);
+    });
+    events.listen($("calendar"), "click", (e) => {
       const monthSection = e.target.closest(".year-month");
       if (!monthSection || resettingBatch || model.batchMode || !model.yearMode)
         return;
@@ -1244,50 +1392,11 @@ WorkTimeApp.ui.createNavigationController = function (options) {
         return;
       model.month = month;
       model.returnMonth = month;
-      actions.render();
+      actions.renderStats();
+      actions.renderYearNavigation();
     });
-    events.handler($("prevMonth"), "onclick", () => {
-      stopPageTransition();
-      if (model.batchMode) return;
-      stopTodayAttention();
-      if (model.yearMode) {
-        if (model.viewYear > 1900)
-          animateMonth(-1, () => {
-            const monthNumber = model.month.slice(5);
-            model.viewYear--;
-            model.month = model.viewYear + "-" + monthNumber;
-            model.returnMonth = model.month;
-            retainCalendarSelection();
-            actions.renderStats();
-            actions.renderCalendar();
-          });
-        return;
-      }
-      const d = C.localDate(model.month + "-01");
-      d.setMonth(d.getMonth() - 1);
-      navigateMonth(C.dateKey(d).slice(0, 7));
-    });
-    events.handler($("nextMonth"), "onclick", () => {
-      stopPageTransition();
-      if (model.batchMode) return;
-      stopTodayAttention();
-      if (model.yearMode) {
-        if (model.viewYear < 9999)
-          animateMonth(1, () => {
-            const monthNumber = model.month.slice(5);
-            model.viewYear++;
-            model.month = model.viewYear + "-" + monthNumber;
-            model.returnMonth = model.month;
-            retainCalendarSelection();
-            actions.renderStats();
-            actions.renderCalendar();
-          });
-        return;
-      }
-      const d = C.localDate(model.month + "-01");
-      d.setMonth(d.getMonth() + 1);
-      navigateMonth(C.dateKey(d).slice(0, 7));
-    });
+    events.handler($("prevMonth"), "onclick", () => stepCalendar(-1));
+    events.handler($("nextMonth"), "onclick", () => stepCalendar(1));
     events.handler($("todayButton"), "onclick", () => {
       if (model.batchMode) return;
       if (model.yearMode)
@@ -1393,6 +1502,9 @@ WorkTimeApp.ui.createNavigationController = function (options) {
   function dispose() {
     stopBatchSweep();
     analysisStyleRequest++;
+    if (yearDrawFrame !== null) window.cancelAnimationFrame(yearDrawFrame);
+    if (yearDetailsTimer !== null) window.clearTimeout(yearDetailsTimer);
+    yearDrawFrame = yearDetailsTimer = null;
     stopPageTransition(false);
     stopTodayAttention();
     unlistenMotion?.();

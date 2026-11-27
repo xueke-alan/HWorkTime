@@ -98,18 +98,6 @@ async function instrument(context) {
           /\/(core|date|view|startup)-runtime\.min\.js/,
         );
         if (match) window.startupMeasurement.stages.push(match[1]);
-        if (match?.[1] === "startup") {
-          const alignment = WorkTimeApp.ui.alignment,
-            prepare = alignment.prepareFirstPaint;
-          alignment.prepareFirstPaint = (...args) => {
-            const started = performance.now();
-            try {
-              return prepare(...args);
-            } finally {
-              window.startupMeasurement.alignment = performance.now() - started;
-            }
-          };
-        }
       },
       true,
     );
@@ -178,7 +166,6 @@ async function sample(context, url, transport) {
       reveal: Math.round(visible - ready),
       longestTask: Math.round(Math.max(0, ...occupied)),
       stages,
-      alignment: Math.round(window.startupMeasurement.alignment),
       resources: performance
         .getEntriesByType("resource")
         .filter((entry) =>
@@ -264,9 +251,10 @@ async function main() {
     }
     for (const [key, values] of Object.entries(report.measurements)) {
       report.summary[key] = Object.fromEntries(
-        ["ready", "visible", "reveal", "longestTask", "alignment"].map(
-          (metric) => [metric, summarize(values.map((value) => value[metric]))],
-        ),
+        ["ready", "visible", "reveal", "longestTask"].map((metric) => [
+          metric,
+          summarize(values.map((value) => value[metric])),
+        ]),
       );
       const prewarmed = values.filter((value) => value.prewarm !== null);
       report.summary[key].prewarm = prewarmed.length

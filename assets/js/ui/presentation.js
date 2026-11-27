@@ -1,5 +1,48 @@
 "use strict";
 
+/** Format signed minutes before converting to hours, without decimal-hour rounding. */
+WorkTimeApp.ui.hourMinuteParts = function (minutes) {
+  const total = Math.round(Math.abs(minutes)),
+    { number } = WorkTimeApp.i18n;
+  const hours =
+      (minutes < 0 && total ? "-" : "") +
+      number(Math.floor(total / 60), { useGrouping: false }),
+    remainder = number(total % 60, {
+      useGrouping: false,
+      minimumIntegerDigits: 2,
+    });
+  return { hours, minutes: remainder, text: hours + "h" + remainder + "m" };
+};
+
+/** Preserve independent rolling fields for signed hours and two-digit minutes. */
+WorkTimeApp.ui.renderHourMinutes = function (
+  element,
+  minutes,
+  { numbers = WorkTimeApp.ui.numbers, motion = true } = {},
+) {
+  const parts = WorkTimeApp.ui.hourMinuteParts(minutes);
+  let hours = element.querySelector(".duration-hours"),
+    remainder = element.querySelector(".duration-minutes");
+  if (!hours || !remainder) {
+    hours = document.createElement("span");
+    hours.className = "duration-hours";
+    remainder = document.createElement("span");
+    remainder.className = "duration-minutes";
+    element.replaceChildren(hours, remainder);
+  }
+  for (const [field, value, unit, reserveSign] of [
+    [hours, parts.hours, "h", true],
+    [remainder, parts.minutes, "m", false],
+  ])
+    numbers.set(field, value, {
+      unit,
+      reserveSign,
+      animateInitial: false,
+      preserveText: true,
+      motion,
+    });
+};
+
 /** Shared fixed-slot year/month renderer, used by both sidebar headers. */
 WorkTimeApp.ui.renderYearMonth = function (
   label,
@@ -13,10 +56,6 @@ WorkTimeApp.ui.renderYearMonth = function (
   } = {},
 ) {
   label.classList.toggle("has-word-month", wordMonth);
-  label.classList.toggle(
-    "has-single-digit-month",
-    !wordMonth && month.length === 1,
-  );
   numbers.set(label.querySelector(".year-month-year"), String(year), {
     animateInitial,
     motion,
@@ -24,7 +63,9 @@ WorkTimeApp.ui.renderYearMonth = function (
   numbers.set(label.querySelector(".year-month-month"), month, {
     animateInitial: animateInitial && !wordMonth,
     animateWhole: wordMonth,
-    animateWholeOnLengthChange: !wordMonth,
+    integerDigits: wordMonth ? 0 : 2,
+    retainIntegerWidth: !wordMonth,
+    digitAlign: "left",
     motion,
   });
 };
@@ -36,16 +77,9 @@ WorkTimeApp.ui.headerDateMarkup = function (
   { weekday = true } = {},
 ) {
   const divider =
-    '<svg class="calendar-date-divider" viewBox="0 0 12 24" aria-hidden="true" focusable="false"><use href="#icon-calendar-date-divider"/></svg>';
+    '<span class="calendar-date-divider" aria-hidden="true">/</span>';
   const { i18n } = WorkTimeApp;
-  const [year, month, day] = date.split("-").map(Number);
-  const parts = weekday
-    ? i18n.date(date).split(/\s*\/\s*/)
-    : [
-        i18n.number(year, { useGrouping: false }),
-        i18n.config.cjk ? i18n.number(month) : i18n.monthName(date),
-        i18n.number(day),
-      ];
+  const parts = weekday ? i18n.date(date).split(/\s*\/\s*/) : date.split("-");
   return (
     '<span class="calendar-today-date' +
     (weekday ? "" : " year-month-label") +

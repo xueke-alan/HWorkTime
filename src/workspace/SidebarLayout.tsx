@@ -5,6 +5,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import { createPortal } from "react-dom";
+import { SidebarTheme } from "../sidebar-theme";
 
 /** All sidebar modes share these three permanent regions. Mount views in the
  * content slot and send their heading through SidebarHeader; never replace the shell. */
@@ -13,15 +14,21 @@ export function SidebarLayout({
   functions,
 }: PropsWithChildren<{ functions: React.ReactNode }>) {
   return (
-    <aside className="panel editor" data-ui="panel">
-      <header id="sidebarHeader" className="sidebar-header" />
-      <div id="sidebarContent" className="sidebar-content">
-        {children}
-      </div>
-      <footer id="sidebarFunctions" className="sidebar-functions">
-        {functions}
-      </footer>
-    </aside>
+    <SidebarTheme>
+      <aside
+        className="panel editor"
+        data-ui="panel"
+        data-theme-scope="sidebar"
+      >
+        <header id="sidebarHeader" className="sidebar-header" />
+        <div id="sidebarContent" className="sidebar-content">
+          {children}
+        </div>
+        <footer id="sidebarFunctions" className="sidebar-functions">
+          {functions}
+        </footer>
+      </aside>
+    </SidebarTheme>
   );
 }
 

@@ -3,7 +3,7 @@
 WorkTimeApp.ui.year = (() => {
   const { pad, localDate, hours } = WorkTimeApp.domain.time;
   const { summary } = WorkTimeApp.domain.statistics;
-  const { calendarInfo } = WorkTimeApp.domain.calendar;
+  const { calendarInfo, holidays } = WorkTimeApp.domain.calendar;
   const { calculate } = WorkTimeApp.domain.records;
   const { scheduleForDate } = WorkTimeApp.domain.schedule;
   const zeroColor = [231, 238, 233],
@@ -68,10 +68,19 @@ WorkTimeApp.ui.year = (() => {
       ) * 60
     );
   }
-  const lunarCache = new Map();
+  const lunarCache = new WeakMap();
   function lunarLabel(date, lunarFor) {
     if (!lunarFor) return "";
-    let parts = lunarCache.get(date);
+    let years = lunarCache.get(lunarFor);
+    if (!years) lunarCache.set(lunarFor, (years = new Map()));
+    const year = date.slice(0, 4);
+    let dates = years.get(year);
+    if (!dates) {
+      dates = new Map();
+      years.set(year, dates);
+      if (years.size > 5) years.delete(years.keys().next().value);
+    }
+    let parts = dates.get(date);
     if (parts === undefined) {
       try {
         const lunar = lunarFor(date);
@@ -84,9 +93,7 @@ WorkTimeApp.ui.year = (() => {
       } catch {
         parts = null;
       }
-      // Keep only enough entries for the current year and its neighbors.
-      if (lunarCache.size >= 1000) lunarCache.clear();
-      lunarCache.set(date, parts);
+      dates.set(date, parts);
     }
     if (!parts) return "";
     if (!WorkTimeApp.i18n.config.cjk)
@@ -112,111 +119,112 @@ WorkTimeApp.ui.year = (() => {
     return [...labels];
   }
   function calendarMonths(state, year, today, lunarFor) {
-    const result = months(state, year, today);
-    for (const month of result)
-      for (const day of month.days) {
-        const info = calendarInfo(day.date, state.days[day.date] || {});
-        day.lunar = lunarLabel(day.date, lunarFor);
-        day.festivals = festivalLabels(info);
-        day.badge = info.holiday ? "rest" : info.makeup ? "work" : "";
-        day.makeup = info.makeup;
-        day.holiday = !!info.holiday;
-        day.description = [
-          day.description,
-          day.lunar
-            ? WorkTimeApp.i18n.t("copy.e393811f90") + " " + day.lunar
+    return months(state, year, today, (day, info) => {
+      day.lunar = lunarLabel(day.date, lunarFor);
+      day.festivals = festivalLabels(info);
+      day.badge = info.holiday ? "rest" : info.makeup ? "work" : "";
+      day.description = [
+        day.description,
+        day.lunar
+          ? WorkTimeApp.i18n.t("copy.e393811f90") + " " + day.lunar
+          : "",
+        day.festivals.join("、"),
+        day.badge === "rest"
+          ? WorkTimeApp.i18n.t("yearView.restLabel")
+          : day.badge === "work"
+            ? WorkTimeApp.i18n.t("yearView.workLabel")
             : "",
-          day.festivals.join("、"),
-          day.badge === "rest"
-            ? WorkTimeApp.i18n.t("yearView.restLabel")
-            : day.badge === "work"
-              ? WorkTimeApp.i18n.t("yearView.workLabel")
-              : "",
-        ]
-          .filter(Boolean)
-          .join(" · ");
-      }
-    return result;
+      ]
+        .filter(Boolean)
+        .join(" · ");
+    });
   }
-  function months(state, year, today) {
-    // Partition once: each monthly total only needs that month's records, even
-    // when the archive holds decades of history. Preserve record iteration order.
-    const records = new Map();
-    for (const [date, day] of Object.entries(state.days)) {
-      if (!date.startsWith(year + "-")) continue;
-      const month = date.slice(0, 7);
-      if (!records.has(month)) records.set(month, {});
-      records.get(month)[date] = day;
-    }
+  function months(state, year, today, decorateDay) {
+    const labels = new Map();
+    const unrecorded = { minutes: null, overtime: null, record: null };
     const result = Array.from({ length: 12 }, (_, index) => {
       const prefix = year + "-" + pad(index + 1),
         first = prefix + "-01",
         total = new Date(year, index + 1, 0, 12).getDate();
+      // Read only dates in this year, even if the archive spans decades.
+      const records = {};
+      const days = Array.from({ length: total }, (_, i) => {
+        const date = prefix + "-" + pad(i + 1),
+          record = state.days[date],
+          day = record || {},
+          info = calendarInfo(date, day),
+          schedule = record ? scheduleForDate(state, date) : state.settings,
+          calc = record ? calculate(date, day, schedule, true) : unrecorded;
+        const cell = {
+          overtime: calc.overtime,
+          work: info.work,
+          holiday: !!info.holiday,
+          weekend: info.weekend,
+          makeup: info.makeup,
+        };
+        const planned = !!day.plannedOvertime && date >= today;
+        if (record) records[date] = record;
+        if (!labels.has(info.label))
+          labels.set(info.label, WorkTimeApp.i18n.message(info.label));
+        const leave = Math.min(
+          schedule.standardMinutes,
+          Math.max(0, day.leaveMinutes || 0),
+        );
+        const rest =
+          !info.work &&
+          (day.kind === "rest" || date <= today) &&
+          !(calc.minutes > 0) &&
+          !planned;
+        const description = [
+          date,
+          labels.get(info.label),
+          calc.overtime === null
+            ? WorkTimeApp.i18n.t("copy.28ddea9e64")
+            : (calc.overtime < 0
+                ? WorkTimeApp.i18n.t("copy.78352e961f")
+                : WorkTimeApp.i18n.t("copy.7bdea8bd81")) +
+              hours(Math.abs(calc.overtime)) +
+              WorkTimeApp.i18n.t("copy.8d383e56ac"),
+          leave
+            ? WorkTimeApp.i18n.t("copy.326f400f75") +
+              hours(leave) +
+              WorkTimeApp.i18n.t("copy.8d383e56ac")
+            : "",
+          rest ? WorkTimeApp.i18n.t("copy.da11d57634") : "",
+          planned ? WorkTimeApp.i18n.t("copy.3cf2307526") : "",
+          calc.record?.type === "estimate"
+            ? WorkTimeApp.i18n.t("copy.85f1f8dfaf")
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        Object.assign(cell, {
+          date,
+          number: i + 1,
+          leave: leave > 0,
+          leaveDays: info.work ? leave / schedule.standardMinutes : 0,
+          rest,
+          today: date === today,
+          description,
+          complete: calc.minutes !== null,
+        });
+        decorateDay?.(cell, info);
+        return cell;
+      });
       return {
         month: index + 1,
         summary: summary(
-          { ...state, days: records.get(prefix) || {} },
+          { ...state, days: records },
           first,
           prefix + "-" + pad(total),
         ),
         offset: (localDate(first).getDay() + 6) % 7,
-        days: Array.from({ length: total }, (_, i) => {
-          const date = prefix + "-" + pad(i + 1),
-            day = state.days[date] || {},
-            info = calendarInfo(date, day),
-            schedule = scheduleForDate(state, date),
-            calc = calculate(date, day, schedule, true),
-            planned = !!day.plannedOvertime && date >= today;
-          const leave = Math.min(
-            schedule.standardMinutes,
-            Math.max(0, day.leaveMinutes || 0),
-          );
-          const rest =
-            !info.work &&
-            (day.kind === "rest" || date <= today) &&
-            !(calc.minutes > 0) &&
-            !planned;
-          const description = [
-            date,
-            WorkTimeApp.i18n.message(info.label),
-            calc.overtime === null
-              ? WorkTimeApp.i18n.t("copy.28ddea9e64")
-              : (calc.overtime < 0
-                  ? WorkTimeApp.i18n.t("copy.78352e961f")
-                  : WorkTimeApp.i18n.t("copy.7bdea8bd81")) +
-                hours(Math.abs(calc.overtime)) +
-                WorkTimeApp.i18n.t("copy.8d383e56ac"),
-            leave
-              ? WorkTimeApp.i18n.t("copy.326f400f75") +
-                hours(leave) +
-                WorkTimeApp.i18n.t("copy.8d383e56ac")
-              : "",
-            rest ? WorkTimeApp.i18n.t("copy.da11d57634") : "",
-            planned ? WorkTimeApp.i18n.t("copy.3cf2307526") : "",
-            calc.record?.type === "estimate"
-              ? WorkTimeApp.i18n.t("copy.85f1f8dfaf")
-              : "",
-          ]
-            .filter(Boolean)
-            .join(" · ");
-          return {
-            date,
-            number: i + 1,
-            overtime: calc.overtime,
-            leave: leave > 0,
-            rest,
-            today: date === today,
-            description,
-            complete: calc.minutes !== null,
-            holiday: !!info.holiday,
-            weekend: info.weekend,
-            work: info.work,
-          };
-        }),
+        days,
       };
     });
     const maximum = scaleMaximum(result),
-      minimum = scaleMinimum(result);
+      minimum = scaleMinimum(result),
+      colors = new Map();
     for (const month of result)
       for (const day of month.days) {
         if (!day.work && (day.overtime || 0) > 0) {
@@ -225,15 +233,62 @@ WorkTimeApp.ui.year = (() => {
           day.color = restOvertimeColor;
           continue;
         }
-        day.color = heatColor(day.overtime, maximum, minimum);
         if (!day.overtime && (day.holiday || day.weekend))
           day.color = {
             ratio: 0,
             background: day.holiday ? "#f4e7d6" : "#dce8e3",
             text: "#3c4a45",
           };
+        else {
+          const minutes = day.overtime || 0;
+          if (!colors.has(minutes))
+            colors.set(minutes, heatColor(minutes, maximum, minimum));
+          day.color = colors.get(minutes);
+        }
       }
     return result;
+  }
+  // Reuse the calendar's daily calculations, including leave without punches.
+  function annualReport(months) {
+    const totals = months.reduce(
+      (sum, month) => {
+        for (const key of Object.keys(sum)) sum[key] += month.summary[key] || 0;
+        return sum;
+      },
+      {
+        total: 0,
+        workOvertime: 0,
+        restOvertime: 0,
+        attendance: 0,
+        completeDays: 0,
+        leaveMinutes: 0,
+      },
+    );
+    const days = months.flatMap((month) => month.days);
+    const restDays = days.filter(
+      (day) => !day.work && day.complete && day.overtime > 0,
+    );
+    return {
+      ...totals,
+      average: totals.attendance
+        ? totals.workOvertime / totals.attendance / 60
+        : null,
+      totalOvertime: (totals.workOvertime + totals.restOvertime) / 60,
+      total: totals.total / 60,
+      workOvertime: totals.workOvertime / 60,
+      restOvertime: totals.restOvertime / 60,
+      dailyHours: totals.completeDays
+        ? totals.total / totals.completeDays / 60
+        : null,
+      leaveDays: days.reduce((sum, day) => sum + day.leaveDays, 0),
+      leaveHours: totals.leaveMinutes / 60,
+      restOvertimeDays: restDays.length,
+      // Published holiday periods take precedence over ordinary weekends.
+      weekendOvertimeDays: restDays.filter(
+        (day) => day.weekend && !holidays[day.date],
+      ).length,
+      holidayOvertimeDays: restDays.filter((day) => holidays[day.date]).length,
+    };
   }
   return {
     heatColor,
@@ -242,5 +297,6 @@ WorkTimeApp.ui.year = (() => {
     months,
     calendarMonths,
     lunarLabel,
+    annualReport,
   };
 })();

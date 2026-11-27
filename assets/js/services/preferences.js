@@ -94,12 +94,15 @@ WorkTimeApp.services.preferences = (() => {
     }
     function saveTheme(id) {
       if (!rules.isTheme(id)) throw Error("Invalid theme identity");
-      return savePreference({ pageTheme: id });
+      return savePreference({ pageTheme: rules.normalize(id) });
     }
     function adopt(preferences) {
       const request = ++languageRequest,
         generation = revision,
-        candidate = Object.freeze({ ...preferences }),
+        candidate = Object.freeze({
+          ...preferences,
+          pageTheme: rules.normalize(preferences.pageTheme),
+        }),
         language = WorkTimeApp.i18n.normalize(candidate.language);
       function finish() {
         if (request !== languageRequest || generation !== revision) return;

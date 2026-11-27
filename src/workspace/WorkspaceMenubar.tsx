@@ -2,16 +2,16 @@ import Button from "antd/es/button";
 import ToolbarSegmented from "./ToolbarSegmented";
 import { useLayoutEffect, useRef, useReducer, useState } from "react";
 import {
-  CalendarCheckIcon,
+  CalendarTimeIcon,
   ChartLineUpIcon,
   CalendarDotsIcon,
   GearSixIcon,
   CaretLeftIcon,
   CaretRightIcon,
-  RadioButtonIcon,
+  MapPinSimpleAreaIcon,
   FloppyDiskIcon,
   StackIcon,
-} from "../phosphor-icons";
+} from "../tabler-icons";
 import { useLanguage } from "../ApplicationTheme";
 import "../styles/menubar.css";
 export type WorkspaceView = "calendar" | "analysis" | "agenda";
@@ -104,7 +104,7 @@ export default function WorkspaceMenubar() {
     [
       {
         value: "calendar",
-        icon: CalendarCheckIcon,
+        icon: CalendarTimeIcon,
         label: t("agenda.attendance"),
         target: current === "agenda" ? agenda : analysis,
       },
@@ -175,14 +175,12 @@ export default function WorkspaceMenubar() {
                 className="month-title-year year-month-year"
                 data-number-motion=""
               ></span>
-              <svg
+              <span
                 className="calendar-date-divider month-title-divider"
-                viewBox="0 0 12 24"
                 aria-hidden="true"
-                focusable="false"
               >
-                <use href="#icon-calendar-date-divider" />
-              </svg>
+                /
+              </span>
               <span
                 id="monthTitleMonth"
                 className="month-title-month year-month-month"
@@ -207,7 +205,7 @@ export default function WorkspaceMenubar() {
               aria-label="当月"
               data-i18n-aria-label="calendarHint.thisMonth"
               className="hw-button ui-button icon-only"
-              icon={<RadioButtonIcon size="1em" />}
+              icon={<MapPinSimpleAreaIcon size="1em" />}
             />
             <span className="workspace-view-divider" aria-hidden="true" />
           </div>

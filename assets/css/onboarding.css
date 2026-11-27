@@ -16,11 +16,10 @@ dialog.onboarding-dialog::backdrop { background:rgb(23 51 44 / 25%); backdrop-fi
 .onboarding-item[data-state=current] .onboarding-node { color:white; border-color:var(--accent); background:var(--accent); box-shadow:0 0 0 4px var(--accent-light); }
 .onboarding-item[data-state=complete] .onboarding-node { color:var(--accent); border-color:var(--accent); background:var(--accent-light); }
 .onboarding-stage { min-width:0; }
-/* Match Canvas glyph metrics: tabular alternates have different ink widths. */
+/* Keep fixed step circles and their numeric line boxes centered in the grid. */
 .onboarding-node { box-sizing:border-box; line-height:1; font-variant-numeric:normal; text-align:center; }
-.onboarding-node > .ui-aligned-text { grid-area:1 / 1; justify-self:center; }
 /* Keep the glyph layer independent of global inline-label line heights. */
-body #onboardingDialog .onboarding-node-text { position:absolute; top:50%; left:50%; display:block; width:max-content; margin:0; padding:0; font:inherit; line-height:1; letter-spacing:0; text-indent:0; text-box-trim:none; transform:translate(calc(-50% + var(--ui-ink-offset-x,0px)),calc(-50% + var(--ui-ink-offset,0px))); }
+body #onboardingDialog .onboarding-node-text { grid-area:1 / 1; display:block; margin:0; padding:0; font:inherit; line-height:1; letter-spacing:0; text-indent:0; }
 .runtime-import-status { flex:none; width:100%; min-width:0; padding:10px 16px; font-size:var(--ui-font-size, var(--text-small)); color:var(--ui-muted, var(--muted)); overflow-wrap:anywhere; }
 .runtime-import-status[hidden], .runtime-import-status [hidden] { display:none !important; }
 .runtime-import-status p { margin:0 0 8px; line-height:1.7; }

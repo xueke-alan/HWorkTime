@@ -268,7 +268,12 @@ const WorkTimeDomainValidation = (() => {
       !WorkTimeApp.data.languages.some((item) => item.id === language)
     )
       fail("preferences.language", "备份中的语言设置无效。");
-    clean.preferences = { pageTheme: input.preferences.pageTheme, language };
+    clean.preferences = {
+      pageTheme: WorkTimeApp.domain.preferences.normalize(
+        input.preferences.pageTheme,
+      ),
+      language,
+    };
     const showCalendarMascot = input.preferences.showCalendarMascot ?? true;
     if (typeof showCalendarMascot !== "boolean")
       fail(

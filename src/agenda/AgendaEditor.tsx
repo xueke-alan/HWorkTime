@@ -1,7 +1,7 @@
 import Button from "antd/es/button";
 import Input from "antd/es/input";
 import Select from "antd/es/select";
-import { CaretDownIcon } from "../phosphor-icons";
+import { CaretDownIcon } from "../tabler-icons";
 import { useLayoutEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useLanguage } from "../ApplicationTheme";

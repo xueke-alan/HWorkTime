@@ -923,7 +923,7 @@ async function verifyLayout() {
         if (!animation) throw Error("Missing title animation");
         animation.pause();
         animation.currentTime = animation.effect.getTiming().duration - 1;
-        WorkTimeApp.ui.alignment.refresh([title]);
+
         const before = title.getBoundingClientRect().top;
         animation.finish();
         await Promise.allSettled([animation.finished]);

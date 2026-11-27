@@ -1,57 +1,52 @@
 import Segmented, { type SegmentedProps } from "antd/es/segmented";
-import { useLayoutEffect, useRef, type RefObject } from "react";
+import type { RefObject } from "react";
 import "../styles/toolbar-segmented.css";
+
+type ToolbarProps<T extends string | number> = Pick<
+  SegmentedProps<T>,
+  | "options"
+  | "onChange"
+  | "disabled"
+  | "name"
+  | "id"
+  | "aria-label"
+  | "aria-controls"
+  | "aria-labelledby"
+> & {
+  controlRef?: RefObject<HTMLDivElement | null>;
+  className?: string;
+  compactOnNarrow?: boolean;
+  size?: "small" | "middle";
+  "data-hint-text"?: string;
+  value: T;
+};
 
 export default function ToolbarSegmented<T extends string | number>({
   controlRef,
   value,
+  options,
+  onChange,
+  disabled,
   className = "",
   compactOnNarrow = false,
+  size = "middle",
   ...props
-}: SegmentedProps<T> & {
-  controlRef?: RefObject<HTMLDivElement | null>;
-  compactOnNarrow?: boolean;
-  value: T;
-}) {
-  const localRef = useRef<HTMLDivElement>(null);
-  const ref = controlRef ?? localRef;
-  useLayoutEffect(() => {
-    const item = ref.current?.querySelector("input:checked")?.closest("label");
-    const group = ref.current?.querySelector<HTMLElement>(
-      ".ant-segmented-group",
-    );
-    if (!group) return;
-    if (!item) {
-      delete group.dataset.positioned;
-      return;
-    }
-    const positionIndicator = () => {
-      const track = group.getBoundingClientRect();
-      const target = item.getBoundingClientRect();
-      group.style.setProperty("--view-left", `${target.left - track.left}px`);
-      group.style.setProperty(
-        "--view-right",
-        `${track.right - target.right}px`,
-      );
-      group.dataset.positioned = "";
-    };
-    positionIndicator();
-    const observer = new ResizeObserver(positionIndicator);
-    observer.observe(group);
-    group.querySelectorAll("label").forEach((label) => observer.observe(label));
-    return () => observer.disconnect();
-  }, [ref, value]);
+}: ToolbarProps<T>) {
   const classes = [
     "toolbar-segmented",
+    size === "small" && "toolbar-segmented--small",
     compactOnNarrow && "toolbar-segmented--compact-on-narrow",
     className,
   ];
   return (
     <Segmented<T>
       {...props}
-      ref={ref}
+      ref={controlRef}
       value={value}
-      size="large"
+      options={options}
+      disabled={disabled}
+      onChange={onChange}
+      size={size}
       className={classes.filter(Boolean).join(" ")}
     />
   );

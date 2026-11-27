@@ -331,7 +331,7 @@ WorkTimeApp.games.register({
     const previewNote = node(controls, "p", "uttt-preview-note");
     const thinkingIndicator = node(controls, "div", "uttt-thinking");
     thinkingIndicator.setAttribute("aria-hidden", "true");
-    thinkingIndicator.innerHTML = `<svg class="uttt-thinking-icon" viewBox="0 0 256 256" focusable="false">
+    thinkingIndicator.innerHTML = `<svg class="uttt-thinking-icon" viewBox="0 0 24 24" focusable="false">
       <use class="uttt-thinking-gear" href="#icon-thinking-gear" />
     </svg>`;
     const error = node(controls, "section", "uttt-engine-error");

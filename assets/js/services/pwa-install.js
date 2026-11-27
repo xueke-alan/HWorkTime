@@ -106,25 +106,8 @@ WorkTimeApp.services.pwaInstall = (() => {
       const host = document.querySelector(".auto-backup-settings");
       if (!host) return;
       const service = WorkTimeApp.services.pwaInstall;
-      const heading = document.createElement("label");
-      heading.id = "appInstallLabel";
-      heading.className = "label";
-      heading.htmlFor = "appInstallButton";
-      const button = WorkTimeApp.ui.native.createElement("button");
-      button.id = "appInstallButton";
-      button.type = "button";
-      button.className = "ui-button";
-      const icon = document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "svg",
-      );
-      icon.setAttribute("class", "ui-icon");
-      icon.setAttribute("aria-hidden", "true");
-      const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-      use.setAttribute("href", "#icon-install-desktop");
-      icon.append(use);
-      button.append(icon);
-      host.append(heading, button);
+      const heading = document.getElementById("appInstallLabel");
+      const button = document.getElementById("appInstallButton");
       let pending = false;
       function render() {
         heading.textContent = t("heading");

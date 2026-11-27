@@ -1,7 +1,12 @@
+import Card from "antd/es/card";
+import Empty from "antd/es/empty";
+import Input from "antd/es/input";
+import { NumberField } from "./number-field";
 import Button from "antd/es/button";
 import { SidebarLayout, SidebarHeader } from "./SidebarLayout";
 import AnalysisSidebar from "../analysis/AnalysisSidebar";
 import SettingsPane from "./SettingsPane";
+import YearReport from "./YearReport";
 
 export default function WorkEditor() {
   return (
@@ -127,12 +132,14 @@ export default function WorkEditor() {
                   id="notificationEmpty"
                   className="notification-empty hidden"
                 >
-                  <svg className="ui-icon" aria-hidden="true">
-                    <use href="#icon-notifications-off" />
-                  </svg>
-                  <span data-i18n-text='{"0":"copy.9f144d4667"}'>
-                    暂无通知或异常
-                  </span>
+                  <Empty
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                    description={
+                      <span data-i18n-text='{"0":"copy.9f144d4667"}'>
+                        暂无通知或异常
+                      </span>
+                    }
+                  />
                 </div>
               </section>
               <section
@@ -163,18 +170,7 @@ export default function WorkEditor() {
                 年度报告
               </h2>
             </SidebarHeader>
-            <div id="yearAnalysisCards" className="year-analysis-cards">
-              {Array.from({ length: 7 }, (_, index) => (
-                <article
-                  key={index}
-                  className={index === 0 ? "card average-card" : "card"}
-                  data-ui="card"
-                >
-                  <div className="card-label" />
-                  <div className="metric" />
-                </article>
-              ))}
-            </div>
+            <YearReport />
           </section>
           <AnalysisSidebar />
           <section
@@ -201,7 +197,7 @@ export default function WorkEditor() {
                       上班打卡时间
                     </label>
                     <div className="time-entry is-blank">
-                      <input
+                      <Input
                         id="batchStart"
                         required
                         placeholder="08:00"
@@ -211,7 +207,7 @@ export default function WorkEditor() {
                         inputMode="numeric"
                         maxLength={5}
                         autoComplete="off"
-                        spellCheck="false"
+                        spellCheck={false}
                       />
                     </div>
                   </div>
@@ -223,7 +219,7 @@ export default function WorkEditor() {
                       下班打卡时间
                     </label>
                     <div className="time-entry is-blank">
-                      <input
+                      <Input
                         id="batchEnd"
                         required
                         placeholder="17:30"
@@ -233,7 +229,7 @@ export default function WorkEditor() {
                         inputMode="numeric"
                         maxLength={5}
                         autoComplete="off"
-                        spellCheck="false"
+                        spellCheck={false}
                       />
                     </div>
                   </div>
@@ -250,12 +246,12 @@ export default function WorkEditor() {
                       每天加班 / 小时
                     </label>
                     <div className="time-entry">
-                      <input
+                      <NumberField
                         id="batchCalcOvertime"
-                        type="number"
-                        min="0"
-                        max="24"
-                        step="0.5"
+
+                        min={0}
+                        max={24}
+                        step={0.5}
                         aria-describedby="batchCalcResult"
                         className="hw-field number-input"
                       />
@@ -508,7 +504,7 @@ export default function WorkEditor() {
                     上班打卡时间
                   </label>
                   <div className="time-entry is-blank">
-                    <input
+                    <Input
                       id="dayStart"
                       placeholder="08:00"
                       data-hint-text="例如 08:00"
@@ -517,7 +513,7 @@ export default function WorkEditor() {
                       inputMode="numeric"
                       maxLength={5}
                       autoComplete="off"
-                      spellCheck="false"
+                      spellCheck={false}
                     />
                   </div>
                 </div>
@@ -529,7 +525,7 @@ export default function WorkEditor() {
                     下班打卡时间
                   </label>
                   <div className="time-entry is-blank">
-                    <input
+                    <Input
                       id="dayEnd"
                       placeholder="17:30"
                       data-hint-text="例如 17:30"
@@ -538,7 +534,7 @@ export default function WorkEditor() {
                       inputMode="numeric"
                       maxLength={5}
                       autoComplete="off"
-                      spellCheck="false"
+                      spellCheck={false}
                     />
                   </div>
                 </div>
@@ -686,11 +682,10 @@ export default function WorkEditor() {
                     >
                       <div className="leave-inline-content">
                         <div className="leave-input-wrap">
-                          <input
-                            type="number"
+                          <NumberField
                             id="dayLeave"
-                            min="0"
-                            step="0.5"
+                            min={0}
+                            step={0.5}
                             aria-label="请假时长 / 小时"
                             aria-describedby="dayLeaveError"
                             data-i18n-aria-label="copy.e4d7defa2e"
@@ -805,11 +800,14 @@ export default function WorkEditor() {
                   className="warnings leave-inline-error"
                   role="alert"
                 ></p>
-                <div
+                <Card
                   id="dayPreview"
+                  size="small"
                   className="calc-preview editor-preview"
                   aria-live="polite"
-                ></div>
+                >
+                  <div id="dayPreviewBody" />
+                </Card>
               </div>
             </form>
           </div>

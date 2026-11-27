@@ -289,9 +289,10 @@ async function verify() {
           );
         }
         if (
-          !sample.horizontal &&
-          (!sample.weekView ||
-            (sample.rows === 1 && !sample.sharedMotion.length))
+          !sample.weekView ||
+          (!sample.horizontal &&
+            sample.rows === 1 &&
+            !sample.sharedMotion.length)
         ) {
           assert.equal(
             sample.timing.duration,
@@ -319,7 +320,7 @@ async function verify() {
           assert.ok(
             frames[0].every((frame) =>
               (sample.horizontal
-                ? /^translateX\(-?[\d.]+px\)$/
+                ? /^translateX\(-?[\d.]+(?:px|%)\)$/
                 : /^translateY\(-?[\d.]+px\)$/
               ).test(frame.transform),
             ),
@@ -336,7 +337,11 @@ async function verify() {
           : sign > 0
             ? sample.rects[0].bottom - sample.rects[1].top
             : sample.rects[1].bottom - sample.rects[0].top;
-        if (sample.sharedMotion.length && sample.rows > 1) {
+        if (
+          !sample.horizontal &&
+          sample.sharedMotion.length &&
+          sample.rows > 1
+        ) {
           const movedRows = (sample.rows * 7 - sample.sharedMotion.length) / 7;
           if (sample.weekView)
             assert.ok(
@@ -444,9 +449,9 @@ async function verify() {
       await page.waitForFunction(
         () => !document.getElementById("panelContent").inert,
       );
-      await slide("nextMonth", 1);
-      await slide("prevMonth", -1);
-      await page.locator('[data-year-date="2026-02-01"]').click();
+      await slide("nextMonth", 1, false);
+      await slide("prevMonth", -1, false);
+      await page.locator('[data-year-date="2026-02-01"]').dblclick();
       await page.waitForFunction(
         () => !document.getElementById("panelContent").inert,
       );

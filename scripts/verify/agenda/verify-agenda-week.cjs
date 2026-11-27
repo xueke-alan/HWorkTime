@@ -163,10 +163,8 @@ async function verify() {
       "w1",
     );
     assert.equal(
-      await page
-        .locator("#monthTitleWeek .month-title-divider use")
-        .getAttribute("href"),
-      "#icon-calendar-date-divider",
+      await page.locator("#monthTitleWeek .month-title-divider").textContent(),
+      "/",
     );
     assert.deepEqual(await visibleDates(), [
       "2026-10-26",
@@ -428,7 +426,6 @@ async function verify() {
     );
     await settled();
     const titleGeometry = await page.evaluate(() => {
-      WorkTimeApp.ui.alignment.refresh();
       const title = document.querySelector("#monthTitle");
       const year = title
         .querySelector(".month-title-year")

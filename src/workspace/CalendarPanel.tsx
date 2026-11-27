@@ -1,6 +1,8 @@
 import Button from "antd/es/button";
 import AnalysisMetrics from "../analysis/AnalysisMetrics";
+import AnalysisHover from "../analysis/AnalysisHover";
 import CalendarGrid from "./CalendarGrid";
+import CalendarSourceHint from "./CalendarSourceHint";
 
 export default function CalendarPanel() {
   return (
@@ -29,13 +31,7 @@ export default function CalendarPanel() {
                     id="analysisPlot"
                     className="analysis-plot-viewport"
                   ></div>
-                  <div
-                    id="analysisHover"
-                    className="analysis-hover"
-                    aria-live="polite"
-                    aria-atomic="true"
-                    hidden
-                  ></div>
+                  <AnalysisHover />
                 </div>
                 <div className="analysis-legends">
                   <span className="analysis-chart-legend">
@@ -98,6 +94,7 @@ export default function CalendarPanel() {
           </div>
         </div>
       </section>
+      <CalendarSourceHint />
     </>
   );
 }

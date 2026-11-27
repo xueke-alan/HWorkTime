@@ -56,13 +56,17 @@ async function verify() {
       window.inkMeasurements = 0;
       const original = Element.prototype.getBoundingClientRect;
       Element.prototype.getBoundingClientRect = function (...args) {
-        if (this.matches(".ui-aligned-text")) window.inkMeasurements++;
+        if (
+          this.matches(
+            ".daynum-text,.calendar-today-number,.calendar-today-weekday,#gameTitle,.summary-number-digit",
+          )
+        )
+          window.inkMeasurements++;
         return original.apply(this, args);
       };
     });
     await page.keyboard.down("Space");
-    // The initial phase/status change may align text once. Sustained charging
-    // only changes the meter transform and must cause no further measurements.
+    // Sustained charging changes the meter transform without text measurements.
     await page.waitForTimeout(100);
     await page.evaluate(() => (window.inkMeasurements = 0));
     await page.waitForTimeout(400);
@@ -103,9 +107,10 @@ async function verify() {
       0,
       "board-only changes must not remeasure unrelated text",
     );
-    assert.ok(
-      titleMeasurements > 0,
-      "toolbar text changes must still be aligned",
+    assert.equal(
+      titleMeasurements,
+      0,
+      "toolbar text changes use CSS without alignment measurements",
     );
     assert.deepEqual(errors, []);
     await context.close();

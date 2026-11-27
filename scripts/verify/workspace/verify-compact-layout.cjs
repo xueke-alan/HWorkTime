@@ -64,7 +64,7 @@ async function verify() {
           width,
           height: width === 2560 ? 1440 : width === 1920 ? 1080 : 1000,
         });
-        await page.evaluate(() => WorkTimeApp.ui.alignment.refresh());
+
         await page.screenshot({
           path: path.join(output, language + "-" + width + ".png"),
           fullPage: true,

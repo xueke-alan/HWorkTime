@@ -295,7 +295,7 @@ async function verify() {
     await page.locator("#agendaCancel").click();
     await clickSettingsControl(page, "#pageSettingsOpen");
     assert.equal(await page.locator("#pageSettingsPane").isVisible(), true);
-    await page.locator("#personalSettingsCancel").click();
+    await page.locator("#pageSettingsOpen").click();
     assert.equal(await page.locator("#agendaList").isVisible(), true);
     await page.locator("#agendaMemo").fill("全局备忘始终展开");
     await page.waitForFunction(() =>

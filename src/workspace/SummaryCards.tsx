@@ -5,8 +5,9 @@ import { mountView } from "../mount-view";
 interface NumberOptions {
   unit: string;
   decimals?: number | null;
-  alignInk?: boolean;
   placeholder?: string;
+  reserveSign?: boolean;
+  retainIntegerWidth?: boolean;
 }
 type Value = number | string | null;
 type Paint = (
@@ -21,6 +22,7 @@ interface Metric {
   hint: string;
   value: Value;
   options: NumberOptions;
+  parts?: { days: string; hours: string };
 }
 interface Target {
   total: Value;
@@ -46,23 +48,34 @@ function NumberValue({
   unit,
   decimals,
   placeholder,
+  reserveSign = true,
+  retainIntegerWidth = true,
   className,
 }: NumberOptions & { value: Value; paint: Paint; className?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
     if (ref.current)
-      paint(ref.current, value, {
+      paint(ref.current, value ?? 0, {
         unit,
         decimals,
         placeholder,
-        alignInk: true,
+        reserveSign,
+        retainIntegerWidth,
       });
-  }, [paint, value, unit, decimals, placeholder]);
+  }, [
+    paint,
+    value,
+    unit,
+    decimals,
+    placeholder,
+    reserveSign,
+    retainIntegerWidth,
+  ]);
   return <span className={className} ref={ref} />;
 }
 function Summary({ metrics, target, negative, paint }: SummaryProps) {
   const { t } = WorkTimeApp.i18n;
-  const [attendance, workOvertime, restOvertime, totalHours, pending] =
+  const [attendance, workOvertime, restOvertime, totalHours, pending, leave] =
     metrics.slice(2);
   return (
     <>
@@ -82,16 +95,21 @@ function Summary({ metrics, target, negative, paint }: SummaryProps) {
             {kind === "target" ? (
               <>
                 <div className="overview-metric-heading">
-                  <strong data-hint-text={t("copy.ac05786a10")}>
-                    {t("short.target")}
+                  <strong
+                    data-hint-text={t("short.target")}
+                    aria-label={t("short.target")}
+                  >
+                    {t("short.targetHeading")}
                   </strong>
                   <strong id="targetValue">
                     <NumberValue
                       paint={paint}
                       value={target.target}
-                      decimals={1}
+                      decimals={2}
                       unit="h"
                       placeholder="-"
+                      reserveSign={false}
+                      retainIntegerWidth={false}
                     />
                   </strong>
                 </div>
@@ -101,21 +119,26 @@ function Summary({ metrics, target, negative, paint }: SummaryProps) {
                     className="overview-detail-row"
                     hidden={target.restDays === null}
                   >
-                    <span>{t("short.restOT")}</span>
+                    <span
+                      data-hint-text={t("short.monthOT")}
+                      aria-label={t("short.monthOT")}
+                    >
+                      {t("short.plannedOT")}
+                    </span>
                     <strong>
-                      {target.restDays !== null &&
-                        WorkTimeApp.i18n.number(target.restDays)}{" "}
-                      <small>d</small>
+                      <NumberValue
+                        paint={paint}
+                        value={target.restDays}
+                        decimals={0}
+                        unit="d"
+                        reserveSign={false}
+                      />
                     </strong>
                   </div>
                   <div id="targetResult" aria-live="polite">
                     {target.message}
                   </div>
-                  <div
-                    className="overview-detail-row"
-                    id="targetTotalRow"
-                    hidden={target.total === null}
-                  >
+                  <div className="overview-detail-row" id="targetTotalRow">
                     <span
                       id="targetTotalLabel"
                       data-hint-text={target.totalTitle}
@@ -141,8 +164,9 @@ function Summary({ metrics, target, negative, paint }: SummaryProps) {
                         paint={paint}
                         value={target.total}
                         unit="h"
-                        decimals={null}
+                        decimals={2}
                         placeholder="-"
+                        reserveSign
                       />
                     </strong>
                   </div>
@@ -155,8 +179,9 @@ function Summary({ metrics, target, negative, paint }: SummaryProps) {
                       <NumberValue
                         paint={paint}
                         value={target.daily}
-                        unit={target.daily === null ? "" : "h/d"}
+                        unit="h/d"
                         decimals={2}
+                        reserveSign
                       />
                     </strong>
                   </div>
@@ -166,6 +191,7 @@ function Summary({ metrics, target, negative, paint }: SummaryProps) {
               <dl className="overview-totals">
                 {[
                   totalHours,
+                  leave,
                   attendance,
                   workOvertime,
                   restOvertime,
@@ -188,11 +214,28 @@ function Summary({ metrics, target, negative, paint }: SummaryProps) {
                       {m.label}
                     </dt>
                     <dd data-stat-value="">
-                      <NumberValue
-                        paint={paint}
-                        value={m.value}
-                        {...m.options}
-                      />
+                      {m.parts ? (
+                        <>
+                          <NumberValue
+                            paint={paint}
+                            value={m.parts.days}
+                            unit="d"
+                            reserveSign={false}
+                          />
+                          <NumberValue
+                            paint={paint}
+                            value={m.parts.hours}
+                            unit="h"
+                            reserveSign={false}
+                          />
+                        </>
+                      ) : (
+                        <NumberValue
+                          paint={paint}
+                          value={m.value}
+                          {...m.options}
+                        />
+                      )}
                     </dd>
                   </div>
                 ))}
@@ -214,31 +257,31 @@ function Summary({ metrics, target, negative, paint }: SummaryProps) {
                     }
                   >
                     {kind === "balance" ? (
-                      metric.value === null ? (
-                        "—"
-                      ) : (
-                        <>
-                          <NumberValue
-                            paint={paint}
-                            className="surplus-hours"
-                            value={
-                              (negative ? "-" : "") + Math.floor(minutes / 60)
-                            }
-                            unit="h"
-                          />
-                          <NumberValue
-                            paint={paint}
-                            className="surplus-minutes"
-                            value={minutes % 60}
-                            unit="m"
-                          />
-                        </>
-                      )
+                      <>
+                        <NumberValue
+                          paint={paint}
+                          className="surplus-hours"
+                          reserveSign
+                          value={
+                            (negative ? "-" : "") +
+                            String(Math.floor(minutes / 60)).padStart(2, "0")
+                          }
+                          unit="h"
+                        />
+                        <NumberValue
+                          paint={paint}
+                          className="surplus-minutes"
+                          reserveSign={false}
+                          value={String(minutes % 60).padStart(2, "0")}
+                          unit="m"
+                        />
+                      </>
                     ) : (
                       <NumberValue
                         paint={paint}
                         value={metric.value}
                         {...metric.options}
+                        reserveSign
                       />
                     )}
                   </strong>

@@ -683,9 +683,9 @@ async function verify() {
           };
           const tick = () => new Promise(requestAnimationFrame);
           try {
-            const edge = document.querySelector(".agenda-date-edge");
+            const edge = document.querySelector(".day.selected");
             for (let i = 0; i < 6; i++) {
-              edge.style.left = i + "px";
+              edge.style.outlineOffset = i + "px";
               await tick();
               await tick();
             }
@@ -707,9 +707,10 @@ async function verify() {
           0,
           "Moving borders must not remeasure live text every frame",
         );
-        assert.ok(
-          alignment.textMeasurements > 0,
-          "Real text changes still trigger alignment",
+        assert.equal(
+          alignment.textMeasurements,
+          0,
+          "CSS date text changes require no alignment measurement",
         );
         assert.deepEqual(errors, []);
         await page.close();

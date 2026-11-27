@@ -1,4 +1,8 @@
+import { setNumberValue } from "./number-field";
+import { setCheckedValue } from "./SwitchField";
 import { createWorkspaceSelect } from "./select";
+import { mountCityField } from "./CityField";
+import { mountNotice } from "./Notice";
 import { mountSummary } from "./SummaryCards";
 import PickerGrid from "./views/PickerGrid";
 import ScheduleChoices from "./views/ScheduleChoices";
@@ -31,6 +35,10 @@ export const { state: oaActions, useSnapshot: useOAActions } = controllerState({
   clipboardNotice: false,
 });
 export const workspaceViews = {
+  setNumberValue,
+  setCheckedValue,
+  mountCityField,
+  mountNotice,
   createWorkspaceSelect,
   mountSummary,
   AgendaDisplay(

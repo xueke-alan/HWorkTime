@@ -4,7 +4,7 @@ import {
   SkipForwardIcon,
   PauseIcon,
   PlayIcon,
-} from "../phosphor-icons";
+} from "../tabler-icons";
 import { useLayoutEffect, useRef } from "react";
 import { mountView } from "../mount-view";
 import { useLanguage } from "../ApplicationTheme";
@@ -125,7 +125,7 @@ function FooterPlayback({
           onClick={() => action(id)}
           className="hw-button site-music-button"
         >
-          <Icon className="ui-icon" aria-hidden="true" />
+          <Icon size={14} className="ui-icon" aria-hidden="true" />
         </Button>
       ))}
       <svg

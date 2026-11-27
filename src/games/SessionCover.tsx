@@ -1,5 +1,5 @@
 import Button from "antd/es/button";
-import { ArrowCounterClockwiseIcon } from "../phosphor-icons";
+import { ArrowCounterClockwiseIcon } from "../tabler-icons";
 import { createPortal } from "react-dom";
 import { mountView } from "../mount-view";
 

@@ -4,9 +4,10 @@ import {
   BookIcon,
   ChartBarIcon,
   GearSixIcon,
-} from "../phosphor-icons";
+} from "../tabler-icons";
 import { useLanguage } from "../ApplicationTheme";
 import { mountView } from "../mount-view";
+import { SidebarHeader } from "../workspace/SidebarLayout";
 
 const pages = [
   { id: "learning", label: "navReview", icon: BookOpenIcon },
@@ -25,27 +26,38 @@ function VocabularyNavigation({
 }) {
   useLanguage();
   const { t } = WorkTimeApp.i18n;
-  return pages.map(({ id, label, icon: Icon }) => (
-    <Button
-      key={id}
-      data-page={id}
-      aria-current={current === id ? "page" : false}
-      onClick={() => navigate(id)}
-      className="hw-button vocabulary-nav-item"
-    >
-      <Icon aria-hidden="true" />
-      <span>{t("vocabulary." + label)}</span>
-      {id === "learning" && (
-        <span
-          className="vocabulary-review-badge"
-          aria-label={t("vocabulary.remaining") + ": " + remaining}
-          data-ui="badge"
+  return (
+    <>
+      <SidebarHeader className="vocabulary-header">
+        <h2>{t("vocabulary.title")}</h2>
+      </SidebarHeader>
+      {pages.map(({ id, label, icon: Icon }) => (
+        <Button
+          type="text"
+          htmlType="button"
+          key={id}
+          data-page={id}
+          aria-current={current === id ? "page" : false}
+          onClick={() => navigate(id)}
+          className="vocabulary-nav-item"
         >
-          {remaining}
-        </span>
-      )}
-    </Button>
-  ));
+          <Icon aria-hidden="true" />
+          <span className="vocabulary-nav-label">
+            {t("vocabulary." + label)}
+          </span>
+          {id === "learning" && (
+            <span
+              className="vocabulary-review-badge"
+              aria-label={t("vocabulary.remaining") + ": " + remaining}
+              data-ui="badge"
+            >
+              {remaining}
+            </span>
+          )}
+        </Button>
+      ))}
+    </>
+  );
 }
 export function mountVocabularyNavigation(
   nav: HTMLElement,

@@ -373,7 +373,15 @@ async function main() {
       throw Error("Unexpected synchronous footer layout");
     },
   };
-  const tabs = { style: {} };
+  const functionStyles = new Map();
+  const tabs = {
+    style: {},
+    parentElement: {
+      style: {
+        setProperty: (name, value) => functionStyles.set(name, value),
+      },
+    },
+  };
   let callback,
     disconnected = false;
   const context = vm.createContext({ WorkTimeApp: { ui: {} } });
@@ -381,6 +389,7 @@ async function main() {
     fs.readFileSync(path.join(root, "assets/js/ui/workspace.js"), "utf8"),
     context,
   );
+  context.WorkTimeApp.ui.createSiteFooter = () => () => {};
   const workspace = context.WorkTimeApp.ui.createWorkspace({
     document: {
       querySelector: (selector) =>
@@ -408,9 +417,11 @@ async function main() {
   workspace.mount();
   callback([{ target: footer, borderBoxSize: [{ blockSize: 42 }] }]);
   assert.equal(tabs.style.height, "42px");
+  assert.equal(functionStyles.get("--sidebar-tabs-height"), "42px");
   workspace.dispose();
   callback([{ target: footer, borderBoxSize: [{ blockSize: 60 }] }]);
   assert.equal(tabs.style.height, "42px");
+  assert.equal(functionStyles.get("--sidebar-tabs-height"), "42px");
   assert.equal(disconnected, true);
   console.log(
     "Workspace: observer measurements avoid forced mount layout and stop after disposal.",

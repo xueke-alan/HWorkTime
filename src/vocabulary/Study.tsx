@@ -1,6 +1,6 @@
 import Button from "antd/es/button";
 import Input from "antd/es/input";
-import { ArrowLeftIcon, SpeakerHighIcon } from "../phosphor-icons";
+import { ArrowLeftIcon, SpeakerHighIcon } from "../tabler-icons";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -107,26 +107,17 @@ function WordHeader({ p, mini = false }: { p: HeaderProps; mini?: boolean }) {
 export interface MiniProps {
   header: HeaderProps | null;
   streak: number;
-  back: () => void;
   expand: () => void;
 }
-export function MiniStudy({ header, streak, back, expand }: MiniProps) {
-  const backTitle = WorkTimeApp.i18n.t("tools.back");
+export function MiniStudy({ header, streak, expand }: MiniProps) {
   return (
     <>
       <Button
         type="text"
-        className="ui-button icon-only vocabulary-mini-back"
-        aria-label={backTitle}
-        data-hint-text={backTitle}
-        onClick={back}
-        icon={<ArrowLeftIcon />}
-      />
-      <button
         className="vocabulary-mini-expand"
         aria-label={t("expand")}
         onClick={expand}
-        type="button"
+        htmlType="button"
       />
       <div className="vocabulary-study-header">
         {header ? (
@@ -179,6 +170,7 @@ export function Study(p: StudyProps) {
         <>
           {p.back && (
             <Button
+              type="text"
               className="vocabulary-word-back"
               aria-label={t("back")}
               icon={<ArrowLeftIcon />}

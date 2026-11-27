@@ -74,7 +74,7 @@ const { chromium } = require("playwright");
         assert.equal(sample.text.includes("加班"), entering);
         assert.ok(
           sample.frames.every((frame) => frame.transform === undefined),
-          "Label fade must preserve the ink alignment transform",
+          "Label fade must preserve its CSS position",
         );
         assert.ok(
           sample.jump < 0.1,

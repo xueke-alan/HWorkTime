@@ -16,8 +16,13 @@
     track.style.removeProperty("animation-play-state");
     // The final digit always occupies its resting line. Only the absolutely
     // positioned outgoing digit is removed; layout and paint origin stay fixed.
-    entry.outgoing.remove();
-    track.classList.remove("number-roll-up", "number-roll-down");
+    entry.outgoing?.remove();
+    track.classList.remove(
+      "number-roll-up",
+      "number-roll-down",
+      "number-sign-in",
+      "number-sign-out",
+    );
     active.delete(track);
   }
   function start(track) {
@@ -35,12 +40,13 @@
       unit = "",
       placeholder = "—",
       key,
-      alignInk = false,
       animateInitial = true,
       animateWhole = false,
       animateWholeOnLengthChange = false,
       preserveText = false,
       integerDigits = 0,
+      retainIntegerWidth = false,
+      digitAlign = "right",
       reserveSign = false,
       motion = true,
       deferAnimation = false,
@@ -68,26 +74,31 @@
     const signature = JSON.stringify([
       raw,
       unit,
-      alignInk,
       animateWhole,
       animateWholeOnLengthChange,
       preserveText,
       integerDigits,
+      retainIntegerWidth,
+      digitAlign,
       reserveSign,
     ]);
     if (old?.signature === signature) return;
-    for (const track of element.querySelectorAll(".summary-number-track"))
+    for (const track of element.querySelectorAll(
+      ".summary-number-track, .summary-number-sign",
+    ))
       finish(track);
     const oldValue =
       old?.number ?? (key === undefined ? undefined : history.get(key)) ?? "0";
-    previous.set(element, { signature, number });
+    const integerWidth = retainIntegerWidth
+      ? Math.max(
+          integerDigits,
+          old?.integerWidth || 0,
+          number?.match(/^[+-]?(\d+)/)?.[1].length || 0,
+        )
+      : integerDigits;
+    previous.set(element, { signature, number, integerWidth });
     if (key !== undefined) history.set(key, number);
-    if (number === null && alignInk) {
-      const label = document.createElement("span");
-      label.dataset.numberInk = "";
-      label.textContent = placeholder;
-      element.replaceChildren(label);
-    } else if (number === null) element.textContent = placeholder;
+    if (number === null) element.textContent = placeholder;
     else {
       const wrapper = document.createElement("span");
       wrapper.className = "summary-number";
@@ -126,10 +137,15 @@
           oldValue.length !== number.length);
       const pending = [];
       const leadingNumber = number.match(/^([+-]?)(\d+)/);
+      const oldLeadingNumber = oldValue.match(/^([+-]?)(\d+)/);
+      const padding =
+        !rollWhole && retainIntegerWidth && leadingNumber
+          ? Math.max(0, integerWidth - leadingNumber[2].length)
+          : 0;
       if (!rollWhole && leadingNumber) {
         for (
           let count = leadingNumber[2].length;
-          count < integerDigits;
+          !retainIntegerWidth && count < integerDigits;
           count++
         ) {
           const spacer = document.createElement("span");
@@ -140,30 +156,56 @@
         if (reserveSign) {
           const sign = document.createElement("span");
           sign.className = "summary-number-sign";
-          sign.textContent = leadingNumber[1];
+          const before = oldLeadingNumber?.[1] || "";
+          const after = leadingNumber[1];
+          sign.textContent = after || before || "-";
+          sign.dataset.numberSignHidden = String(!after);
+          if (animate && Boolean(before) !== Boolean(after)) {
+            sign.classList.add(after ? "number-sign-in" : "number-sign-out");
+            const end = (event) => {
+              if (event.target === sign) finish(sign);
+            };
+            sign.addEventListener("animationend", end);
+            sign.addEventListener("animationcancel", end);
+            sign.style.animationPlayState = "paused";
+            active.set(sign, { end, timer: null, duration: 240 });
+            pending.push(sign);
+          }
           visual.append(sign);
         }
       }
-      for (const [index, digit] of (rollWhole
-        ? [number]
-        : [...number]
-      ).entries()) {
+      const digits = rollWhole ? [number] : [...number];
+      // Keep missing columns on the side required by the view's alignment.
+      // Accessible text still contains only the formatted number.
+      if (padding) {
+        const blanks = Array(padding).fill("");
+        if (digitAlign === "left") digits.push(...blanks);
+        else digits.splice(leadingNumber[1].length, 0, ...blanks);
+      }
+      for (const [index, digit] of digits.entries()) {
         if (reserveSign && index === 0 && leadingNumber?.[1]) continue;
-        if (!rollWhole && !/\d/.test(digit)) {
+        if (!rollWhole && digit !== "" && !/\d/.test(digit)) {
           const punctuation = document.createElement("span");
           punctuation.textContent = digit === " " ? "\u00a0" : digit;
           visual.append(punctuation);
           continue;
         }
+        const numberIndex = index - (digitAlign === "left" ? 0 : padding);
         const oldIndex =
-          index < newDot
-            ? oldDot - (newDot - index)
-            : oldDot + (index - newDot);
+          digitAlign === "left"
+            ? numberIndex -
+              (leadingNumber?.[1].length || 0) +
+              (oldLeadingNumber?.[1].length || 0)
+            : numberIndex < newDot
+              ? oldDot - (newDot - numberIndex)
+              : oldDot + (numberIndex - newDot);
         const before = rollWhole
           ? oldValue
           : /\d/.test(oldValue[oldIndex] || "")
             ? oldValue[oldIndex]
-            : "0";
+            : retainIntegerWidth
+              ? ""
+              : "0";
         const column = document.createElement("span");
         column.className = "summary-number-column";
         if (rollWhole) column.classList.add("summary-number-word");
@@ -172,7 +214,9 @@
         const row = (text) => {
           const item = document.createElement("span");
           item.className = "summary-number-digit";
-          item.textContent = text;
+          // Empty blocks use their bottom edge as a baseline. Keep a text line
+          // even for blank slots so adjacent digits never jump vertically.
+          item.textContent = text || "\u00a0";
           return item;
         };
         const finalRow = row(digit);

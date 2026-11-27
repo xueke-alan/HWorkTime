@@ -102,7 +102,7 @@ async function verify() {
       await open();
       await selected("#settingsGeneralTab");
       await tab("#settingsPersonalTab");
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       await open();
       await selected("#settingsPersonalTab");
       await page.locator("#settingsPersonalTab").press("Home");
@@ -119,12 +119,12 @@ async function verify() {
       await page.waitForFunction(
         () => !document.getElementById("scheduleRangeDialog").open,
       );
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       assert.equal(await page.locator("#settingsPane").isVisible(), false);
       await open();
       await selected("#settingsWorkTab");
       assert.equal(await page.locator("#standardStart").inputValue(), draft);
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       const agendaMode = page.locator("#agendaMode");
       const settings = page.locator("#settingsPane");
       await open();
@@ -186,7 +186,7 @@ async function verify() {
         path: path.join(root, "settings-tabs-" + width + ".png"),
         fullPage: true,
       });
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       // Opening/closing and grouping animate content while the sidebar frame stays still.
       await page.emulateMedia({ reducedMotion: "no-preference" });
       const animatedClick = async (selector, surface = "#settingsPane") => {
@@ -273,7 +273,7 @@ async function verify() {
           .evaluate((element) => element.getAnimations().length),
         0,
       );
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       // Settings use plain text tabs and keep the lower tools docked in agenda mode.
       await toggleAgenda(page);
       await open();
@@ -352,7 +352,7 @@ async function verify() {
         path: path.join(root, "settings-agenda-" + width + ".png"),
         fullPage: true,
       });
-      await page.locator("#personalSettingsCancel").click();
+      await page.locator("#pageSettingsOpen").click();
       assert.equal(await page.locator(".date-info-area").isVisible(), false);
       await page.locator("#date-tab-notifications").click();
       assert.equal(await page.locator(".date-info-area").isVisible(), true);

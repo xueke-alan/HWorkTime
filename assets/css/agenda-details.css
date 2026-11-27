@@ -1,11 +1,9 @@
-/* Week lanes share the calendar's transform, while day artwork remains untouched. */
+/* Week lanes and native date borders follow their own CSS layout and transforms. */
 
 .agenda-mode-exit-clip { position: absolute; inset: 0; overflow: clip; contain: paint; pointer-events: none; z-index: 4; }
 .agenda-content-outgoing, .agenda-content-outgoing * { pointer-events: none !important; }
 .agenda-mode .calendar.agenda-lane-view .day > .agenda-card-items { display: none; }
 .agenda-week-layers { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
-.agenda-date-edges { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
-.agenda-date-edge { position: absolute; display: block; box-sizing: border-box; background: none; pointer-events: none; transition: none; }
 .agenda-week-lane { position: absolute; overflow: hidden; pointer-events: none; }
 .agenda-week-lane.is-scrollable { overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; overscroll-behavior-y: contain; pointer-events: auto; }
 .agenda-week-lane:focus { outline: none; }
@@ -48,7 +46,6 @@
 .agenda-chip-title-text {
   min-width: 0;
   flex: 0 1 auto;
-  transform: translateY(var(--ui-ink-offset, 0px));
 }
 .agenda-chip-continuation {
   display: block;
@@ -139,7 +136,6 @@
 .agenda-chip-time {
   color: var(--agenda-chip-muted);
 }
-body .agenda-chip-time.ui-aligned-text { display: block; }
 .agenda-chip span {
   display: block;
   overflow: hidden;

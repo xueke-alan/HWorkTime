@@ -65,7 +65,7 @@ WorkTimeApp.services.gamePrefetch = (() => {
           if (job.paths) {
             for (const path of job.paths) {
               await waitForIdle();
-              await assets.preload(path, path.endsWith(".css"));
+              await assets.prefetch(path, path.endsWith(".css"));
             }
           } else {
             const [script, resource] = definitions[job.id];

@@ -16,6 +16,13 @@ html:not(.app-loading) body #calendar > .day {
 html:not(.app-loading) body .year-month .year-day {
   transition: border-color 180ms var(--motion-ease), box-shadow 180ms var(--motion-ease);
 }
+html:not(.app-loading) body .is-year-navigating:not(.year-calendar-detail) .year-day {
+  transition: background-color 200ms linear, border-color 180ms var(--motion-ease), box-shadow 180ms var(--motion-ease);
+}
+
+html:not(.app-loading) body .is-year-navigating.year-calendar-detail .year-detail-colors > span {
+  transition: background-color 200ms linear;
+}
 
 /* Residual shared-file rules restored to their component owner. */
 body .sidebar-actions > #importOpen {
@@ -137,12 +144,6 @@ body dialog[open] {
 }
 body dialog[open]::backdrop {
   animation: motion-fade 180ms cubic-bezier(0.2, 0, 0, 1);
-}
-/* Measure before the first painted frame, without moving or resizing controls. */
-body dialog.motion-dialog-preparing,
-body dialog.motion-dialog-preparing::backdrop {
-  visibility: hidden;
-  animation: none;
 }
 body .feedback-notice {
   animation: motion-notice 220ms var(--motion-ease);

@@ -50,11 +50,13 @@ async function main() {
           document.documentElement.dataset.appState === "ready" &&
           !document.documentElement.classList.contains("app-loading"),
       );
-      const initialPreloads = await page.locator('link[rel="preload"]').count();
+      const initialPrefetches = await page
+        .locator('link[rel="prefetch"]')
+        .count();
       await page.waitForTimeout(2400);
       assert.equal(
-        await page.locator('link[rel="preload"]').count(),
-        initialPreloads,
+        await page.locator('link[rel="prefetch"]').count(),
+        initialPrefetches,
         "Typing postpones startup warming even when audio caching is disabled",
       );
       await page.evaluate(() => clearInterval(window.preloadTyping));

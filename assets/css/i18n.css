@@ -92,10 +92,14 @@ body .site-audio-hint > span:first-child > span {
 }
 .settings-select-row,
 .auto-backup-settings { display: grid; column-gap: 0.857143rem; row-gap: 0.428571rem; }
-.settings-select-row { grid-template-columns: minmax(0, 1fr) 25%; }
+.settings-select-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .auto-backup-settings { grid-template-columns: minmax(0, 1fr) 25%; }
 body .editor .settings-select-row > .field { display: grid; grid-row: span 3; grid-template-rows: subgrid; grid-template-columns: minmax(0, 1fr); min-width: 0; }
 body .editor .settings-select-row > .field > label { min-width: 0; white-space: normal; overflow-wrap: anywhere; align-self: end; }
+/* Match the space between options to Ant's popup edge padding. */
+.preference-select-popup .ant-select-item + .ant-select-item {
+  margin-block-start: var(--ant-padding-xxs, 4px);
+}
 body #pageSettingsPane .language-trigger .button-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .language-settings {
   --language-control-inset: 0.857143rem;
@@ -172,7 +176,6 @@ body #pageSettingsPane .settings-select-options > button > .button-label {
   overflow-wrap: anywhere;
   text-align: start;
   line-height: 1.4;
-  transform: translateY(var(--ui-ink-offset, 0px));
 }
 body #settingsPane #pageSettingsPane .settings-select-options > button[aria-selected="true"] { color: var(--ui-accent, var(--accent)); background: var(--ui-highlight, var(--accent-light)); }
 body #settingsPane #pageSettingsPane .settings-select-options > button:is(:hover, :focus-visible) { background: var(--control-hover); }
@@ -260,17 +263,3 @@ body #pageSettingsPane #autoBackupFolderReset:is(:hover, :focus-visible) { color
 body #pageSettingsPane #appInstallLabel { grid-column: 2; grid-row: 1; align-self: end; min-width: 0; margin: 0; padding-inline-start: 8px; text-align: start; overflow-wrap: anywhere; }
 body #pageSettingsPane #appInstallButton { grid-column: 2; grid-row: 2; align-self: start; justify-self: stretch; width: 100%; min-width: 0; max-width: none; padding-inline: 0; }
 body #pageSettingsPane #appInstallButton > .ui-icon { width: var(--icon-size-small); height: var(--icon-size-small); }
-
-/* One surface style and interaction state for this shared settings row. */
-body #pageSettingsPane :is(.auto-backup-folder-control, #appInstallButton) {
-  box-sizing: border-box;
-  border: 1px solid var(--control-border);
-  border-radius: var(--ui-button-radius);
-  background: var(--theme-surface-paper, var(--paper));
-  box-shadow: var(--control-shadow);
-}
-body #pageSettingsPane #appInstallButton:is(:hover, :focus-visible):not(:disabled),
-body #pageSettingsPane .auto-backup-folder-control:has(> #autoBackupFolderChoose:is(:hover, :focus-visible):not(:disabled)) {
-  border-color: var(--accent);
-  background: var(--control-hover);
-}

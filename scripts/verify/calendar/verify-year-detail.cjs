@@ -156,13 +156,8 @@ require("../../lib/browser-test-setup.cjs");
           (animation) => animation.effect.target,
         );
         const layer = (name) => firstMonth.querySelector(name);
-        const detailsEnter = [
-          ".year-day-surfaces",
-          ".year-detail-numbers",
-          ".year-day-notes",
-          ".year-day-badges",
-        ].every((name) => hasFade(layer(name), 1));
-        const digitsMove = layer(".year-detail-numbers")
+        const detailsEnter = hasFade(layer(".year-detail-cells"), 1);
+        const digitsMove = layer(".year-detail-cells")
           .getAnimations()
           .some((item) => item.transitionProperty === "transform");
         const summaryLeaves = hasFade(layer(".year-month-stats"), 0);
@@ -170,7 +165,7 @@ require("../../lib/browser-test-setup.cjs");
         await settle();
         heatmapLabel.click();
         await frame();
-        const notesLeave = hasFade(layer(".year-day-notes"), 0);
+        const notesLeave = hasFade(layer(".year-detail-cells"), 0);
         const watermarkLeaves = hasFade(
           document.getElementById("yearWatermark"),
           0,
@@ -188,9 +183,11 @@ require("../../lib/browser-test-setup.cjs");
           notesLeave,
           watermarkLeaves,
           sharedLayers: targets.every((target) =>
-            target.matches(".year-day-layer, .year-month-stats"),
+            target.matches(
+              ".year-detail-colors, .year-heat-labels, .year-day-layer, .year-month-stats",
+            ),
           ),
-          boundedMotion: targets.length <= 12 * 17,
+          boundedMotion: targets.length <= 12 * 6,
           detail: grid.classList.contains("year-calendar-detail"),
           checked: detailLabel.contains(current),
         };
@@ -224,9 +221,8 @@ require("../../lib/browser-test-setup.cjs");
         await firstDay.evaluate((day) => {
           const days = day.parentElement;
           const index = [...days.children].indexOf(day);
-          const number = days.querySelector(".year-detail-numbers").children[
-            index
-          ];
+          const number =
+            days.querySelector(".year-detail-cells").children[index];
           const buttonBounds = day.getBoundingClientRect();
           const numberBounds = number.getBoundingClientRect();
           return (
@@ -253,11 +249,13 @@ require("../../lib/browser-test-setup.cjs");
       assert.equal(overflow, false, "year view fits viewport");
       const date = await firstDay.getAttribute("data-year-date");
       await firstDay.click();
+      assert.equal(await page.locator("#calendar.year-calendar").count(), 1);
+      await firstDay.dblclick();
       await page.locator("#calendar .day.selected").waitFor();
       assert.equal(
         await page.locator("#calendar .day.selected").getAttribute("data-date"),
         date,
-        "clicking through the decorative layers opens the selected date",
+        "double-clicking through the decorative layers opens the selected date",
       );
       assert.deepEqual(errors, []);
       await page.close();

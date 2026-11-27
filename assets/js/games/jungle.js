@@ -236,7 +236,7 @@ WorkTimeApp.games.register({
     status.setAttribute("role", "status");
     const thinkingIndicator = node(objective, "div", "jungle-thinking");
     thinkingIndicator.setAttribute("aria-hidden", "true");
-    thinkingIndicator.innerHTML = `<svg class="jungle-thinking-icon" viewBox="0 0 256 256" focusable="false">
+    thinkingIndicator.innerHTML = `<svg class="jungle-thinking-icon" viewBox="0 0 24 24" focusable="false">
       <use class="jungle-thinking-gear" href="#icon-thinking-gear" />
     </svg>`;
     const engineFailure = node(controls, "div", "jungle-engine-error");

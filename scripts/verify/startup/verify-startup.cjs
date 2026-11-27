@@ -127,10 +127,7 @@ async function verifyCalendarAverage(page) {
         await value.evaluate((element) => getComputedStyle(element).color),
         "rgb(209, 59, 50)",
       );
-    assert.equal(
-      await day.locator(".trend-icon use").getAttribute("href"),
-      "#icon-horizontal-rule",
-    );
+    assert.equal(await day.locator(".trend-icon").count(), 0);
   }
   await page.locator('.day[data-date="2026-10-11"]').click();
   await page.locator("#plannedOvertimeToggle").click();
@@ -384,10 +381,7 @@ async function verifyCalendar(page) {
     await first.locator(".day-average-value").textContent(),
     "1.50 h",
   );
-  assert.equal(
-    await first.locator(".trend-flat use").getAttribute("href"),
-    "#icon-horizontal-rule",
-  );
+  assert.equal(await first.locator(".trend-icon").count(), 0);
   assert.equal(
     await second.locator(".day-average-value").textContent(),
     "0.25 h",
