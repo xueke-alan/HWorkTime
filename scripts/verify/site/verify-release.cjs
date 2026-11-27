@@ -190,7 +190,7 @@ async function verifyWorkspaceMenubar(page) {
         JSON.stringify(bounds),
       );
       assert.ok(
-        Math.abs(bounds.dateStart - bounds.firstDateStart - 10) <= 2,
+        Math.abs(bounds.dateStart - bounds.firstDateStart) <= 2,
         JSON.stringify(bounds),
       );
       assert.ok(
@@ -491,8 +491,8 @@ async function verifyCalendarAndRestore(page) {
   await dates.nth(1).click();
   assert.equal(await dates.nth(1).getAttribute("aria-pressed"), "true");
   const metric = page.locator('#analysisMetrics [data-key="earliest"]');
-  await metric.getByRole("button").click();
-  assert.ok(await metric.locator(".analysis-date-hint").isVisible());
+  assert.ok(await metric.locator(".analysis-metric-dates").isVisible());
+  assert.ok(await metric.locator(".analysis-metric-dates").innerText());
   await page.locator("#prevMonth").click();
   await page.waitForFunction(
     () => document.querySelector("#analysisFocusDates").childElementCount === 0,
